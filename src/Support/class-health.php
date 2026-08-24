@@ -1,0 +1,83 @@
+<?php
+/**
+ * Defines the Health class.
+ *
+ * @package DreamaxLicenseManager
+ */
+
+declare(strict_types=1);
+
+namespace Dreamax\LicenseManager\Support;
+
+use Dreamax\LicenseManager\Encryption\Crypto;
+
+/**
+ * Handles Health operations.
+ */
+final class Health {
+	/**
+	 * Handles the register operation.
+	 */
+	public function register(): void {
+		add_action( 'admin_notices', array( $this, 'notice' ) );
+		add_filter( 'site_status_tests', array( $this, 'site_health_test' ) );
+	}
+
+	/**
+	 * Handles the notice operation.
+	 */
+	public function notice(): void {
+		if ( ! current_user_can( Capabilities::SECURITY ) || ( new Crypto() )->ready() ) {
+			return;
+		}
+		echo '<div class="notice notice-error"><p><strong>' . esc_html__( 'Dreamax License Manager recovery mode:', 'dreamax-license-manager' ) . '</strong> ';
+		echo esc_html__( 'The master key is missing, invalid, or does not match this site. Key generation, assignment, reveal, export, and public validation are paused. Restore the correct wp-config.php key; stored encrypted data has not been changed.', 'dreamax-license-manager' );
+		echo '</p></div>';
+	}
+
+	/**
+	 * Handles the site health test operation.
+	 *
+	 * @param array $tests Tests value.
+	 * @phpstan-param array{
+	 *     direct?:array<string,array{label:string,test:callable|string,skip_cron?:bool}>,
+	 *     async?:array<string,array{label:string,test:string,has_rest?:bool,skip_cron?:bool,async_direct_test?:callable,headers?:array<string,string>}>
+	 * } $tests Site Health tests.
+	 * @return array{
+	 *     direct:array<string,array{label:string,test:callable|string,skip_cron?:bool}>,
+	 *     async?:array<string,array{label:string,test:string,has_rest?:bool,skip_cron?:bool,async_direct_test?:callable,headers?:array<string,string>}>
+	 * }
+	 */
+	public function site_health_test( array $tests ): array {
+		$tests['direct']['dreamax_lm_encryption'] = array(
+			'label' => __( 'Dreamax license encryption', 'dreamax-license-manager' ),
+			'test'  => array( $this, 'test_encryption' ),
+		);
+		return $tests;
+	}
+
+	/**
+	 * Handles the test encryption operation.
+	 *
+	 * @return array{
+	 *     label:string,
+	 *     status:'good'|'critical',
+	 *     badge:array{label:string,color:'blue'},
+	 *     description:string,
+	 *     test:'dreamax_lm_encryption'
+	 * }
+	 */
+	public function test_encryption(): array {
+		$ready = ( new Crypto() )->ready();
+		return array(
+			'label'       => $ready ? __( 'Dreamax license encryption is ready', 'dreamax-license-manager' ) : __( 'Dreamax license encryption needs attention', 'dreamax-license-manager' ),
+			'status'      => $ready ? 'good' : 'critical',
+			'badge'       => array(
+				'label' => __( 'Security', 'dreamax-license-manager' ),
+				'color' => 'blue',
+			),
+			'description' => '<p>' . esc_html( $ready ? __( 'The configured key passed an authenticated encryption self-test.', 'dreamax-license-manager' ) : __( 'Restore or configure the dedicated wp-config.php master key before issuing licenses.', 'dreamax-license-manager' ) ) . '</p>',
+			'test'        => 'dreamax_lm_encryption',
+		);
+	}
+}

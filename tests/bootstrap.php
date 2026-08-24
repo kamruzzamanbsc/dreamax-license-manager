@@ -8,7 +8,11 @@ spl_autoload_register(
 		if ( 0 !== strpos( $class, $prefix ) ) {
 			return;
 		}
-		$file = dirname( __DIR__ ) . '/src/' . str_replace( '\\', '/', substr( $class, strlen( $prefix ) ) ) . '.php';
+		$relative   = substr( $class, strlen( $prefix ) );
+		$parts      = explode( '\\', $relative );
+		$class_file = 'class-' . strtolower( (string) array_pop( $parts ) ) . '.php';
+		$directory  = $parts ? implode( '/', $parts ) . '/' : '';
+		$file       = dirname( __DIR__ ) . '/src/' . $directory . $class_file;
 		if ( is_readable( $file ) ) {
 			require_once $file;
 		}
