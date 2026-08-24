@@ -53,7 +53,7 @@ final class EventRepository {
 				'actor_id'       => $actor_id,
 				'request_id'     => $request_id,
 				'occurred_at'    => gmdate( 'Y-m-d H:i:s' ),
-				'metadata'       => wp_json_encode( $this->sanitize_metadata( $metadata ) ),
+				'metadata'       => wp_json_encode( ( new AuditMetadata() )->sanitize( $metadata ) ),
 			),
 			array( '%s', '%d', '%s', '%d', '%s', '%d', '%s', '%s', '%s' )
 		);
@@ -105,20 +105,5 @@ final class EventRepository {
 			ARRAY_A
 		);
 		return is_array( $rows ) ? $rows : array();
-	}
-
-	/**
-	 * Handles the sanitize metadata operation.
-	 *
-	 * @param array $metadata Metadata value.
-	 * @phpstan-param array<string,mixed> $metadata Metadata value.
-	 * @return array<string,mixed>
-	 */
-	private function sanitize_metadata( array $metadata ): array {
-		$blocked = array( 'license_key', 'key', 'secret', 'authorization', 'token', 'raw_ip', 'password' );
-		foreach ( $blocked as $field ) {
-			unset( $metadata[ $field ] );
-		}
-		return $metadata;
 	}
 }

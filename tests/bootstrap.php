@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+defined( 'MINUTE_IN_SECONDS' ) || define( 'MINUTE_IN_SECONDS', 60 );
+defined( 'HOUR_IN_SECONDS' ) || define( 'HOUR_IN_SECONDS', 3600 );
+
 spl_autoload_register(
 	static function ( string $class ): void {
 		$prefix = 'Dreamax\\LicenseManager\\';

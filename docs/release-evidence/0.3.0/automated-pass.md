@@ -10,15 +10,16 @@
 
 | Command/procedure | Expected | Observed |
 | --- | --- | --- |
-| `composer dump-autoload -o --strict-ambiguous` | Optimized classmap; no ambiguous production class | Exit 0; 1,586 classes generated; no ambiguity reported |
+| `composer dump-autoload -o --strict-ambiguous` | Optimized classmap; no ambiguous production class | Exit 0; 1,596 classes generated; no ambiguity reported |
 | `composer validate --no-check-publish` | Valid Composer configuration | Exit 0; `./composer.json is valid` |
 | `composer lint` | WordPress PHPCS clean | Exit 0; no violation reported |
-| `composer analyse` | PHPStan clean | Exit 0; `[OK] No errors`, 41/41 source files |
-| `composer test` | Complete configured suite passes | Exit 0; 40/40 tests, 53 assertions |
-| PHP-lint `dreamax-license-manager.php`, `uninstall.php`, and every `src/**/*.php` file | No syntax error in every production PHP file | Exit 0; 43/43 production PHP files clean |
-| `php docs/release-evidence/0.3.0/verify-autoload.php` | All production classes resolve through Composer and the runtime mapping using exact portable case | Exit 0; 41 unique classes resolved through both mappings; no case/path collision |
-| `powershell -NoProfile -ExecutionPolicy Bypass -File docs/release-evidence/0.3.0/verify-renames.ps1` | HEAD/current identities match and no old path reference remains | Exit 0; all 41 identities match; no missing/duplicate class or old path reference |
+| `composer analyse` | PHPStan clean | Exit 0; `[OK] No errors`, 46/46 source files |
+| `composer test` | Complete configured suite passes | Exit 0; 66/66 tests, 122 assertions |
+| PHP-lint `dreamax-license-manager.php`, `uninstall.php`, and every `src/**/*.php` file | No syntax error in every production PHP file | Exit 0; 48/48 production PHP files clean |
+| `php docs/release-evidence/0.3.0/verify-autoload.php` | All production classes resolve through Composer and the runtime mapping using exact portable case | Exit 0; 46 unique classes resolved through both mappings; no case/path collision |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File docs/release-evidence/0.3.0/verify-renames.ps1` | Main-baseline and intentional F25 identities resolve and no old path reference remains | Exit 0; all 41 main-baseline identities and 5 F25 additions present; no missing/duplicate class or old path reference |
 | Compare plugin header, `DREAMAX_LM_VERSION`, and readme stable tag | All versions equal `0.3.0` | Exit 0; all three equal `0.3.0` |
+| High-confidence secret-signature scan of all intended changed files, excluding dependency/cache/log/environment/key/build paths | No embedded credential or private-key material | Exit 0; 38/38 intended files scanned; no finding and no prohibited changed path |
 | `git -c safe.directory=E:/development/dreamax-license-manager diff --check` | No whitespace errors | Exit 0; no output |
 
 Composer emitted a sandbox-only Git ownership warning and used `1.0.0+no-version-set` for root-package discovery. It did not affect any command exit status, classmap path, plugin version, or the independently verified `0.3.0` header/constant/stable-tag values.
@@ -37,7 +38,7 @@ Composer emitted a sandbox-only Git ownership warning and used `1.0.0+no-version
 
 - Commands: `composer lint`; `composer analyse`; `composer audit --locked --format=summary`.
 - Expected: no WordPress coding-standard violation, no PHPStan error, and no known dependency vulnerability advisory.
-- Observed: all exited 0; PHPCS reported no violation; PHPStan reported `[OK] No errors` for 41/41 files; Composer reported `No security vulnerability advisories found.`
+- Observed: all exited 0; PHPCS reported no violation; PHPStan reported `[OK] No errors` for 46/46 files; Composer reported `No security vulnerability advisories found.`
 - Evidence: Required automated audit above and this section.
 - Environment/date/reviewer: environment above; 2026-08-25; Codex automated release-gate audit.
 
@@ -77,7 +78,7 @@ Composer emitted a sandbox-only Git ownership warning and used `1.0.0+no-version
 | F22 | AUTOMATABLE_PENDING | The release-header URL blocker is resolved; WordPress readme validation and a clean production build remain unexecuted. |
 | F23 | PASS_WITH_EVIDENCE | Dependency inventory, licenses, isolation, and advisory scan passed; see F23 evidence above. |
 | F24 | AUTOMATABLE_PENDING | The required 10k-license/50k-event performance fixture does not exist in the configured test tree. |
-| F25 | IMPLEMENTATION_BLOCKER | The secure guest-claim workflow is explicitly not implemented and is identified as a Free V1 blocker in the threat/specification documents. |
+| F25 | MANUAL_ENVIRONMENT_REQUIRED | The secure guest-claim workflow, unit/source-contract coverage, and security documentation are implemented; real WordPress/WooCommerce/database/mail/concurrency acceptance evidence remains required. See `f25-guest-claim.md`. |
 | F26 | MANUAL_ENVIRONMENT_REQUIRED | Fault injection across database, key, cache, mail, and WooCommerce states requires a disposable integrated runtime. |
 | F27 | MANUAL_ENVIRONMENT_REQUIRED | Repeated/cross-customer/partial exporter and eraser checks require WordPress privacy-tool and database fixtures. |
 | F28 | MANUAL_ENVIRONMENT_REQUIRED | The frozen client exists, but executing it requires a live configured v1 server and scenario fixtures. |
@@ -87,4 +88,4 @@ Composer emitted a sandbox-only Git ownership warning and used `1.0.0+no-version
 | F32 | IMPLEMENTATION_BLOCKER | The audit catalog documents two emitted event types whose final versioned schemas are still undefined, and consumer compatibility tests are absent. |
 | F33 | AUTOMATABLE_PENDING | The deterministic two-clean-build comparison is supported by the build script but was not run because this pass explicitly prohibited ZIP creation. |
 
-Classification totals: 3 PASS_WITH_EVIDENCE; 4 AUTOMATABLE_PENDING; 23 MANUAL_ENVIRONMENT_REQUIRED; 3 IMPLEMENTATION_BLOCKER.
+Classification totals: 3 PASS_WITH_EVIDENCE; 4 AUTOMATABLE_PENDING; 24 MANUAL_ENVIRONMENT_REQUIRED; 2 IMPLEMENTATION_BLOCKER.

@@ -12,7 +12,7 @@ Self-hosted software licensing, activation, delivery, and migration for WooComme
 
 == Description ==
 
-This package is a development build. It includes encrypted license storage, generator and imported-pool foundations, WooCommerce allocation, a versioned REST API, customer license display, and data portability. It does not depend on a paid API or remote SaaS.
+This package is a development build. It includes encrypted license storage, generator and imported-pool foundations, WooCommerce allocation, a secure guest-order account-claim workflow, a versioned REST API, customer license display, and data portability. It does not depend on a paid API or remote SaaS.
 
 Do not deploy this development build to a live store until every item in `docs/FREE-V1-MUST-PASS.md` has verified evidence.
 
@@ -42,7 +42,7 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 
 = 0.3.0 =
 
-* Added snapshotted refund/cancellation policies, deterministic partial-refund mapping, guarded quantity edits, explicit post-delivery allocation, resend, and preview-confirmed historical-order backfill. Still not a production Free V1 release.
+* Added secure one-time-code guest-order account claims, snapshotted refund/cancellation policies, deterministic partial-refund mapping, guarded quantity edits, explicit post-delivery allocation, resend, and preview-confirmed historical-order backfill. Still not a production Free V1 release.
 
 = 0.2.0 =
 

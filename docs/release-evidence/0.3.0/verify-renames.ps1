@@ -15,17 +15,17 @@ function Get-ClassIdentity {
 
 Push-Location $repository
 try {
-	$headPaths = @(git -c safe.directory=E:/development/dreamax-license-manager ls-tree -r --name-only HEAD src | Where-Object { $_ -like '*.php' })
+	$baselinePaths = @(git -c safe.directory=E:/development/dreamax-license-manager ls-tree -r --name-only main src | Where-Object { $_ -like '*.php' })
 	$currentPaths = @(Get-ChildItem -LiteralPath src -Recurse -File -Filter *.php | ForEach-Object { $_.FullName.Substring($repository.Length + 1).Replace('\', '/') })
-	$headMap = @{}
+	$baselineMap = @{}
 	$currentMap = @{}
 
-	foreach ($path in $headPaths) {
-		$identity = Get-ClassIdentity -Content ((git -c safe.directory=E:/development/dreamax-license-manager show ('HEAD:' + $path)) -join "`n")
-		if ($headMap.ContainsKey($identity)) {
-			throw 'Duplicate class in HEAD: ' + $identity
+	foreach ($path in $baselinePaths) {
+		$identity = Get-ClassIdentity -Content ((git -c safe.directory=E:/development/dreamax-license-manager show ('main:' + $path)) -join "`n")
+		if ($baselineMap.ContainsKey($identity)) {
+			throw 'Duplicate class in main baseline: ' + $identity
 		}
-		$headMap[$identity] = $path
+		$baselineMap[$identity] = $path
 	}
 
 	foreach ($path in $currentPaths) {
@@ -36,13 +36,22 @@ try {
 		$currentMap[$identity] = $path
 	}
 
-	$missing = @($headMap.Keys | Where-Object { -not $currentMap.ContainsKey($_) })
-	$added = @($currentMap.Keys | Where-Object { -not $headMap.ContainsKey($_) })
-	if (41 -ne $headMap.Count -or 41 -ne $currentMap.Count -or $missing.Count -or $added.Count) {
-		throw "Class identity mismatch: HEAD=$($headMap.Count), current=$($currentMap.Count), missing=$($missing -join ','), added=$($added -join ',')"
+	$expectedAdded = @(
+		'Dreamax\LicenseManager\CustomerPortal\GuestClaimPolicy',
+		'Dreamax\LicenseManager\CustomerPortal\GuestClaimService',
+		'Dreamax\LicenseManager\CustomerPortal\GuestClaimToken',
+		'Dreamax\LicenseManager\Events\AuditMetadata',
+		'Dreamax\LicenseManager\Integrations\WooCommerce\OrderAccessPolicy'
+	)
+	$missing = @($baselineMap.Keys | Where-Object { -not $currentMap.ContainsKey($_) })
+	$added = @($currentMap.Keys | Where-Object { -not $baselineMap.ContainsKey($_) })
+	$unexpectedAdded = @($added | Where-Object { $_ -notin $expectedAdded })
+	$missingAdded = @($expectedAdded | Where-Object { $_ -notin $added })
+	if (41 -ne $baselineMap.Count -or 46 -ne $currentMap.Count -or $missing.Count -or $unexpectedAdded.Count -or $missingAdded.Count) {
+		throw "Class identity mismatch: baseline=$($baselineMap.Count), current=$($currentMap.Count), missing=$($missing -join ','), unexpected_added=$($unexpectedAdded -join ','), missing_added=$($missingAdded -join ',')"
 	}
 
-	$oldPaths = @(git -c safe.directory=E:/development/dreamax-license-manager diff --diff-filter=D --name-only -- src | Where-Object { $_ -like '*.php' })
+	$oldPaths = @($baselinePaths)
 	if (41 -ne $oldPaths.Count) {
 		throw "Expected 41 renamed source paths; found $($oldPaths.Count)."
 	}
@@ -62,7 +71,7 @@ try {
 		throw 'Old source-path references remain: ' + (($hits | Sort-Object -Unique) -join '; ')
 	}
 
-	Write-Output 'PASS: all 41 HEAD/current class identities match exactly; no missing or duplicate class; no old production PHP path or filename reference remains.'
+	Write-Output 'PASS: all 41 main-baseline identities and 5 F25 additions are present; no missing or duplicate class; no old production PHP path or filename reference remains.'
 } finally {
 	Pop-Location
 }

@@ -14,7 +14,7 @@ This is a new plugin with no inherited repository architecture. WordPress and Wo
 - `Events`: append-only, schema-versioned audit evidence.
 - `Api`, `Credentials`: public v1 routes, transport guards, idempotency, rate limits, scoped Bearer authentication.
 - `Integrations/WooCommerce`: snapshotted product policies, deterministic order-slot allocation, refund/cancellation transitions, guarded quantity edits, resend, and preview-confirmed historical backfill.
-- `CustomerPortal`, `Admin`, `ImportExport`, `Privacy`: human workflows and WordPress integration.
+- `CustomerPortal`, `Admin`, `ImportExport`, `Privacy`: human workflows and WordPress integration. `GuestClaimService` owns emailed single-use guest-order proofs, atomic account ownership, invalidation, and privacy integration.
 
 Hook adapters must remain thin. Domain services must not render HTML. No module may query another module's table except through a documented repository/service boundary; the current development foundation still contains a few direct read-only administration queries tracked in `SPEC-COVERAGE.md` for refactoring.
 
@@ -54,6 +54,8 @@ Product edits/restores retain the ID. Ordinary duplication generates a new ID. H
 ## WooCommerce order integrity
 
 Allocation identities use the order-item ID plus quantity slot and are protected by a database unique constraint. Product/variation order-policy values are snapshotted in license metadata. Partial refunds map to stable quantity slots; each per-license policy operation is transactionally claimed. Delivered or generated keys cannot re-enter a shared pool. WooCommerce order reads and writes use its CRUD objects for HPOS compatibility, while the plugin's own tables remain behind repositories/services.
+
+Guest account claiming adds one unique active-proof slot and one unique claimed-owner row per order. Verification locks the proof, claimed owner, and all associated license rows before WooCommerce CRUD and plugin ownership updates occur in the same database transaction. See ADR 0002.
 
 ## Time, cache, and transport
 

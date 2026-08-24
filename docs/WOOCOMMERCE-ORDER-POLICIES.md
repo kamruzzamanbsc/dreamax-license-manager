@@ -46,6 +46,14 @@ The WooCommerce order-action menu can resend currently `assigned` keys to the or
 
 Historical allocation creates only missing eligible slots for paid, non-cancelled, non-failed, non-refunded orders. Retried allocation converges on existing slots. Resend uses a database-unique, expiring operation claim to prevent concurrent duplicate email for the same confirmed request. Resend and allocation record actor, order, request identity, counts, and outcomes without placing clear keys in audit metadata.
 
+## Guest-order account claims
+
+Guest order license output is shown only inside WooCommerce's verified order context with a valid order key. A billing email address by itself never proves access. An authenticated customer can request a one-time claim code for a paid guest order whose normalized billing email exactly matches the account email. The code is delivered to that billing address, expires after 30 minutes by default, and is accepted only through a nonce-protected POST over HTTPS.
+
+The database stores only a purpose-separated keyed hash of the code. Claim and ownership rows are locked during verification, the active-order and owner constraints prevent concurrent account claims, and successful consumption clears the hash. A successful claim updates the WooCommerce customer through order CRUD and reassigns the order's licenses to the same account. Reissue, expiry, ownership changes, privacy erasure, administrator release, and administrator override invalidate outstanding proofs.
+
+Administrators can release or override a claim from **License Manager -> Order tools** only with the management capability, nonce verification, and explicit confirmation. See `GUEST-ORDER-CLAIMS.md` for customer and merchant instructions and `adr/0002-secure-guest-order-claims.md` for the security decision.
+
 ## Required acceptance tests
 
 The following still require a real WordPress, WooCommerce, PHP, database, and mail-capture environment:
@@ -56,3 +64,4 @@ The following still require a real WordPress, WooCommerce, PHP, database, and ma
 - quantity increase/decrease/delete before and after delivery;
 - pool exhaustion, eligible release, and blocked release;
 - HPOS order edits, preview/confirm authorization, resend delivery, and failure recovery.
+- guest-order claim mail, replay, expiry, ownership conflict, concurrent verification, release/override, rate limits, privacy, and audit behavior under classic storage and HPOS.

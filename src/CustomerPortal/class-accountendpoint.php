@@ -9,8 +9,10 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\CustomerPortal;
 
+use Dreamax\LicenseManager\Api\TransportGuard;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
+use Throwable;
 
 /**
  * Handles Account endpoint operations.
@@ -38,6 +40,8 @@ final class AccountEndpoint {
 		add_filter( 'woocommerce_account_menu_items', array( $this, 'menu' ) );
 		add_action( 'woocommerce_account_licenses_endpoint', array( $this, 'render' ) );
 		add_action( 'wp_ajax_dreamax_lm_reveal', array( $this, 'reveal' ) );
+		add_action( 'admin_post_dreamax_lm_guest_claim_issue', array( $this, 'issue_claim' ) );
+		add_action( 'admin_post_dreamax_lm_guest_claim_verify', array( $this, 'verify_claim' ) );
 	}
 
 	/**
@@ -72,7 +76,6 @@ final class AccountEndpoint {
 		$rows = $this->licenses->for_customer( get_current_user_id() );
 		if ( array() === $rows ) {
 			echo '<p>' . esc_html__( 'You do not have any licenses yet.', 'dreamax-license-manager' ) . '</p>';
-			return;
 		}
 		$nonce = wp_create_nonce( 'dreamax_lm_reveal' );
 		echo '<table class="shop_table shop_table_responsive"><thead><tr><th>' . esc_html__( 'License', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Status', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Expiry', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Actions', 'dreamax-license-manager' ) . '</th></tr></thead><tbody>';
@@ -88,6 +91,60 @@ final class AccountEndpoint {
 		$ajax   = admin_url( 'admin-ajax.php' );
 		$script = "document.querySelectorAll('.dreamax-lm-reveal').forEach(function(b){b.addEventListener('click',async function(){b.disabled=true;try{const p=new URLSearchParams({action:'dreamax_lm_reveal',nonce:'" . esc_js( $nonce ) . "',license:b.dataset.license});const r=await fetch('" . esc_url( $ajax ) . "',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:p});const j=await r.json();if(!j.success){throw new Error(j.data&&j.data.message?j.data.message:'Unable to reveal');}const el=document.getElementById('dreamax-key-'+b.dataset.license);el.textContent=j.data.key;await navigator.clipboard.writeText(j.data.key);b.textContent='" . esc_js( __( 'Copied', 'dreamax-license-manager' ) ) . "';}catch(e){window.alert(e.message);}finally{b.disabled=false;}});});";
 		wp_print_inline_script_tag( $script );
+
+		echo '<section class="dreamax-lm-guest-claim"><h2>' . esc_html__( 'Claim a guest order', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Request a one-time code for a guest order. The code is sent only to the order billing email and expires after 30 minutes by default.', 'dreamax-license-manager' ) . '</p>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_guest_claim_issue">';
+		wp_nonce_field( 'dreamax_lm_guest_claim_issue' );
+		echo '<p><label>' . esc_html__( 'Order number', 'dreamax-license-manager' ) . ' <input type="number" name="order_id" min="1" required></label></p><p><label>' . esc_html__( 'Billing email', 'dreamax-license-manager' ) . ' <input type="email" name="billing_email" autocomplete="email" required></label></p>';
+		echo '<button type="submit" class="button">' . esc_html__( 'Email claim code', 'dreamax-license-manager' ) . '</button></form>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="margin-top:1em"><input type="hidden" name="action" value="dreamax_lm_guest_claim_verify">';
+		wp_nonce_field( 'dreamax_lm_guest_claim_verify' );
+		echo '<p><label>' . esc_html__( 'Order number', 'dreamax-license-manager' ) . ' <input type="number" name="order_id" min="1" required></label></p><p><label>' . esc_html__( 'One-time code', 'dreamax-license-manager' ) . ' <input type="password" name="claim_code" minlength="43" maxlength="43" autocomplete="one-time-code" required></label></p>';
+		echo '<button type="submit" class="button alt">' . esc_html__( 'Claim order licenses', 'dreamax-license-manager' ) . '</button></form></section>';
+	}
+
+	/**
+	 * Handles authenticated claim issuance.
+	 */
+	public function issue_claim(): void {
+		check_admin_referer( 'dreamax_lm_guest_claim_issue' );
+		( new TransportGuard() )->assert_interactive_request();
+		$user_id = get_current_user_id();
+		if ( $user_id < 1 ) {
+			wp_die( esc_html__( 'Authentication is required.', 'dreamax-license-manager' ), '', array( 'response' => 403 ) );
+		}
+		$order_id = isset( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : 0;
+		$email    = isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( (string) $_POST['billing_email'] ) ) : '';
+		try {
+			( new GuestClaimService() )->issue( $user_id, $order_id, $email );
+		} catch ( Throwable $error ) {
+			// The response remains identical for invalid, missing, throttled, and unavailable claims.
+			unset( $error );
+		}
+		wc_add_notice( __( 'If the guest order is eligible, a one-time code has been sent to its billing email.', 'dreamax-license-manager' ), 'notice' );
+		$this->redirect_to_licenses();
+	}
+
+	/**
+	 * Handles authenticated claim verification.
+	 */
+	public function verify_claim(): void {
+		check_admin_referer( 'dreamax_lm_guest_claim_verify' );
+		( new TransportGuard() )->assert_interactive_request();
+		$user_id = get_current_user_id();
+		if ( $user_id < 1 ) {
+			wp_die( esc_html__( 'Authentication is required.', 'dreamax-license-manager' ), '', array( 'response' => 403 ) );
+		}
+		$order_id = isset( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : 0;
+		$token    = isset( $_POST['claim_code'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['claim_code'] ) ) : '';
+		try {
+			$result = ( new GuestClaimService() )->verify( $user_id, $order_id, $token );
+		} catch ( Throwable $error ) {
+			$result = ( new GuestClaimPolicy() )->public_failure();
+		}
+		$message = $result['success'] ? __( 'The order licenses are now linked to your account.', 'dreamax-license-manager' ) : __( 'The claim could not be completed. Check the details or request a new code.', 'dreamax-license-manager' );
+		wc_add_notice( $message, $result['success'] ? 'success' : 'error' );
+		$this->redirect_to_licenses();
 	}
 
 	/**
@@ -103,5 +160,13 @@ final class AccountEndpoint {
 		}
 		( new EventRepository() )->append( 'license_revealed', (int) $license['id'], 'customer', get_current_user_id(), null, array( 'channel' => 'my_account' ) );
 		wp_send_json_success( array( 'key' => $this->licenses->decrypt_key( $license ) ) );
+	}
+
+	/**
+	 * Redirects back to the private WooCommerce licenses endpoint.
+	 */
+	private function redirect_to_licenses(): void {
+		wp_safe_redirect( wc_get_account_endpoint_url( 'licenses' ) );
+		exit;
 	}
 }

@@ -123,8 +123,8 @@ foreach (array_keys($classes) as $class) {
 	}
 }
 
-if (41 !== count($classes)) {
-	$errors[] = 'Expected 41 production classes; found ' . count($classes);
+if (46 !== count($classes)) {
+	$errors[] = 'Expected 46 production classes; found ' . count($classes);
 }
 
 if ($errors) {
@@ -132,4 +132,4 @@ if ($errors) {
 	exit(1);
 }
 
-echo 'PASS: 41 unique production classes; exact case-sensitive runtime paths; Composer classmap and runtime autoload both resolved every class; no case-only or non-portable path collision.' . PHP_EOL;
+echo 'PASS: 46 unique production classes; exact case-sensitive runtime paths; Composer classmap and runtime autoload both resolved every class; no case-only or non-portable path collision.' . PHP_EOL;
