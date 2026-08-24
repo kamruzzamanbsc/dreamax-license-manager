@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ruleset name="Dreamax License Manager">
+  <description>WordPress coding standards for Dreamax License Manager.</description>
+  <file>dreamax-license-manager.php</file>
+  <file>src</file>
+  <exclude-pattern>vendor/*</exclude-pattern>
+  <rule ref="WordPress"/>
+  <rule ref="WordPress.WP.I18n">
+    <properties>
+      <property name="text_domain" type="array" value="dreamax-license-manager"/>
+    </properties>
+  </rule>
+  <arg name="extensions" value="php"/>
+</ruleset>

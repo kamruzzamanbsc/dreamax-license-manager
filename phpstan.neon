@@ -1,0 +1,10 @@
+parameters:
+  level: 6
+  paths:
+    - src
+  excludePaths:
+    - tests
+  ignoreErrors:
+    - '#Function .* not found#'
+    - '#Class WP_.* not found#'
+    - '#Class WC_.* not found#'

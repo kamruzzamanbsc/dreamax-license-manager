@@ -1,0 +1,106 @@
+openapi: 3.1.0
+info:
+  title: Dreamax License Manager API
+  version: 1.0.0
+  description: Frozen public and scoped management licensing contract. HTTPS is required in production.
+servers:
+  - url: https://store.example/wp-json/dreamax-license-manager/v1
+paths:
+  /system/ping:
+    get:
+      operationId: ping
+      responses:
+        '200':
+          description: Minimal service health
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Envelope'}
+  /licenses/activate:
+    post:
+      operationId: activateLicense
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody: {$ref: '#/components/requestBodies/PublicLicenseRequest'}
+      responses:
+        '200': {description: Activated or exact replay, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}
+        '409': {description: Capacity or idempotency conflict, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}
+  /licenses/deactivate:
+    post:
+      operationId: deactivateLicense
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody: {$ref: '#/components/requestBodies/PublicLicenseRequest'}
+      responses:
+        '200': {description: Deactivated or exact replay, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}
+  /licenses/validate:
+    post:
+      operationId: validateLicense
+      requestBody: {$ref: '#/components/requestBodies/PublicLicenseRequest'}
+      responses:
+        '200': {description: Valid, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}
+  /licenses/status:
+    post:
+      operationId: licenseStatus
+      requestBody: {$ref: '#/components/requestBodies/PublicLicenseRequest'}
+      responses:
+        '200': {description: Current status, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}
+  /licenses:
+    get:
+      operationId: listLicenses
+      security: [{bearerCredential: []}]
+      responses:
+        '200': {description: License page, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}
+    post:
+      operationId: createLicense
+      security: [{bearerCredential: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [product_public_id]
+              properties:
+                product_public_id: {type: string, pattern: '^prd_[A-Za-z0-9_-]{22}$'}
+                license_key: {type: string, maxLength: 512}
+                activation_limit: {type: [integer, 'null'], minimum: 0}
+                expires_at: {type: [string, 'null'], format: date-time}
+      responses:
+        '201': {description: Created; key is returned once, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}
+components:
+  securitySchemes:
+    bearerCredential:
+      type: http
+      scheme: bearer
+      bearerFormat: dlm_v1_public.secret
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 8, maxLength: 128, pattern: '^[!-~]+$'}
+  requestBodies:
+    PublicLicenseRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [license_key, product_public_id, instance_id]
+            properties:
+              license_key: {type: string, minLength: 1, maxLength: 512}
+              product_public_id: {type: string, pattern: '^prd_[A-Za-z0-9_-]{22}$'}
+              instance_id: {type: string, minLength: 16, maxLength: 128, pattern: '^[A-Za-z0-9._:-]+$'}
+              instance_label: {type: [string, 'null'], maxLength: 255}
+  schemas:
+    Envelope:
+      type: object
+      required: [success, code, message, request_id, timestamp, data]
+      properties:
+        success: {type: boolean}
+        code: {type: string}
+        message: {type: string}
+        request_id: {type: string}
+        timestamp: {type: string, format: date-time}
+        data: {type: object}
