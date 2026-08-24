@@ -2,12 +2,15 @@
 
 ## 0.3.0 — WooCommerce order-policy milestone
 
+- Added an authenticated, emailed one-time-code workflow for claiming paid guest orders without accepting email-only or URL-based proof.
+- Added transactional single-use claim/ownership records, rate limits, ownership invalidation, HPOS-safe order updates, privacy handling, and versioned redacted audit events.
+- Added unit and source-contract coverage plus an ADR, customer/merchant instructions, and F25 evidence; live WordPress/WooCommerce/database/mail/concurrency acceptance evidence remains required.
 - Added product and variation refund/cancellation settings with per-license policy snapshots.
 - Added deterministic per-quantity and per-item refund mapping plus retry-safe cancellation handling.
 - Added safe post-delivery quantity increase/decrease/delete behavior without silent key deletion or reuse.
 - Added authorized order-action resend and a bounded preview/confirm tool for missing-slot historical backfill and resend.
 - Added pure order-slot policy unit test sources and WooCommerce order-policy operating documentation.
-- PHP, WordPress/WooCommerce runtime, mail, concurrency, HPOS, static-analysis, and authorization evidence remains blocked in this environment.
+- WordPress/WooCommerce runtime, mail, concurrency, HPOS, and authorization acceptance evidence remains blocked in this environment.
 
 ## 0.2.0 — lifecycle administration milestone
 

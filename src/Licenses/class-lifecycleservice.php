@@ -467,6 +467,33 @@ final class LifecycleService {
 					throw new RuntimeException( 'The reassignment could not be stored.' );
 				}
 
+				if ( ! empty( $before['order_id'] ) ) {
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- An administrator ownership override invalidates every outstanding proof for the former order inside the same transaction.
+					$invalidated = $wpdb->query(
+						$wpdb->prepare(
+							"UPDATE {$wpdb->prefix}dreamax_lm_guest_claims SET status='invalidated',active_order_id=NULL,token_hash=NULL,invalidated_at=%s,updated_at=%s WHERE order_id=%d AND status IN ('pending','issued')",
+							$now,
+							$now,
+							(int) $before['order_id']
+						)
+					);
+					if ( false === $invalidated ) {
+						throw new RuntimeException( 'Outstanding guest claims could not be invalidated.' );
+					}
+					$this->events->append(
+						'guest_claim_administrator_override',
+						(int) $row['id'],
+						$actor_type,
+						$actor_id,
+						$operation_id,
+						array(
+							'order_id'    => (int) $before['order_id'],
+							'customer_id' => $customer_id,
+							'scope'       => 'single_license_reassignment',
+						)
+					);
+				}
+
 				$reset_count = 0;
 				if ( $reset_activations ) {
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.

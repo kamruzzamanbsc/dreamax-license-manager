@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\Integrations\WooCommerce;
 
+use Dreamax\LicenseManager\CustomerPortal\GuestClaimService;
+use Dreamax\LicenseManager\CustomerPortal\GuestClaimPolicy;
 use Dreamax\LicenseManager\Support\Capabilities;
 use Throwable;
 
@@ -22,6 +24,7 @@ final class OrderWorkflowAdmin {
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'menu' ) );
 		add_action( 'admin_post_dreamax_lm_execute_order_tool', array( $this, 'execute' ) );
+		add_action( 'admin_post_dreamax_lm_guest_claim_admin', array( $this, 'claim_admin' ) );
 	}
 
 	/**
@@ -77,7 +80,56 @@ final class OrderWorkflowAdmin {
 			$this->confirmation_form( $ids, 'allocate_missing', __( 'Create only the missing quantity slots shown above. Existing and decreased-quantity licenses remain unchanged.', 'dreamax-license-manager' ), __( 'Confirm allocation / backfill', 'dreamax-license-manager' ) );
 			$this->confirmation_form( $ids, 'resend', __( 'Email currently assigned keys to each order’s current billing email. Suspended and revoked keys are excluded.', 'dreamax-license-manager' ), __( 'Confirm resend', 'dreamax-license-manager' ) );
 		}
-		echo '</div>';
+		echo '<hr><h2>' . esc_html__( 'Guest claim ownership', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Release returns an order to guest ownership. Override links the order and every associated Dreamax license to one verified WordPress account. Both actions invalidate outstanding claim codes and are audited.', 'dreamax-license-manager' ) . '</p>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_guest_claim_admin">';
+		wp_nonce_field( 'dreamax_lm_guest_claim_admin' );
+		echo '<p><label>' . esc_html__( 'Order ID', 'dreamax-license-manager' ) . ' <input type="number" name="order_id" min="1" required></label> <label>' . esc_html__( 'Action', 'dreamax-license-manager' ) . ' <select name="claim_operation"><option value="release">' . esc_html__( 'Release to guest', 'dreamax-license-manager' ) . '</option><option value="override">' . esc_html__( 'Override account owner', 'dreamax-license-manager' ) . '</option></select></label> <label>' . esc_html__( 'Target customer ID for override', 'dreamax-license-manager' ) . ' <input type="number" name="target_customer_id" min="1"></label></p>';
+		echo '<p><label><input type="checkbox" name="confirm_operation" value="1" required> ' . esc_html__( 'I verified the authoritative ownership and confirm this change.', 'dreamax-license-manager' ) . '</label></p>';
+		submit_button( __( 'Apply guest claim ownership change', 'dreamax-license-manager' ), 'secondary', 'submit', false );
+		echo '</form></div>';
+	}
+
+	/**
+	 * Handles confirmed administrator claim release and override actions.
+	 */
+	public function claim_admin(): void {
+		$this->authorize();
+		check_admin_referer( 'dreamax_lm_guest_claim_admin' );
+		$confirmed = isset( $_POST['confirm_operation'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['confirm_operation'] ) ) : '';
+		if ( '1' !== $confirmed ) {
+			wp_die( esc_html__( 'Explicit confirmation is required.', 'dreamax-license-manager' ) );
+		}
+		$order_id    = isset( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : 0;
+		$operation   = isset( $_POST['claim_operation'] ) ? sanitize_key( wp_unslash( (string) $_POST['claim_operation'] ) ) : '';
+		$customer_id = isset( $_POST['target_customer_id'] ) ? absint( wp_unslash( $_POST['target_customer_id'] ) ) : 0;
+		$allowed     = ( new GuestClaimPolicy() )->admin_action_allowed( current_user_can( Capabilities::MANAGE ), $operation, $customer_id );
+		if ( $order_id < 1 || ! $allowed ) {
+			wp_die( esc_html__( 'The ownership operation is invalid.', 'dreamax-license-manager' ) );
+		}
+		try {
+			$claims = new GuestClaimService();
+			if ( 'release' === $operation ) {
+				$claims->admin_release( $order_id, get_current_user_id() );
+			} else {
+				$claims->admin_override( $order_id, $customer_id, get_current_user_id() );
+			}
+			$completed = 1;
+			$failed    = 0;
+		} catch ( Throwable $error ) {
+			$completed = 0;
+			$failed    = 1;
+		}
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'      => 'dreamax-license-manager-order-tools',
+					'completed' => $completed,
+					'failed'    => $failed,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 
 	/**

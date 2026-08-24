@@ -102,9 +102,32 @@ final class Privacy {
 				),
 			);
 		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Privacy export reads the plugin-owned claim table directly and never returns hashes or proof material.
+		$claims = $wpdb->get_results( $wpdb->prepare( "SELECT public_id,order_id,status,created_at,consumed_at,invalidated_at FROM {$wpdb->prefix}dreamax_lm_guest_claims WHERE target_user_id=%d ORDER BY id LIMIT 100 OFFSET %d", (int) $user->ID, max( 0, ( $page - 1 ) * 100 ) ), ARRAY_A );
+		foreach ( is_array( $claims ) ? $claims : array() as $claim ) {
+			$data[] = array(
+				'group_id'    => 'dreamax-guest-claims',
+				'group_label' => __( 'Guest order license claims', 'dreamax-license-manager' ),
+				'item_id'     => (string) $claim['public_id'],
+				'data'        => array(
+					array(
+						'name'  => __( 'Order ID', 'dreamax-license-manager' ),
+						'value' => $claim['order_id'],
+					),
+					array(
+						'name'  => __( 'Claim status', 'dreamax-license-manager' ),
+						'value' => $claim['status'],
+					),
+					array(
+						'name'  => __( 'Created', 'dreamax-license-manager' ),
+						'value' => $claim['created_at'],
+					),
+				),
+			);
+		}
 		return array(
 			'data' => $data,
-			'done' => count( $data ) < 100,
+			'done' => count( is_array( $rows ) ? $rows : array() ) < 100 && count( is_array( $claims ) ? $claims : array() ) < 100,
 		);
 	}
 
@@ -129,7 +152,11 @@ final class Privacy {
 		}
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}dreamax_lm_licenses WHERE customer_id=%d LIMIT 100", (int) $user->ID ) );
-		if ( ! $ids ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Counts determine whether any plugin-owned claim identity also needs erasure.
+		$claim_count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}dreamax_lm_guest_claims WHERE target_user_id=%d", (int) $user->ID ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Counts determine whether any plugin-owned claimed owner also needs erasure.
+		$owner_count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}dreamax_lm_order_owners WHERE customer_id=%d", (int) $user->ID ) );
+		if ( ! $ids && 0 === $claim_count && 0 === $owner_count ) {
 			return array(
 				'items_removed'  => false,
 				'items_retained' => false,
@@ -138,13 +165,31 @@ final class Privacy {
 			);
 		}
 		( new Transaction() )->run(
-			function () use ( $wpdb, $ids ): void {
-				$id_list = implode( ',', array_map( 'intval', $ids ) );
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Every list value is normalized with intval(); privacy writes must be direct and fresh.
-				$wpdb->query( "UPDATE {$wpdb->prefix}dreamax_lm_activations SET instance_label=NULL,ip_fingerprint=NULL,metadata=NULL WHERE license_id IN ({$id_list})" );
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Every list value is normalized with intval(); privacy writes must be direct and fresh.
-				$wpdb->query( "UPDATE {$wpdb->prefix}dreamax_lm_licenses SET customer_id=NULL,customer_email_enc=NULL,metadata=NULL WHERE id IN ({$id_list})" );
-				( new EventRepository() )->append( 'privacy_data_anonymized', null, 'privacy_tool', null, null, array( 'license_count' => count( $ids ) ) );
+			function () use ( $wpdb, $ids, $user, $claim_count, $owner_count ): void {
+				if ( $ids ) {
+					$id_list = implode( ',', array_map( 'intval', $ids ) );
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Every list value is normalized with intval(); privacy writes must be direct and fresh.
+					$wpdb->query( "UPDATE {$wpdb->prefix}dreamax_lm_activations SET instance_label=NULL,ip_fingerprint=NULL,metadata=NULL WHERE license_id IN ({$id_list})" );
+					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Every list value is normalized with intval(); privacy writes must be direct and fresh.
+					$wpdb->query( "UPDATE {$wpdb->prefix}dreamax_lm_licenses SET customer_id=NULL,customer_email_enc=NULL,metadata=NULL WHERE id IN ({$id_list})" );
+				}
+				$now = gmdate( 'Y-m-d H:i:s' );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Privacy erasure invalidates proof material and removes its direct user link.
+				$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}dreamax_lm_guest_claims SET target_user_id=NULL,invalidated_at=IF(status IN ('pending','issued'),%s,invalidated_at),status=IF(status IN ('pending','issued'),'invalidated',status),active_order_id=NULL,token_hash=NULL,updated_at=%s WHERE target_user_id=%d", $now, $now, (int) $user->ID ) );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Removing the direct claimed-owner row permits a later authoritative reclaim after privacy erasure.
+				$wpdb->delete( $wpdb->prefix . 'dreamax_lm_order_owners', array( 'customer_id' => (int) $user->ID ), array( '%d' ) );
+				( new EventRepository() )->append(
+					'privacy_data_anonymized',
+					null,
+					'privacy_tool',
+					null,
+					null,
+					array(
+						'license_count' => count( $ids ),
+						'claim_count'   => $claim_count,
+						'owner_count'   => $owner_count,
+					)
+				);
 			}
 		);
 		return array(

@@ -43,6 +43,15 @@ final class TransportGuard {
 	}
 
 	/**
+	 * Validates an authenticated browser form carrying claim proof.
+	 */
+	public function assert_interactive_request(): void {
+		$this->assert_https();
+		$this->assert_size( 16 * 1024, 128 );
+		$this->assert_no_query_secrets();
+	}
+
+	/**
 	 * Handles the assert privileged request operation.
 	 *
 	 * @param bool $has_body Has body value.
@@ -80,7 +89,7 @@ final class TransportGuard {
 
 		$remote = $this->source->resolve();
 		$local  = in_array( $remote, array( '127.0.0.1', '::1' ), true );
-		if ( $local && true === get_option( 'dreamax_lm_allow_http_local', false ) ) {
+		if ( $local && 1 === (int) get_option( 'dreamax_lm_allow_http_local', 0 ) ) {
 			return;
 		}
 		throw new LicenseException( 'server_unavailable', 'HTTPS is required for licensing requests.', 503 );
@@ -123,9 +132,10 @@ final class TransportGuard {
 	 * @throws LicenseException When the operation cannot be completed.
 	 */
 	private function assert_no_query_secrets(): void {
-		foreach ( array( 'license_key', 'license', 'key', 'token', 'authorization', 'idempotency_key' ) as $name ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public API query inspection rejects secrets and performs no mutation.
-			if ( isset( $_GET[ $name ] ) ) {
+		$blocked = array( 'license_key', 'license', 'key', 'token', 'code', 'claim_code', 'claim_token', 'claim_proof', 'proof', 'authorization', 'idempotency_key' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public API query inspection rejects secrets and performs no mutation.
+		foreach ( array_keys( $_GET ) as $name ) {
+			if ( in_array( strtolower( (string) $name ), $blocked, true ) ) {
 				throw new LicenseException( 'invalid_request', 'Secrets are not accepted in the URL.', 400 );
 			}
 		}

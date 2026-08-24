@@ -13,7 +13,7 @@ namespace Dreamax\LicenseManager\Database;
  * Handles Schema operations.
  */
 final class Schema {
-	public const VERSION = '1';
+	public const VERSION = '2';
 
 	/**
 	 * Handles the install operation.
@@ -148,6 +148,40 @@ final class Schema {
 				expires_at datetime NOT NULL,
 				PRIMARY KEY  (bucket_hash),
 				KEY expires_at (expires_at)
+			) ENGINE=InnoDB {$charset};",
+			"CREATE TABLE {$prefix}guest_claims (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				public_id varchar(64) NOT NULL,
+				order_id bigint(20) unsigned NOT NULL,
+				active_order_id bigint(20) unsigned NULL,
+				target_user_id bigint(20) unsigned NULL,
+				token_hash binary(32) NULL,
+				ownership_hash binary(32) NOT NULL,
+				status varchar(16) NOT NULL,
+				expires_at datetime NOT NULL,
+				created_at datetime NOT NULL,
+				issued_at datetime NULL,
+				consumed_at datetime NULL,
+				invalidated_at datetime NULL,
+				updated_at datetime NOT NULL,
+				PRIMARY KEY  (id),
+				UNIQUE KEY public_id (public_id),
+				UNIQUE KEY active_order (active_order_id),
+				UNIQUE KEY token_hash (token_hash),
+				KEY order_target (order_id,target_user_id),
+				KEY status_expiry (status,expires_at)
+			) ENGINE=InnoDB {$charset};",
+			"CREATE TABLE {$prefix}order_owners (
+				order_id bigint(20) unsigned NOT NULL,
+				customer_id bigint(20) unsigned NULL,
+				claim_id bigint(20) unsigned NULL,
+				ownership_hash binary(32) NOT NULL,
+				source varchar(24) NOT NULL,
+				claimed_at datetime NOT NULL,
+				updated_at datetime NOT NULL,
+				PRIMARY KEY  (order_id),
+				UNIQUE KEY claim_id (claim_id),
+				KEY customer_id (customer_id)
 			) ENGINE=InnoDB {$charset};",
 		);
 

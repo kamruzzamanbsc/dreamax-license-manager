@@ -16,6 +16,19 @@ use Dreamax\LicenseManager\Support\Capabilities;
  */
 final class Installer {
 	/**
+	 * Applies additive schema changes when the stored version is behind.
+	 */
+	public static function maybe_upgrade(): void {
+		$installed = (string) get_option( 'dreamax_lm_schema_version', '0' );
+		if ( version_compare( $installed, Schema::VERSION, '>=' ) ) {
+			return;
+		}
+
+		( new Schema() )->install();
+		update_option( 'dreamax_lm_schema_version', Schema::VERSION, false );
+	}
+
+	/**
 	 * Handles the activate operation.
 	 *
 	 * @param bool $network_wide Network wide value.

@@ -13,6 +13,8 @@ use Dreamax\LicenseManager\Admin\Admin;
 use Dreamax\LicenseManager\Api\PublicRoutes;
 use Dreamax\LicenseManager\Api\PrivilegedRoutes;
 use Dreamax\LicenseManager\CustomerPortal\AccountEndpoint;
+use Dreamax\LicenseManager\CustomerPortal\GuestClaimService;
+use Dreamax\LicenseManager\Database\Installer;
 use Dreamax\LicenseManager\ImportExport\CsvController;
 use Dreamax\LicenseManager\Integrations\WooCommerce\OrderLicensing;
 use Dreamax\LicenseManager\Integrations\WooCommerce\OrderWorkflowAdmin;
@@ -28,12 +30,14 @@ final class Plugin {
 	 * Handles the register operation.
 	 */
 	public function register(): void {
+		Installer::maybe_upgrade();
 		( new PublicRoutes() )->register();
 		( new PrivilegedRoutes() )->register();
 		( new ProductSettings() )->register();
 		( new OrderLicensing() )->register();
 		( new OrderWorkflowAdmin() )->register();
 		( new AccountEndpoint() )->register();
+		( new GuestClaimService() )->register();
 		( new Admin() )->register();
 		( new CsvController() )->register();
 		( new Privacy() )->register();
@@ -60,6 +64,15 @@ final class Plugin {
 		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->prefix}dreamax_lm_rate_limits WHERE expires_at < %s LIMIT 500",
+				$now
+			)
+		);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Claim expiry is bounded cleanup on a plugin-owned table.
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}dreamax_lm_guest_claims SET status='expired',active_order_id=NULL,token_hash=NULL,invalidated_at=%s,updated_at=%s WHERE status IN ('pending','issued') AND expires_at < %s LIMIT 500",
+				$now,
+				$now,
 				$now
 			)
 		);

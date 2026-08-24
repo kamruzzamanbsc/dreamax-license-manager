@@ -65,6 +65,12 @@ final class OrderLicensing {
 	 * @var OrderOperationRepository
 	 */
 	private OrderOperationRepository $operations;
+	/**
+	 * Order access policy value.
+	 *
+	 * @var OrderAccessPolicy
+	 */
+	private OrderAccessPolicy $access;
 
 	/**
 	 * Initializes the service.
@@ -77,6 +83,7 @@ final class OrderLicensing {
 		$this->events     = new EventRepository();
 		$this->slots      = new OrderSlotPolicy();
 		$this->operations = new OrderOperationRepository();
+		$this->access     = new OrderAccessPolicy();
 	}
 
 	/**
@@ -599,6 +606,9 @@ final class OrderLicensing {
 	 * @param WC_Order $order Order value.
 	 */
 	public function order_licenses( WC_Order $order ): void {
+		if ( ! $this->customer_can_view( $order ) ) {
+			return;
+		}
 		$this->render( (int) $order->get_id(), false, false );
 	}
 
@@ -612,7 +622,24 @@ final class OrderLicensing {
 		if ( ! $order || ! $order->is_paid() ) {
 			return;
 		}
+		if ( ! $this->customer_can_view( $order ) ) {
+			return;
+		}
 		$this->render( $order_id, false, true );
+	}
+
+	/**
+	 * Reuses WooCommerce's verified hook context and order-key validation.
+	 *
+	 * @param WC_Order $order Order value.
+	 */
+	private function customer_can_view( WC_Order $order ): bool {
+		$hook                 = current_filter();
+		$woocommerce_verified = in_array( $hook, array( 'woocommerce_order_details_after_order_table', 'woocommerce_thankyou' ), true );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- The key is read-only WooCommerce ownership proof and is validated by WC_Order::key_is_valid().
+		$key       = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['key'] ) ) : '';
+		$key_valid = '' !== $key && $order->key_is_valid( $key );
+		return $this->access->allows( (int) $order->get_customer_id(), get_current_user_id(), $woocommerce_verified, $key_valid );
 	}
 
 	/**

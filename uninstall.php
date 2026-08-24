@@ -12,7 +12,7 @@ if ( true !== get_option( 'dreamax_lm_permanent_delete_on_uninstall', false ) ) 
 }
 
 global $wpdb;
-$tables = array( 'rate_limits', 'idempotency', 'api_credentials', 'generators', 'events', 'activations', 'licenses' );
+$tables = array( 'order_owners', 'guest_claims', 'rate_limits', 'idempotency', 'api_credentials', 'generators', 'events', 'activations', 'licenses' );
 foreach ( $tables as $name ) {
 	$table = $wpdb->prefix . 'dreamax_lm_' . $name;
 	$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" );
