@@ -17,6 +17,7 @@ if ('' === $requestedCommit) {
 }
 
 $root = dirname(__DIR__);
+$gitSafeDirectory = str_replace('\\', '/', $root);
 $output = (string) ($options['output'] ?? ($root . '/build'));
 if (1 !== preg_match('#^(?:[A-Za-z]:[\\\\/]|/)#D', $output)) {
 	$output = $root . '/' . ltrim(str_replace('\\', '/', $output), '/');
@@ -30,11 +31,11 @@ if (! is_dir($output) && ! mkdir($output, 0777, true) && ! is_dir($output)) {
 	throw new RuntimeException('The release output directory could not be created.');
 }
 
-$commit = ProcessRunner::run(array('git', '-c', 'safe.directory=' . $root, 'rev-parse', '--verify', $requestedCommit . '^{commit}'), $root);
+$commit = ProcessRunner::run(array('git', '-c', 'safe.directory=' . $gitSafeDirectory, 'rev-parse', '--verify', $requestedCommit . '^{commit}'), $root);
 if (1 !== preg_match('/^[a-f0-9]{40}$/D', $commit)) {
 	throw new RuntimeException('The requested source is not a recorded Git commit.');
 }
-$epoch = (int) ProcessRunner::run(array('git', '-c', 'safe.directory=' . $root, 'show', '-s', '--format=%ct', $commit), $root);
+$epoch = (int) ProcessRunner::run(array('git', '-c', 'safe.directory=' . $gitSafeDirectory, 'show', '-s', '--format=%ct', $commit), $root);
 $temporaryBase = sys_get_temp_dir();
 $temporary = $temporaryBase . DIRECTORY_SEPARATOR . 'dreamax-lm-' . bin2hex(random_bytes(8));
 if (! mkdir($temporary, 0777, true) && ! is_dir($temporary)) {
@@ -44,7 +45,7 @@ if (! mkdir($temporary, 0777, true) && ! is_dir($temporary)) {
 /**
  * @return array{zip:string,sha256:string,lock_sha256:string,inventory:list<array{path:string,size:int,sha256:string}>,paths:list<string>,version:string}
  */
-function build_once(string $root, string $commit, int $epoch, string $temporary, string $label): array {
+function build_once(string $root, string $gitSafeDirectory, string $commit, int $epoch, string $temporary, string $label): array {
 	$snapshot = $temporary . DIRECTORY_SEPARATOR . 'dreamax-lm-' . $label;
 	$source = $snapshot . DIRECTORY_SEPARATOR . 'source';
 	$staged = $snapshot . DIRECTORY_SEPARATOR . 'stage';
@@ -53,7 +54,7 @@ function build_once(string $root, string $commit, int $epoch, string $temporary,
 	}
 
 	$archive = $snapshot . DIRECTORY_SEPARATOR . 'source.tar';
-	ProcessRunner::run(array('git', '-c', 'safe.directory=' . $root, 'archive', '--format=tar', '--output=' . $archive, $commit), $root);
+	ProcessRunner::run(array('git', '-c', 'safe.directory=' . $gitSafeDirectory, 'archive', '--format=tar', '--output=' . $archive, $commit), $root);
 	(new PharData($archive))->extractTo($source, null, true);
 	unlink($archive);
 
@@ -89,8 +90,8 @@ function build_once(string $root, string $commit, int $epoch, string $temporary,
 }
 
 try {
-	$first = build_once($root, $commit, $epoch, $temporary, 'first');
-	$second = build_once($root, $commit, $epoch, $temporary, 'second');
+	$first = build_once($root, $gitSafeDirectory, $commit, $epoch, $temporary, 'first');
+	$second = build_once($root, $gitSafeDirectory, $commit, $epoch, $temporary, 'second');
 	$identical = hash_equals($first['sha256'], $second['sha256']) && hash_equals($first['lock_sha256'], $second['lock_sha256']) && $first['inventory'] === $second['inventory'] && $first['paths'] === $second['paths'];
 	if (! $identical) {
 		throw new RuntimeException('The two clean builds differ; no release-candidate artifact was published.');
