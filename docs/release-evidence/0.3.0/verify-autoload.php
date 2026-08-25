@@ -34,7 +34,7 @@ function production_class(string $root, string $file): array {
 			continue;
 		}
 
-		if (T_CLASS !== $token[0]) {
+		if (! in_array($token[0], array(T_CLASS, T_INTERFACE), true)) {
 			continue;
 		}
 
@@ -118,13 +118,13 @@ if (! defined('DREAMAX_LM_DIR')) {
 require_once $root . '/src/Support/class-autoloader.php';
 Dreamax\LicenseManager\Support\Autoloader::register();
 foreach (array_keys($classes) as $class) {
-	if (! class_exists($class, true)) {
+	if (! class_exists($class, true) && ! interface_exists($class, true)) {
 		$errors[] = 'Runtime autoload failed: ' . $class;
 	}
 }
 
-if (49 !== count($classes)) {
-	$errors[] = 'Expected 49 production classes; found ' . count($classes);
+if (52 !== count($classes)) {
+	$errors[] = 'Expected 52 production symbols; found ' . count($classes);
 }
 
 if ($errors) {
@@ -132,4 +132,4 @@ if ($errors) {
 	exit(1);
 }
 
-echo 'PASS: 49 unique production classes; exact case-sensitive runtime paths; Composer classmap and runtime autoload both resolved every class; no case-only or non-portable path collision.' . PHP_EOL;
+echo 'PASS: 52 unique production symbols; exact case-sensitive runtime paths; Composer classmap and runtime autoload both resolved every class/interface; no case-only or non-portable path collision.' . PHP_EOL;
