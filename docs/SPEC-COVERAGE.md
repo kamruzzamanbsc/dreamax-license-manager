@@ -21,7 +21,7 @@ Build status: development version `0.3.0`; no production-readiness claim.
 | Least privilege | `Capabilities` | Implemented map; security tests pending |
 | Privileged Bearer API | `CredentialService`, `CredentialToken`, `CredentialPolicy`, `PrivilegedRoutes`, ADR 0003 | Lifecycle implemented; live REST/proxy/MySQL/multisite concurrency evidence pending |
 | Versioned audit | `AuditEventCatalog`, `EventRepository`, published catalog/consumer guide, fixtures | Source contract complete for 44 emitted v1 types and four legacy names; live WordPress/MySQL/privacy/multisite evidence pending |
-| Release provenance | release docs/scripts/manifest schema | Planned evidence; deterministic two-build proof pending |
+| Release provenance | release docs/scripts/manifest schema | Deterministic two-clean-build comparison and external provenance sidecar implemented; artifact remains an unshipped candidate |
 | P0 lifecycle | creation, state machine, `LifecycleService`, expiry/activation/order-slot unit sources, operations guides | Partial: manual/bulk and Woo refund/cancel/quantity workflows complete at source level; runtime evidence remains |
 | P0 WooCommerce | product/variation settings, allocation, email/order display, refund/cancel policy, quantity safety, resend, preview-confirmed backfill, secure guest account claim/release/override | Partial: full runtime/concurrency/HPOS/mail evidence remains |
 | P0 customer portal | masked list and audited reveal | Partial: activation list/deactivation and complete cache tests pending |
@@ -34,8 +34,8 @@ Build status: development version `0.3.0`; no production-readiness claim.
 | P0 setup/diagnostics | requirements, Site Health, master-key snippet | Partial smoke tests and system report |
 | P1 migration/webhooks/tooling/reminders/renewal | Milestone 6 roadmap | Intentionally not implemented before stable P0 |
 | P2 blocks/background tools/dashboard | Milestone 7 roadmap | Intentionally not implemented before P1 |
-| Data model | `Schema`, ADRs 0001/0002/0003/0004 | Schema v3 already contains the complete audit envelope; F32 adds no destructive migration; live repeated migration/evidence pending |
-| Architecture/threat/privacy/performance/i18n/a11y | dedicated docs and code conventions | Contract recorded; verification incomplete |
+| Data model | `Schema`, ADRs 0001/0002/0003/0004, `docs/MIGRATIONS.md` | Sequential v1/v2/v3 additive snapshots and source replay verified; live MySQL preservation/interruption/multisite evidence pending |
+| Architecture/threat/privacy/performance/i18n/a11y | dedicated docs and code conventions | Deterministic performance smoke and bounded export implemented; live full-scale and other manual verification remains incomplete |
 | Unit/integration/REST/security/compatibility tests | test tree and must-pass table | Unit/reference foundations; WordPress/WooCommerce runtime unavailable here |
 | Definition of done | `FREE-V1-MUST-PASS.md` | Open blockers; no unsupported pass statements |
 | Documentation deliverables | `docs/` index and guides | Core guides present; specialized launch guides remain blockers |
