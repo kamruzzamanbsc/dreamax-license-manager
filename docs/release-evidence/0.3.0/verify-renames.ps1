@@ -40,6 +40,8 @@ try {
 		'Dreamax\LicenseManager\CustomerPortal\GuestClaimPolicy',
 		'Dreamax\LicenseManager\CustomerPortal\GuestClaimService',
 		'Dreamax\LicenseManager\CustomerPortal\GuestClaimToken',
+		'Dreamax\LicenseManager\Credentials\CredentialPolicy',
+		'Dreamax\LicenseManager\Credentials\CredentialToken',
 		'Dreamax\LicenseManager\Events\AuditMetadata',
 		'Dreamax\LicenseManager\Integrations\WooCommerce\OrderAccessPolicy'
 	)
@@ -47,7 +49,7 @@ try {
 	$added = @($currentMap.Keys | Where-Object { -not $baselineMap.ContainsKey($_) })
 	$unexpectedAdded = @($added | Where-Object { $_ -notin $expectedAdded })
 	$missingAdded = @($expectedAdded | Where-Object { $_ -notin $added })
-	if (41 -ne $baselineMap.Count -or 46 -ne $currentMap.Count -or $missing.Count -or $unexpectedAdded.Count -or $missingAdded.Count) {
+	if (41 -ne $baselineMap.Count -or 48 -ne $currentMap.Count -or $missing.Count -or $unexpectedAdded.Count -or $missingAdded.Count) {
 		throw "Class identity mismatch: baseline=$($baselineMap.Count), current=$($currentMap.Count), missing=$($missing -join ','), unexpected_added=$($unexpectedAdded -join ','), missing_added=$($missingAdded -join ',')"
 	}
 
@@ -71,7 +73,7 @@ try {
 		throw 'Old source-path references remain: ' + (($hits | Sort-Object -Unique) -join '; ')
 	}
 
-	Write-Output 'PASS: all 41 main-baseline identities and 5 F25 additions are present; no missing or duplicate class; no old production PHP path or filename reference remains.'
+	Write-Output 'PASS: all 41 main-baseline identities and 7 F25/F31 additions are present; no missing or duplicate class; no old production PHP path or filename reference remains.'
 } finally {
 	Pop-Location
 }

@@ -12,7 +12,7 @@ This is a new plugin with no inherited repository architecture. WordPress and Wo
 - `Encryption`: master-key contract, purpose-separated derivation, authenticated encryption, blind indexes.
 - `Licenses`, `Generators`, `Activations`: lifecycle, key production, normalization, atomic capacity. `LifecycleService` owns confirmed administrator transitions, retry-safe extension/reset, reassignment, and guarded deletion.
 - `Events`: append-only, schema-versioned audit evidence.
-- `Api`, `Credentials`: public v1 routes, transport guards, idempotency, rate limits, scoped Bearer authentication.
+- `Api`, `Credentials`: public v1 routes, transport guards, idempotency, rate limits, scoped Bearer authentication, version-guarded zero-overlap rotation, and irreversible revocation.
 - `Integrations/WooCommerce`: snapshotted product policies, deterministic order-slot allocation, refund/cancellation transitions, guarded quantity edits, resend, and preview-confirmed historical backfill.
 - `CustomerPortal`, `Admin`, `ImportExport`, `Privacy`: human workflows and WordPress integration. `GuestClaimService` owns emailed single-use guest-order proofs, atomic account ownership, invalidation, and privacy integration.
 
@@ -60,6 +60,8 @@ Guest account claiming adds one unique active-proof slot and one unique claimed-
 ## Time, cache, and transport
 
 Server UTC is authoritative. Sensitive responses are private/no-store. Production credential-bearing requests require HTTPS; forwarded protocol/address headers are honored only when the direct source is an explicitly configured trusted proxy. HTTP is permitted only when the local exception is explicitly enabled and the resolved source is loopback.
+
+Privileged API use, rotation, and revocation share a site-derived MySQL advisory lock. Under that lock, API use rechecks status, expiry, and secret version before scope enforcement and business processing; mutations additionally row-lock the credential in an InnoDB transaction. Schema v3 adds only secret-version and rotation/revocation timestamps to the existing credential table. See ADR 0003.
 
 ## Multisite
 

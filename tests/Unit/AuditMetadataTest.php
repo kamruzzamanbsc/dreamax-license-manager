@@ -22,4 +22,17 @@ final class AuditMetadataTest extends TestCase {
 		);
 		self::assertSame( array( 'order_id' => 123, 'nested' => array( 'result' => 'conflict' ) ), $clean );
 	}
+
+	public function test_credential_audit_metadata_removes_headers_verifiers_and_request_bodies(): void {
+		$clean = ( new AuditMetadata() )->sanitize(
+			array(
+				'credential_public_id' => 'public-reference',
+				'authorization_header' => 'not-persisted',
+				'secret_hash'          => 'not-persisted',
+				'request_body'         => 'not-persisted',
+				'outcome'              => 'revoked',
+			)
+		);
+		self::assertSame( array( 'credential_public_id' => 'public-reference', 'outcome' => 'revoked' ), $clean );
+	}
 }
