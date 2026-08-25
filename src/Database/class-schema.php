@@ -13,7 +13,7 @@ namespace Dreamax\LicenseManager\Database;
  * Handles Schema operations.
  */
 final class Schema {
-	public const VERSION = '2';
+	public const VERSION = '3';
 
 	/**
 	 * Handles the install operation.
@@ -112,10 +112,13 @@ final class Schema {
 				name varchar(191) NOT NULL,
 				visible_prefix varchar(24) NOT NULL,
 				secret_hash varchar(255) NOT NULL,
+				secret_version int(10) unsigned NOT NULL DEFAULT 1,
 				scopes longtext NOT NULL,
 				status varchar(16) NOT NULL,
 				expires_at datetime NULL,
 				last_used_at datetime NULL,
+				rotated_at datetime NULL,
+				revoked_at datetime NULL,
 				created_at datetime NOT NULL,
 				updated_at datetime NOT NULL,
 				PRIMARY KEY  (id),

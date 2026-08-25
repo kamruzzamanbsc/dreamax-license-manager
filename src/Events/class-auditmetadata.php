@@ -23,7 +23,8 @@ final class AuditMetadata {
 	public function sanitize( array $metadata ): array {
 		$clean = array();
 		foreach ( $metadata as $field => $value ) {
-			if ( preg_match( '/(^|_)(authorization|password|secret|token|code|key|raw_ip|idempotency)($|_)/i', (string) $field ) ) {
+			$name = strtolower( (string) $field );
+			if ( 'credential_public_id' !== $name && preg_match( '/(^|_)(authorization|password|secret|token|code|key|credential|verifier|request_body|raw_ip|idempotency)($|_)/i', $name ) ) {
 				continue;
 			}
 			if ( is_array( $value ) ) {

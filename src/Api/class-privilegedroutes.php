@@ -320,17 +320,14 @@ final class PrivilegedRoutes {
 	private function handle( WP_REST_Request $request, string $scope, bool $has_body, callable $callback ): \WP_REST_Response {
 		$request_id = PublicId::generate( 'req' );
 		try {
-			$this->transport->assert_privileged_request( $has_body );
+			$this->transport->assert_privileged_request( $has_body, $request->get_body() );
 			$header     = $request->get_header( 'Authorization' );
-			$credential = $this->credentials->authenticate( $header, '' );
+			$credential = $this->credentials->authenticate( $header, $request_id );
 			if ( ! is_array( $credential ) ) {
-				$this->limits->consume( 'privileged|' . $this->source->network() . '|' . substr( $header, 0, 24 ), 10, 1.0 / 60.0 );
+				$this->limits->consume( 'privileged-auth-failed|' . $this->source->network(), 10, 1.0 / 60.0 );
 				throw new LicenseException( 'authentication_required', 'Authentication is required.', 401 );
 			}
-			if ( ! $this->credentials->has_scope( $credential, $scope ) ) {
-				throw new LicenseException( 'insufficient_scope', 'The credential does not have the required scope.', 403 );
-			}
-			$result = $callback();
+			$result = $this->credentials->authorized_use( $credential, $scope, $request_id, $callback );
 			$status = isset( $result['status'] ) ? (int) $result['status'] : 200;
 			return $this->responses->make( true, (string) $result['code'], 'The request was completed.', $request_id, (array) $result['data'], $status );
 		} catch ( LicenseException $error ) {

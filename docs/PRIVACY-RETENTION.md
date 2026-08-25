@@ -10,6 +10,7 @@ This is an operational policy template, not legal advice. Merchants must choose 
 | Network security identity | keyed/truncated source network | Short bounded retention; never raw long-term IP |
 | Audit evidence | event type/time/actor class/references | Configurable; metadata minimized and schema-versioned |
 | Guest claim evidence | claim public ID, order/account reference, status and times | Pending proof hash cleared on final state; export status facts; erase direct account link and outstanding proof material |
+| API credential operations | administrator-supplied name, public ID, scopes, status, expiry/use/rotation/revocation times | Site-local operational/security record; inventory excludes verifier; retain or delete under the merchant security policy |
 | Secrets | clear license key, API secret, idempotency key, claim token | Never retain in logs/audit; key ciphertext exists only for licensed function |
 
 The WordPress exporter returns license identifiers, lifecycle facts, and guest-claim status facts, not clear keys, token hashes, or ownership hashes. The eraser removes direct customer/claim-owner links, invalidates outstanding proofs, clears proof hashes, labels, fingerprints, and free-form metadata while retaining minimum order/license/lifecycle/audit evidence. Repeated erasure is idempotent. Customer email alone never proves ownership for reveal or claim.

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\Api;
 
+use Dreamax\LicenseManager\Credentials\CredentialToken;
 use Dreamax\LicenseManager\Licenses\LicenseException;
 
 /**
@@ -54,13 +55,17 @@ final class TransportGuard {
 	/**
 	 * Handles the assert privileged request operation.
 	 *
-	 * @param bool $has_body Has body value.
+	 * @param bool   $has_body Has body value.
+	 * @param string $body Raw request body.
 	 * @throws LicenseException When the operation cannot be completed.
 	 */
-	public function assert_privileged_request( bool $has_body ): void {
+	public function assert_privileged_request( bool $has_body, string $body = '' ): void {
 		$this->assert_https();
 		if ( $has_body ) {
 			$this->assert_content_type();
+		}
+		if ( '' !== $body ) {
+			$this->assert_no_body_credentials( $body );
 		}
 		$this->assert_size( 64 * 1024, 128 );
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The credential header must remain byte-exact; it is unslashed, length/control validated, and parsed strictly downstream.
@@ -138,6 +143,23 @@ final class TransportGuard {
 			if ( in_array( strtolower( (string) $name ), $blocked, true ) ) {
 				throw new LicenseException( 'invalid_request', 'Secrets are not accepted in the URL.', 400 );
 			}
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Query values are inspected only to reject exposed credentials.
+		$query = wp_json_encode( $_GET );
+		if ( is_string( $query ) && ( new CredentialToken() )->body_contains_credential( $query ) ) {
+			throw new LicenseException( 'invalid_request', 'Secrets are not accepted in the URL.', 400 );
+		}
+	}
+
+	/**
+	 * Rejects credential proof carried in a privileged JSON body.
+	 *
+	 * @param string $body Raw request body.
+	 * @throws LicenseException When the body contains credential material.
+	 */
+	private function assert_no_body_credentials( string $body ): void {
+		if ( '' !== $body && ( new CredentialToken() )->body_contains_credential( $body ) ) {
+			throw new LicenseException( 'invalid_request', 'Credentials are accepted only in the Authorization header.', 400 );
 		}
 	}
 }
