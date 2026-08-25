@@ -20,6 +20,22 @@ final class MasterKey {
 	public const CONSTANT_NAME = 'DREAMAX_LICENSE_MANAGER_MASTER_KEY';
 
 	/**
+	 * Site-local KDF salt manager.
+	 *
+	 * @var KdfSalt
+	 */
+	private KdfSalt $kdf_salt;
+
+	/**
+	 * Initializes key dependencies.
+	 *
+	 * @param ?KdfSalt $kdf_salt Site-local KDF salt manager.
+	 */
+	public function __construct( ?KdfSalt $kdf_salt = null ) {
+		$this->kdf_salt = $kdf_salt ?? new KdfSalt();
+	}
+
+	/**
 	 * Handles the ready operation.
 	 */
 	public function ready(): bool {
@@ -66,14 +82,11 @@ final class MasterKey {
 	 * @param string $purpose Purpose value.
 	 */
 	public function derived( string $purpose ): string {
-		$salt = get_option( 'dreamax_lm_kdf_salt' );
-		if ( ! is_string( $salt ) || 32 !== strlen( $salt ) ) {
-			$salt = random_bytes( 32 );
-			update_option( 'dreamax_lm_kdf_salt', $salt, false );
-		}
-
+		$salt    = $this->kdf_salt->load( $this->identifier() );
 		$context = sprintf( 'dreamax-lm|site:%d|%s|v1', get_current_blog_id(), $purpose );
-		return hash_hkdf( 'sha256', $this->root(), 32, $context, $salt );
+		$derived = hash_hkdf( 'sha256', $this->root(), 32, $context, $salt );
+		sodium_memzero( $salt );
+		return $derived;
 	}
 
 	/**

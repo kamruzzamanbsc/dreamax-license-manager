@@ -9,6 +9,10 @@
 
 No retrievable production license may be created before readiness.
 
+The site-local KDF salt is exactly 32 random bytes stored in the current site's WordPress options table as `v1.` followed by 43 characters of unpadded base64url. First initialization uses a database-atomic insert that never replaces a concurrent winner, then reads the authoritative stored value back before deriving a key. Missing, malformed, incorrectly sized, unverified, or unpersisted values fail closed. A missing salt is initialized only when the configured root identifier matches and no salt-dependent records exist.
+
+Historical raw 32-byte option values remain readable. On first use they are rewritten to the versioned ASCII representation, read back, decoded, and accepted only when the bytes are identical, so derived keys and existing ciphertext do not change.
+
 ## Complete backup
 
 A complete backup contains the WordPress database, the exact external `DREAMAX_LICENSE_MANAGER_MASTER_KEY` value, and ordinary WordPress/WooCommerce files/configuration. A database-only copy is incomplete.

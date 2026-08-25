@@ -6,7 +6,7 @@ function Get-ClassIdentity {
 	param([Parameter(Mandatory = $true)][string]$Content)
 
 	$namespace = [regex]::Match($Content, '(?m)^namespace\s+([^;]+);').Groups[1].Value.Trim()
-	$class = [regex]::Match($Content, '(?m)^(?:final\s+)?class\s+(\w+)').Groups[1].Value
+	$class = [regex]::Match($Content, '(?m)^(?:(?:final|abstract)\s+)?(?:class|interface)\s+(\w+)').Groups[1].Value
 	if (-not $namespace -or -not $class) {
 		throw 'Could not parse a production class identity.'
 	}
@@ -44,13 +44,16 @@ try {
 		'Dreamax\LicenseManager\Credentials\CredentialToken',
 		'Dreamax\LicenseManager\Events\AuditEventCatalog',
 		'Dreamax\LicenseManager\Events\AuditMetadata',
-		'Dreamax\LicenseManager\Integrations\WooCommerce\OrderAccessPolicy'
+		'Dreamax\LicenseManager\Integrations\WooCommerce\OrderAccessPolicy',
+		'Dreamax\LicenseManager\Encryption\KdfSalt',
+		'Dreamax\LicenseManager\Encryption\KdfSaltRepository',
+		'Dreamax\LicenseManager\Encryption\WordPressKdfSaltRepository'
 	)
 	$missing = @($baselineMap.Keys | Where-Object { -not $currentMap.ContainsKey($_) })
 	$added = @($currentMap.Keys | Where-Object { -not $baselineMap.ContainsKey($_) })
 	$unexpectedAdded = @($added | Where-Object { $_ -notin $expectedAdded })
 	$missingAdded = @($expectedAdded | Where-Object { $_ -notin $added })
-	if (41 -ne $baselineMap.Count -or 49 -ne $currentMap.Count -or $missing.Count -or $unexpectedAdded.Count -or $missingAdded.Count) {
+	if (41 -ne $baselineMap.Count -or 52 -ne $currentMap.Count -or $missing.Count -or $unexpectedAdded.Count -or $missingAdded.Count) {
 		throw "Class identity mismatch: baseline=$($baselineMap.Count), current=$($currentMap.Count), missing=$($missing -join ','), unexpected_added=$($unexpectedAdded -join ','), missing_added=$($missingAdded -join ',')"
 	}
 
@@ -74,7 +77,7 @@ try {
 		throw 'Old source-path references remain: ' + (($hits | Sort-Object -Unique) -join '; ')
 	}
 
-	Write-Output 'PASS: all 41 main-baseline identities and 8 F25/F31/F32 additions are present; no missing or duplicate class; no old production PHP path or filename reference remains.'
+	Write-Output 'PASS: all 41 main-baseline identities and 11 intentional additions are present; no missing or duplicate class/interface; no old production PHP path or filename reference remains.'
 } finally {
 	Pop-Location
 }
