@@ -29,7 +29,8 @@ final class Admin {
 	 * Handles the register operation.
 	 */
 	public function register(): void {
-		add_action( 'admin_menu', array( $this, 'menu' ) );
+		// Register the parent before separately owned submenus so WordPress creates matching page hooks and admin.php routes.
+		add_action( 'admin_menu', array( $this, 'menu' ), 9 );
 		add_action( 'admin_post_dreamax_lm_create_license', array( $this, 'create_license' ) );
 		add_action( 'admin_post_dreamax_lm_bulk_lifecycle', array( $this, 'bulk_lifecycle' ) );
 		add_action( 'admin_post_dreamax_lm_reassign_license', array( $this, 'reassign_license' ) );
