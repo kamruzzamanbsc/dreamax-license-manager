@@ -33,4 +33,10 @@ The disposable WordPress runtime confirmed that PHP, native Sodium, WooCommerce,
 | `git diff --check` | Exit 0 |
 | Non-content-printing secret/private-path/prohibited-artifact scan | Exit 0; no finding |
 
-Live replacement and recovery-notice clearance remain manual gates for the disposable site. No test-site database or configuration mutation was performed during implementation or automated QA.
+## Live disposable-site replacement verification
+
+The unshipped release-candidate ZIP built from commit `88db7b45175e939c00bd8f542cc815c98b40f941` was installed over the existing plugin with WordPress **Replace current with uploaded**. The plugin was not uninstalled or deleted. The existing root-key configuration and stored non-secret identifier were left unchanged and were not regenerated.
+
+On the first fresh request after replacement, System Status reported Encryption **Ready**, the license table engine **InnoDB**, and the cleanup job **Scheduled**; no recovery notice was present. A second hard refresh reported the same three states and no recovery notice. This is live evidence that the corrected first-time KDF salt persistence path reached readiness and remained ready across separate requests on this disposable site.
+
+This observation is limited to a fresh, disposable, single-site database without protected plugin data. It does not exercise an absent or wrong root key, encrypted-data or database restoration, disaster recovery, multisite separation, concurrent HTTP initialization, uninstall behavior, order processing, or mail delivery. Those gates remain open. No salt, key, identifier, credential, configuration content, private path, or screenshot is included in this record.
