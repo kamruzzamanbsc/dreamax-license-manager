@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Dreamax\LicenseManager\Licenses;
 
 use Dreamax\LicenseManager\Database\Transaction;
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use InvalidArgumentException;
 use RuntimeException;
@@ -111,12 +112,8 @@ final class LifecycleService {
 					throw new RuntimeException( 'The lifecycle change could not be stored.' );
 				}
 
-				$event = array(
-					'suspended' => 'license_suspended',
-					'revoked'   => 'license_revoked',
-				)[ $target ] ?? 'license_restored';
 				$this->events->append(
-					$event,
+					'suspended' === $target ? AuditEventCatalog::LICENSE_SUSPENDED : ( 'revoked' === $target ? AuditEventCatalog::LICENSE_REVOKED : AuditEventCatalog::LICENSE_RESTORED ),
 					(int) $row['id'],
 					$actor_type,
 					$actor_id,
@@ -125,7 +122,8 @@ final class LifecycleService {
 						'from'   => $from,
 						'to'     => $target,
 						'reason' => $reason,
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				return array(
 					'public_id' => $public_id,
@@ -182,7 +180,7 @@ final class LifecycleService {
 					throw new RuntimeException( 'The lifecycle restoration could not be stored.' );
 				}
 				$this->events->append(
-					'license_restored',
+					AuditEventCatalog::LICENSE_RESTORED,
 					(int) $row['id'],
 					$actor_type,
 					$actor_id,
@@ -191,7 +189,8 @@ final class LifecycleService {
 						'from'   => 'suspended',
 						'to'     => $target,
 						'reason' => $reason,
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				return array(
 					'public_id' => $public_id,
@@ -253,7 +252,7 @@ final class LifecycleService {
 					throw new RuntimeException( 'The expiry extension could not be stored.' );
 				}
 				$this->events->append(
-					'license_extended',
+					AuditEventCatalog::LICENSE_EXTENDED,
 					(int) $row['id'],
 					$actor_type,
 					$actor_id,
@@ -263,7 +262,8 @@ final class LifecycleService {
 						'new_expiry'     => $new_expiry,
 						'extension_days' => $days,
 						'reason'         => $reason,
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				return array(
 					'public_id'  => $public_id,
@@ -330,7 +330,7 @@ final class LifecycleService {
 					throw new RuntimeException( 'The activation reset marker could not be stored.' );
 				}
 				$this->events->append(
-					'license_activations_reset',
+					AuditEventCatalog::LICENSE_ACTIVATIONS_RESET,
 					(int) $row['id'],
 					$actor_type,
 					$actor_id,
@@ -338,7 +338,8 @@ final class LifecycleService {
 					array(
 						'reset_count' => (int) $reset,
 						'reason'      => $reason,
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				return array(
 					'public_id'   => $public_id,
@@ -481,7 +482,7 @@ final class LifecycleService {
 						throw new RuntimeException( 'Outstanding guest claims could not be invalidated.' );
 					}
 					$this->events->append(
-						'guest_claim_administrator_override',
+						AuditEventCatalog::GUEST_CLAIM_ADMINISTRATOR_OVERRIDE,
 						(int) $row['id'],
 						$actor_type,
 						$actor_id,
@@ -490,7 +491,8 @@ final class LifecycleService {
 							'order_id'    => (int) $before['order_id'],
 							'customer_id' => $customer_id,
 							'scope'       => 'single_license_reassignment',
-						)
+						),
+						AuditEventCatalog::SCHEMA_V1
 					);
 				}
 
@@ -505,7 +507,7 @@ final class LifecycleService {
 				}
 
 				$this->events->append(
-					'license_reassigned',
+					AuditEventCatalog::LICENSE_REASSIGNED,
 					(int) $row['id'],
 					$actor_type,
 					$actor_id,
@@ -516,7 +518,8 @@ final class LifecycleService {
 						'activation_reset' => $reset_activations,
 						'reset_count'      => $reset_count,
 						'reason'           => $reason,
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				return array(
 					'public_id'   => $public_id,
@@ -534,7 +537,7 @@ final class LifecycleService {
 			$sent = $user && wp_mail( (string) $user->user_email, __( 'A license was assigned to your account', 'dreamax-license-manager' ), sprintf( __( 'License %s is now available in the Licenses section of your account.', 'dreamax-license-manager' ), $public_id ) );
 			$row  = ( new LicenseRepository() )->by_public_id( $public_id );
 			if ( is_array( $row ) ) {
-				$this->events->append( $sent ? 'license_reassignment_notified' : 'license_reassignment_notification_failed', (int) $row['id'], $actor_type, $actor_id, $operation_id, array( 'customer_id' => $customer_id ) );
+				$this->events->append( $sent ? AuditEventCatalog::LICENSE_REASSIGNMENT_NOTIFIED : AuditEventCatalog::LICENSE_REASSIGNMENT_NOTIFICATION_FAILED, (int) $row['id'], $actor_type, $actor_id, $operation_id, array( 'customer_id' => $customer_id ), AuditEventCatalog::SCHEMA_V1 );
 			}
 			$result['notification_sent'] = (bool) $sent;
 		}
@@ -573,7 +576,7 @@ final class LifecycleService {
 					throw new InvalidArgumentException( 'A license with activation history cannot be permanently deleted.' );
 				}
 				$this->events->append(
-					'license_deleted',
+					AuditEventCatalog::LICENSE_DELETED,
 					(int) $row['id'],
 					$actor_type,
 					$actor_id,
@@ -581,7 +584,8 @@ final class LifecycleService {
 					array(
 						'license_public_id' => $public_id,
 						'reason'            => $reason,
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 				$deleted = $wpdb->delete( $wpdb->prefix . 'dreamax_lm_licenses', array( 'id' => (int) $row['id'] ), array( '%d' ) );

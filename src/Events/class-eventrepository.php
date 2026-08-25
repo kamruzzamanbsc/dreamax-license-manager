@@ -29,6 +29,7 @@ final class EventRepository {
 	 * @phpstan-param string|null $request_id Request id value.
 	 * @param array   $metadata Metadata value.
 	 * @phpstan-param array<string,mixed> $metadata Metadata value.
+	 * @param int     $schema_version Published payload schema version.
 	 * @throws RuntimeException When the operation cannot be completed.
 	 */
 	public function append(
@@ -37,10 +38,17 @@ final class EventRepository {
 		string $actor_type,
 		?int $actor_id,
 		?string $request_id,
-		array $metadata = array()
+		array $metadata = array(),
+		int $schema_version = AuditEventCatalog::SCHEMA_V1
 	): string {
 		global $wpdb;
-		$public_id = PublicId::generate( 'evt' );
+		$metadata = AuditEventCatalog::validate( $event_type, $schema_version, $license_id, $actor_type, $actor_id, $request_id, $metadata );
+		$encoded  = wp_json_encode( $metadata );
+		if ( ! is_string( $encoded ) ) {
+			throw new RuntimeException( 'Required audit evidence could not be stored.' );
+		}
+		$public_id   = PublicId::generate( 'evt' );
+		$occurred_at = gmdate( 'Y-m-d H:i:s' );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 		$inserted = $wpdb->insert(
 			$wpdb->prefix . 'dreamax_lm_events',
@@ -48,12 +56,12 @@ final class EventRepository {
 				'public_id'      => $public_id,
 				'license_id'     => $license_id,
 				'event_type'     => $event_type,
-				'schema_version' => 1,
+				'schema_version' => $schema_version,
 				'actor_type'     => $actor_type,
 				'actor_id'       => $actor_id,
 				'request_id'     => $request_id,
-				'occurred_at'    => gmdate( 'Y-m-d H:i:s' ),
-				'metadata'       => wp_json_encode( ( new AuditMetadata() )->sanitize( $metadata ) ),
+				'occurred_at'    => $occurred_at,
+				'metadata'       => $encoded,
 			),
 			array( '%s', '%d', '%s', '%d', '%s', '%d', '%s', '%s', '%s' )
 		);
@@ -76,13 +84,13 @@ final class EventRepository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT public_id,event_type,schema_version,actor_type,actor_id,request_id,occurred_at,metadata FROM {$wpdb->prefix}dreamax_lm_events WHERE license_id=%d ORDER BY id DESC LIMIT %d",
+				"SELECT public_id,license_id,event_type,schema_version,actor_type,actor_id,request_id,occurred_at,metadata FROM {$wpdb->prefix}dreamax_lm_events WHERE license_id=%d ORDER BY id DESC LIMIT %d",
 				$license_id,
 				min( 100, max( 1, $limit ) )
 			),
 			ARRAY_A
 		);
-		return is_array( $rows ) ? $rows : array();
+		return $this->compatible_rows( is_array( $rows ) ? $rows : array() );
 	}
 
 	/**
@@ -99,11 +107,29 @@ final class EventRepository {
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Both table names are built from the trusted WordPress database prefix.
-				"SELECT e.public_id,e.event_type,e.actor_type,e.actor_id,e.occurred_at,e.metadata,l.public_id AS license_public_id FROM {$events} e LEFT JOIN {$licenses} l ON l.id=e.license_id ORDER BY e.id DESC LIMIT %d",
+				"SELECT e.public_id,e.license_id,e.event_type,e.schema_version,e.actor_type,e.actor_id,e.request_id,e.occurred_at,e.metadata,l.public_id AS license_public_id FROM {$events} e LEFT JOIN {$licenses} l ON l.id=e.license_id ORDER BY e.id DESC LIMIT %d",
 				min( 200, max( 1, $limit ) )
 			),
 			ARRAY_A
 		);
-		return is_array( $rows ) ? $rows : array();
+		return $this->compatible_rows( is_array( $rows ) ? $rows : array() );
+	}
+
+	/**
+	 * Preserves legacy rows while labeling their consumer compatibility status.
+	 *
+	 * @param array $rows Persisted event rows.
+	 * @phpstan-param list<array<string,mixed>> $rows
+	 * @return list<array<string,mixed>>
+	 */
+	private function compatible_rows( array $rows ): array {
+		$result = array();
+		foreach ( $rows as $row ) {
+			$row['contract_status'] = AuditEventCatalog::compatibility_status( $row );
+			$metadata               = json_decode( (string) ( $row['metadata'] ?? '{}' ), true );
+			$row['metadata']        = wp_json_encode( ( new AuditMetadata() )->sanitize( is_array( $metadata ) ? $metadata : array() ) );
+			$result[]               = $row;
+		}
+		return $result;
 	}
 }

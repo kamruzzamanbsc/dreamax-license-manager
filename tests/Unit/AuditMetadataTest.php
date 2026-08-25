@@ -35,4 +35,20 @@ final class AuditMetadataTest extends TestCase {
 		);
 		self::assertSame( array( 'credential_public_id' => 'public-reference', 'outcome' => 'revoked' ), $clean );
 	}
+
+	public function test_recursive_redaction_handles_objects_and_secret_values_under_innocent_keys(): void {
+		$nested                  = new \stdClass();
+		$nested->authorization   = 'not-persisted';
+		$nested->result          = 'retained';
+		$nested->innocent_label  = 'Bearer not-persisted';
+		$clean                   = ( new AuditMetadata() )->sanitize(
+			array(
+				'nested'       => $nested,
+				'innocent_key' => 'dlm_v1_' . str_repeat( 'A', 22 ) . '.' . str_repeat( 'B', 43 ),
+				'claim_proof'  => str_repeat( 'C', 43 ),
+				'safe'         => true,
+			)
+		);
+		self::assertSame( array( 'nested' => array( 'result' => 'retained' ), 'safe' => true ), $clean );
+	}
 }

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\CustomerPortal;
 
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use InvalidArgumentException;
 
 /**
@@ -96,13 +97,7 @@ final class GuestClaimPolicy {
 	 * @param string $failure Failure classification.
 	 */
 	public function failure_event( string $failure ): string {
-		if ( 'expired' === $failure ) {
-			return 'guest_claim_expired_failed';
-		}
-		if ( 'replay' === $failure ) {
-			return 'guest_claim_replay_failed';
-		}
-		return 'guest_claim_conflict_failed';
+		return AuditEventCatalog::guest_claim_failure( $failure );
 	}
 
 	/**

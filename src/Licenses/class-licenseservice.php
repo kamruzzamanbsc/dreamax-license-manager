@@ -11,6 +11,7 @@ namespace Dreamax\LicenseManager\Licenses;
 
 use Dreamax\LicenseManager\Encryption\Crypto;
 use Dreamax\LicenseManager\Database\Transaction;
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Generators\KeyGenerator;
 use Dreamax\LicenseManager\Support\PublicId;
@@ -181,7 +182,7 @@ final class LicenseService {
 				$actor_id   = isset( $attributes['actor_id'] ) ? (int) $attributes['actor_id'] : null;
 				$request_id = isset( $attributes['request_id'] ) ? (string) $attributes['request_id'] : null;
 				$this->events->append(
-					'license_assigned',
+					AuditEventCatalog::LICENSE_ASSIGNED,
 					(int) $license['id'],
 					$actor_type,
 					$actor_id,
@@ -189,10 +190,11 @@ final class LicenseService {
 					array(
 						'order_id'      => $attributes['order_id'],
 						'order_item_id' => $attributes['order_item_id'],
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				$this->events->append(
-					'license_delivered',
+					AuditEventCatalog::LICENSE_DELIVERED,
 					(int) $license['id'],
 					$actor_type,
 					$actor_id,
@@ -200,7 +202,8 @@ final class LicenseService {
 					array(
 						'order_id'      => $attributes['order_id'],
 						'order_item_id' => $attributes['order_item_id'],
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				return array(
 					'id'        => (int) $license['id'],
@@ -264,7 +267,7 @@ final class LicenseService {
 			function () use ( $record, $attributes, $public_id ): int {
 				$id = $this->licenses->insert( $record );
 				$this->events->append(
-					'license_created',
+					AuditEventCatalog::LICENSE_CREATED,
 					$id,
 					(string) ( $attributes['actor_type'] ?? 'system' ),
 					isset( $attributes['actor_id'] ) ? (int) $attributes['actor_id'] : null,
@@ -272,14 +275,15 @@ final class LicenseService {
 					array(
 						'source'    => $attributes['source'] ?? 'generated',
 						'public_id' => $public_id,
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				if ( ! empty( $attributes['order_id'] ) ) {
 					$actor_type = (string) ( $attributes['actor_type'] ?? 'woocommerce' );
 					$actor_id   = isset( $attributes['actor_id'] ) ? (int) $attributes['actor_id'] : null;
 					$request_id = isset( $attributes['request_id'] ) ? (string) $attributes['request_id'] : null;
 					$this->events->append(
-						'license_assigned',
+						AuditEventCatalog::LICENSE_ASSIGNED,
 						$id,
 						$actor_type,
 						$actor_id,
@@ -287,10 +291,11 @@ final class LicenseService {
 						array(
 							'order_id'      => $attributes['order_id'],
 							'order_item_id' => $attributes['order_item_id'] ?? null,
-						)
+						),
+						AuditEventCatalog::SCHEMA_V1
 					);
 					$this->events->append(
-						'license_delivered',
+						AuditEventCatalog::LICENSE_DELIVERED,
 						$id,
 						$actor_type,
 						$actor_id,
@@ -298,7 +303,8 @@ final class LicenseService {
 						array(
 							'order_id'      => $attributes['order_id'],
 							'order_item_id' => $attributes['order_item_id'] ?? null,
-						)
+						),
+						AuditEventCatalog::SCHEMA_V1
 					);
 				}
 				return $id;

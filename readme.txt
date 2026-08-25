@@ -42,7 +42,7 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 
 = 0.3.0 =
 
-* Added secure one-time-code guest-order claims, atomic privileged credential rotation/revocation, snapshotted refund/cancellation policies, deterministic partial-refund mapping, guarded quantity edits, explicit post-delivery allocation, resend, and preview-confirmed historical-order backfill. Still not a production Free V1 release.
+* Added secure one-time-code guest-order claims, atomic privileged credential rotation/revocation, a central validated versioned audit-event contract, snapshotted refund/cancellation policies, deterministic partial-refund mapping, guarded quantity edits, explicit post-delivery allocation, resend, and preview-confirmed historical-order backfill. Still not a production Free V1 release.
 
 = 0.2.0 =
 

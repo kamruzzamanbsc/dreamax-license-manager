@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Dreamax\LicenseManager\CustomerPortal;
 
 use Dreamax\LicenseManager\Api\TransportGuard;
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
 use Throwable;
@@ -158,7 +159,7 @@ final class AccountEndpoint {
 		if ( ! is_array( $license ) || get_current_user_id() !== (int) $license['customer_id'] ) {
 			wp_send_json_error( array( 'message' => __( 'You cannot access that license.', 'dreamax-license-manager' ) ), 403 );
 		}
-		( new EventRepository() )->append( 'license_revealed', (int) $license['id'], 'customer', get_current_user_id(), null, array( 'channel' => 'my_account' ) );
+		( new EventRepository() )->append( AuditEventCatalog::LICENSE_REVEALED, (int) $license['id'], 'customer', get_current_user_id(), null, array( 'channel' => 'my_account' ), AuditEventCatalog::SCHEMA_V1 );
 		wp_send_json_success( array( 'key' => $this->licenses->decrypt_key( $license ) ) );
 	}
 

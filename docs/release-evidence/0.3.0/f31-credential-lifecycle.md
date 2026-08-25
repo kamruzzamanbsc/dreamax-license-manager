@@ -38,4 +38,4 @@ F31 is not PASS. A disposable integration environment must still demonstrate:
 - two-site credential, lock, rate-bucket, audit, and uninstall isolation;
 - audit/support/log inspection confirming no secret, verifier, Authorization header, or sensitive body.
 
-F32 remains a separate implementation blocker for complete published audit-event schema and consumer compatibility work.
+F32's central published event contract and consumer compatibility work is implemented separately; its remaining live-environment evidence is recorded in `f32-audit-event-contract.md`.

@@ -11,6 +11,7 @@ namespace Dreamax\LicenseManager\Admin;
 
 use Dreamax\LicenseManager\Credentials\CredentialService;
 use Dreamax\LicenseManager\Encryption\Crypto;
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Licenses\KeyNormalizer;
 use Dreamax\LicenseManager\Licenses\LifecycleService;
@@ -652,7 +653,7 @@ final class Admin {
 		try {
 			$row = ( new LicenseRepository() )->by_public_id( $public_id );
 			if ( is_array( $row ) ) {
-				( new EventRepository() )->append( 'license_operation_rejected', (int) $row['id'], 'administrator', get_current_user_id(), $request_id, array( 'operation' => $operation ) );
+				( new EventRepository() )->append( AuditEventCatalog::LICENSE_OPERATION_REJECTED, (int) $row['id'], 'administrator', get_current_user_id(), $request_id, array( 'operation' => $operation ), AuditEventCatalog::SCHEMA_V1 );
 			}
 		} catch ( Throwable $error ) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Records a fixed operational message without user data or secrets.

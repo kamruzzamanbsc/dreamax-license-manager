@@ -32,7 +32,7 @@ Schema-version-1 events are `credential_created`, `credential_authentication_use
 
 The frozen REST namespace, routes, envelope, scope names, and Bearer syntax do not change. MySQL advisory locks are intentionally held across the privileged callback so revocation has an unambiguous ordering relative to business use; a five-second lock-acquisition timeout fails unavailable without processing business work.
 
-Real WordPress REST, web-server header handling, MySQL concurrency, proxy, role/nonce, expiration, rate-limit, and multisite tests remain required. F31 therefore moves from implementation blocker to manual-environment-required, not PASS. F32 remains a separate implementation blocker until the complete published audit catalog and consumer compatibility tests are finished.
+Real WordPress REST, web-server header handling, MySQL concurrency, proxy, role/nonce, expiration, rate-limit, and multisite tests remain required. F31 therefore moves from implementation blocker to manual-environment-required, not PASS. ADR 0004 and the central audit catalog now govern the event payloads introduced here; F32 retains live-environment acceptance requirements.
 
 ## Rejected alternatives
 

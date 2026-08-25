@@ -36,8 +36,8 @@ final class CredentialLifecycleSourceContractTest extends TestCase {
 		self::assertStringContainsString( 'FOR UPDATE', $this->service );
 		self::assertStringContainsString( '\'secret_version\' => $expected_version', $this->service );
 		self::assertStringContainsString( '\'secret_hash\'    => $hash', $this->service );
-		self::assertStringContainsString( 'credential_rotation_succeeded', $this->service );
-		self::assertStringContainsString( 'credential_rotation_failed', $this->service );
+		self::assertStringContainsString( 'AuditEventCatalog::CREDENTIAL_ROTATION_SUCCEEDED', $this->service );
+		self::assertStringContainsString( 'AuditEventCatalog::CREDENTIAL_ROTATION_FAILED', $this->service );
 		self::assertStringNotContainsString( 'grace', strtolower( $this->service ) );
 	}
 
@@ -53,7 +53,7 @@ final class CredentialLifecycleSourceContractTest extends TestCase {
 		self::assertStringContainsString( "'status'         => 'revoked'", $this->service );
 		self::assertStringContainsString( "'secret_hash'    => \$this->tokens->hash( \$replacement_secret )", $this->service );
 		self::assertStringContainsString( "'revoked_at'     => \$now", $this->service );
-		self::assertStringContainsString( 'credential_revoked', $this->service );
+		self::assertStringContainsString( 'AuditEventCatalog::CREDENTIAL_REVOKED', $this->service );
 	}
 
 	public function test_authentication_precedes_exact_scope_and_business_processing(): void {
@@ -62,8 +62,8 @@ final class CredentialLifecycleSourceContractTest extends TestCase {
 		self::assertNotFalse( $authenticate );
 		self::assertNotFalse( $authorized );
 		self::assertLessThan( $authorized, $authenticate );
-		self::assertStringContainsString( 'credential_insufficient_scope', $this->service );
-		self::assertStringContainsString( 'credential_authentication_used', $this->service );
+		self::assertStringContainsString( 'AuditEventCatalog::CREDENTIAL_INSUFFICIENT_SCOPE', $this->service );
+		self::assertStringContainsString( 'AuditEventCatalog::CREDENTIAL_AUTHENTICATION_USED', $this->service );
 	}
 
 	public function test_per_credential_limit_and_coalesced_last_used_write_are_present(): void {

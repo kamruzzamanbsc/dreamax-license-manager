@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\ImportExport;
 
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Licenses\KeyNormalizer;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
@@ -135,7 +136,7 @@ final class CsvController {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 		$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}dreamax_lm_licenses ORDER BY id", ARRAY_A );
 		( new EventRepository() )->append(
-			'license_exported',
+			AuditEventCatalog::LICENSE_EXPORTED,
 			null,
 			'administrator',
 			get_current_user_id(),
@@ -143,7 +144,8 @@ final class CsvController {
 			array(
 				'full_keys' => $full,
 				'row_count' => is_array( $rows ) ? count( $rows ) : 0,
-			)
+			),
+			AuditEventCatalog::SCHEMA_V1
 		);
 		nocache_headers();
 		header( 'Content-Type: text/csv; charset=utf-8' );
