@@ -1,6 +1,6 @@
 === Dreamax License Manager ===
 Contributors: dreamaxsoft
-Tags: woocommerce, license manager, software licensing, serial keys
+Tags: woocommerce, license manager, software licensing
 Requires at least: 6.9
 Tested up to: 6.9
 Requires PHP: 8.0
@@ -43,6 +43,7 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 = 0.3.0 =
 
 * Added secure one-time-code guest-order claims, atomic privileged credential rotation/revocation, a central validated versioned audit-event contract, snapshotted refund/cancellation policies, deterministic partial-refund mapping, guarded quantity edits, explicit post-delivery allocation, resend, and preview-confirmed historical-order backfill. Still not a production Free V1 release.
+* Added sequential migration verification, deterministic packaging/provenance, and seeded performance fixtures. Live release gates still prevent production shipment.
 
 = 0.2.0 =
 

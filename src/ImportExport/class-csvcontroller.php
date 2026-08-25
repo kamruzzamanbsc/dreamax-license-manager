@@ -134,7 +134,7 @@ final class CsvController {
 		check_admin_referer( 'dreamax_lm_export_csv' );
 		$full = isset( $_POST['full_keys'] ) && current_user_can( Capabilities::EXPORT );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
-		$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}dreamax_lm_licenses ORDER BY id", ARRAY_A );
+		$row_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}dreamax_lm_licenses" );
 		( new EventRepository() )->append(
 			AuditEventCatalog::LICENSE_EXPORTED,
 			null,
@@ -143,7 +143,7 @@ final class CsvController {
 			null,
 			array(
 				'full_keys' => $full,
-				'row_count' => is_array( $rows ) ? count( $rows ) : 0,
+				'row_count' => $row_count,
 			),
 			AuditEventCatalog::SCHEMA_V1
 		);
@@ -156,13 +156,22 @@ final class CsvController {
 		}
 		fputcsv( $output, array( 'public_id', 'license_key', 'product_public_id', 'lifecycle_status', 'activation_limit', 'expires_at', 'order_id', 'customer_id' ) );
 		$repository = new LicenseRepository();
-		foreach ( is_array( $rows ) ? $rows : array() as $row ) {
-			$key = $repository->decrypt_key( $row );
-			if ( ! $full ) {
-				$key = strlen( $key ) > 8 ? substr( $key, 0, 4 ) . '********' . substr( $key, -4 ) : '********';
+		$last_id    = 0;
+		$batch_size = 250;
+		do {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Keyset pagination keeps the authorized export bounded while reading fresh plugin-owned data.
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_licenses WHERE id>%d ORDER BY id LIMIT %d", $last_id, $batch_size ), ARRAY_A );
+			$rows = is_array( $rows ) ? $rows : array();
+			foreach ( $rows as $row ) {
+				$key = $repository->decrypt_key( $row );
+				if ( ! $full ) {
+					$key = strlen( $key ) > 8 ? substr( $key, 0, 4 ) . '********' . substr( $key, -4 ) : '********';
+				}
+				fputcsv( $output, array_map( array( $this, 'csv_safe' ), array( $row['public_id'], $key, $row['product_public_id'], $row['lifecycle_status'], $row['activation_limit'], $row['expires_at'], $row['order_id'], $row['customer_id'] ) ) );
+				$last_id = (int) $row['id'];
 			}
-			fputcsv( $output, array_map( array( $this, 'csv_safe' ), array( $row['public_id'], $key, $row['product_public_id'], $row['lifecycle_status'], $row['activation_limit'], $row['expires_at'], $row['order_id'], $row['customer_id'] ) ) );
-		}
+			$batch_count = count( $rows );
+		} while ( $batch_size === $batch_count );
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes the php://output CSV stream.
 		fclose( $output );
 		exit;

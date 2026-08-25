@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\Database;
 
+use InvalidArgumentException;
+use RuntimeException;
+
 /**
  * Handles Schema operations.
  */
@@ -16,14 +19,70 @@ final class Schema {
 	public const VERSION = '3';
 
 	/**
+	 * Returns every supported stored schema version in upgrade order.
+	 *
+	 * @return list<string>
+	 */
+	public static function supported_versions(): array {
+		return array( '1', '2', '3' );
+	}
+
+	/**
 	 * Handles the install operation.
 	 */
 	public function install(): void {
+		$this->install_version( self::VERSION );
+	}
+
+	/**
+	 * Installs one historical schema snapshot with idempotent dbDelta calls.
+	 *
+	 * @param string $version Supported schema version.
+	 * @throws RuntimeException When WordPress reports a database error.
+	 */
+	public function install_version( string $version ): void {
 		global $wpdb;
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		$charset = $wpdb->get_charset_collate();
 		$prefix  = $wpdb->prefix . 'dreamax_lm_';
+		$sql     = $this->statements( $version, $prefix, $charset );
+
+		foreach ( $sql as $statement ) {
+			$wpdb->last_error = '';
+			dbDelta( $statement );
+			if ( '' !== $this->last_database_error() ) {
+				throw new RuntimeException( 'The plugin schema migration did not complete. Re-running the upgrade is safe.' );
+			}
+		}
+	}
+
+	/**
+	 * Returns the complete additive schema snapshot for a supported version.
+	 *
+	 * This pure representation is used by the isolated migration verifier. It
+	 * never connects to a database or reads production configuration.
+	 *
+	 * @param string $version Supported schema version.
+	 * @param string $prefix Site-local plugin table prefix.
+	 * @param string $charset WordPress charset/collation suffix.
+	 * @return list<string>
+	 * @throws InvalidArgumentException When the version or prefix is unsafe.
+	 */
+	public function statements( string $version, string $prefix, string $charset = '' ): array {
+		if ( ! in_array( $version, self::supported_versions(), true ) ) {
+			throw new InvalidArgumentException( 'Unsupported plugin schema version.' );
+		}
+		if ( 1 !== preg_match( '/^[A-Za-z0-9_]+dreamax_lm_$/D', $prefix ) ) {
+			throw new InvalidArgumentException( 'The schema prefix is not site-local and safe.' );
+		}
+
+		$credential_v3    = version_compare( $version, '3', '>=' )
+			? "\n\t\t\t\tsecret_version int(10) unsigned NOT NULL DEFAULT 1,"
+			: '';
+		$credential_dates = version_compare( $version, '3', '>=' )
+			? "\n\t\t\t\trotated_at datetime NULL,\n\t\t\t\trevoked_at datetime NULL,"
+			: '';
 
 		$sql = array(
 			"CREATE TABLE {$prefix}licenses (
@@ -111,14 +170,11 @@ final class Schema {
 				public_id varchar(64) NOT NULL,
 				name varchar(191) NOT NULL,
 				visible_prefix varchar(24) NOT NULL,
-				secret_hash varchar(255) NOT NULL,
-				secret_version int(10) unsigned NOT NULL DEFAULT 1,
+				secret_hash varchar(255) NOT NULL,{$credential_v3}
 				scopes longtext NOT NULL,
 				status varchar(16) NOT NULL,
 				expires_at datetime NULL,
-				last_used_at datetime NULL,
-				rotated_at datetime NULL,
-				revoked_at datetime NULL,
+				last_used_at datetime NULL,{$credential_dates}
 				created_at datetime NOT NULL,
 				updated_at datetime NOT NULL,
 				PRIMARY KEY  (id),
@@ -152,7 +208,10 @@ final class Schema {
 				PRIMARY KEY  (bucket_hash),
 				KEY expires_at (expires_at)
 			) ENGINE=InnoDB {$charset};",
-			"CREATE TABLE {$prefix}guest_claims (
+		);
+
+		if ( version_compare( $version, '2', '>=' ) ) {
+			$sql[] = "CREATE TABLE {$prefix}guest_claims (
 				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 				public_id varchar(64) NOT NULL,
 				order_id bigint(20) unsigned NOT NULL,
@@ -173,8 +232,8 @@ final class Schema {
 				UNIQUE KEY token_hash (token_hash),
 				KEY order_target (order_id,target_user_id),
 				KEY status_expiry (status,expires_at)
-			) ENGINE=InnoDB {$charset};",
-			"CREATE TABLE {$prefix}order_owners (
+			) ENGINE=InnoDB {$charset};";
+			$sql[] = "CREATE TABLE {$prefix}order_owners (
 				order_id bigint(20) unsigned NOT NULL,
 				customer_id bigint(20) unsigned NULL,
 				claim_id bigint(20) unsigned NULL,
@@ -185,11 +244,18 @@ final class Schema {
 				PRIMARY KEY  (order_id),
 				UNIQUE KEY claim_id (claim_id),
 				KEY customer_id (customer_id)
-			) ENGINE=InnoDB {$charset};",
-		);
-
-		foreach ( $sql as $statement ) {
-			dbDelta( $statement );
+			) ENGINE=InnoDB {$charset};";
 		}
+
+		return $sql;
+	}
+
+	/**
+	 * Returns the latest WordPress database error after a dbDelta call.
+	 */
+	private function last_database_error(): string {
+		global $wpdb;
+
+		return (string) $wpdb->last_error;
 	}
 }

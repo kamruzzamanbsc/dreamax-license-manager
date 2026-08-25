@@ -31,7 +31,10 @@
     "analyse": "@php vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=2G",
     "lint": "@php vendor/bin/phpcs",
     "phpcs": "@lint",
-    "build": "bash scripts/build.sh"
+    "migration:verify": "@php scripts/verify-migration-contract.php --environment-marker=DREAMAX_LM_DISPOSABLE_TEST",
+    "benchmark:smoke": "@php scripts/performance-benchmark.php --profile=smoke --seed=free-v1-smoke-20260825 --environment-marker=DREAMAX_LM_DISPOSABLE_TEST",
+    "release:validate": "@php scripts/validate-release-metadata.php",
+    "build": "@php scripts/build-release.php"
   },
   "config": {
     "sort-packages": true,

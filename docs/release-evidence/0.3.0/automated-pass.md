@@ -20,7 +20,7 @@
 | `powershell -NoProfile -ExecutionPolicy Bypass -File docs/release-evidence/0.3.0/verify-renames.ps1` | Main-baseline and intentional F25/F31/F32 identities resolve and no old path reference remains | Exit 0; all 41 main-baseline identities and 8 F25/F31/F32 additions present; no missing/duplicate class or old path reference |
 | Compare plugin header, `DREAMAX_LM_VERSION`, and readme stable tag | All versions equal `0.3.0` | Exit 0; all three equal `0.3.0` |
 | High-confidence secret-signature scan of all intended changed files, excluding dependency/cache/log/environment/key/build paths | No embedded credential or private-key material | Exit 0; 38/38 intended files scanned; no finding and no prohibited changed path |
-| `git -c safe.directory=E:/development/dreamax-license-manager diff --check` | No whitespace errors | Exit 0; no output |
+| `git diff --check` | No whitespace errors | Exit 0; no output |
 
 Composer emitted a sandbox-only Git ownership warning and defaulted root-package discovery to `1.0.0`. It did not affect any command exit status, classmap path, plugin version, or the independently verified `0.3.0` header/constant/stable-tag values.
 
@@ -55,7 +55,7 @@ Composer emitted a sandbox-only Git ownership warning and defaulted root-package
 | ID | Classification | Evidence-based reason |
 | --- | --- | --- |
 | F01 | MANUAL_ENVIRONMENT_REQUIRED | Clean WordPress activation, database tables, and roles require a disposable WordPress/database runtime. |
-| F02 | AUTOMATABLE_PENDING | There is no released prior-schema fixture against which to run every migration twice. |
+| F02 | MANUAL_ENVIRONMENT_REQUIRED | Sequential v1/v2/v3 schema snapshots, replay, guards, and source/unit evidence are complete; real disposable WordPress/MySQL preservation, interruption, and multisite execution remains. |
 | F03 | MANUAL_ENVIRONMENT_REQUIRED | Paid simple-product checkout and delivery require WooCommerce, payment/status hooks, database, and mail. |
 | F04 | MANUAL_ENVIRONMENT_REQUIRED | Variation-specific policy/identity requires a live WooCommerce catalog and checkout. |
 | F05 | MANUAL_ENVIRONMENT_REQUIRED | Hook replay/idempotent delivery requires the WordPress/WooCommerce/database integration runtime. |
@@ -75,9 +75,9 @@ Composer emitted a sandbox-only Git ownership warning and defaulted root-package
 | F19 | MANUAL_ENVIRONMENT_REQUIRED | CSV upload/import/export, Unicode, formula, size, filesystem, and audit behavior require WordPress/database fixtures. |
 | F20 | MANUAL_ENVIRONMENT_REQUIRED | HPOS/classic storage and Blocks/classic checkout require the supported WooCommerce compatibility matrix. |
 | F21 | PASS_WITH_EVIDENCE | PHPCS, PHPStan, and locked dependency audit passed; see F21 evidence above. |
-| F22 | AUTOMATABLE_PENDING | The release-header URL blocker is resolved; WordPress readme validation and a clean production build remain unexecuted. |
+| F22 | PASS_WITH_EVIDENCE | Official hosted readme validation has no errors; header/version/policy checks and the isolated deterministic production build pass. The artifact remains an unshipped candidate. |
 | F23 | PASS_WITH_EVIDENCE | Dependency inventory, licenses, isolation, and advisory scan passed; see F23 evidence above. |
-| F24 | AUTOMATABLE_PENDING | The required 10k-license/50k-event performance fixture does not exist in the configured test tree. |
+| F24 | MANUAL_ENVIRONMENT_REQUIRED | Seeded smoke fixture and full 10k/50k profile, cleanup guards, pagination/allocation/memory checks, and bounded CSV export are implemented; full database execution remains. |
 | F25 | MANUAL_ENVIRONMENT_REQUIRED | The secure guest-claim workflow, unit/source-contract coverage, and security documentation are implemented; real WordPress/WooCommerce/database/mail/concurrency acceptance evidence remains required. See `f25-guest-claim.md`. |
 | F26 | MANUAL_ENVIRONMENT_REQUIRED | Fault injection across database, key, cache, mail, and WooCommerce states requires a disposable integrated runtime. |
 | F27 | MANUAL_ENVIRONMENT_REQUIRED | Repeated/cross-customer/partial exporter and eraser checks require WordPress privacy-tool and database fixtures. |
@@ -86,6 +86,6 @@ Composer emitted a sandbox-only Git ownership warning and defaulted root-package
 | F30 | MANUAL_ENVIRONMENT_REQUIRED | Two-site data/API/export/uninstall isolation requires a real WordPress multisite network. |
 | F31 | MANUAL_ENVIRONMENT_REQUIRED | Credential creation/authentication/scope/expiration/rotation/revocation, local unit/source-contract coverage, and security documentation are complete; live WordPress REST/MySQL/proxy/multisite concurrency evidence remains required. See `f31-credential-lifecycle.md`. |
 | F32 | MANUAL_ENVIRONMENT_REQUIRED | The authoritative catalog validates all 44 production event types, preserves four non-persistable legacy names, and has emitter/consumer/redaction/compatibility coverage; live WordPress/MySQL/privacy/multisite transaction evidence remains required. See `f32-audit-event-contract.md`. |
-| F33 | AUTOMATABLE_PENDING | The deterministic two-clean-build comparison is supported by the build script but was not run because this pass explicitly prohibited ZIP creation. |
+| F33 | PASS_WITH_EVIDENCE | Two clean snapshots of one recorded commit produce matching ZIP SHA-256 and exact inventories; the secret-free provenance manifest remains outside the artifact. |
 
-Classification totals: 3 PASS_WITH_EVIDENCE; 4 AUTOMATABLE_PENDING; 26 MANUAL_ENVIRONMENT_REQUIRED; 0 IMPLEMENTATION_BLOCKER.
+Classification totals: 5 PASS_WITH_EVIDENCE; 0 AUTOMATABLE_PENDING; 28 MANUAL_ENVIRONMENT_REQUIRED; 0 IMPLEMENTATION_BLOCKER.

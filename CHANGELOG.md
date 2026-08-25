@@ -2,6 +2,9 @@
 
 ## 0.3.0 — WooCommerce order-policy milestone
 
+- Added sequential schema v1/v2/v3 migration contracts and a disposable source verifier.
+- Added official readme validation evidence, deterministic clean builds, external provenance manifests, and dependency/license inventory.
+- Added seeded smoke/full performance fixtures and bounded keyset-batched CSV export.
 - Added the authoritative F32 catalog for all 44 production audit types and four non-persistable legacy published names, with explicit schema versions at every emitter.
 - Added actor/reference/metadata validation, recursive key/value redaction, compatibility-labeled historical reads, consumer fixtures/guidance, ADR 0004, and local F32 evidence.
 - Completed the privileged Bearer credential lifecycle with exact parsing, uniform authentication failures, per-credential limits, expiration, coalesced usage timestamps, zero-overlap versioned rotation, and irreversible idempotent revocation.
