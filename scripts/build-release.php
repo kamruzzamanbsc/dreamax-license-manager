@@ -35,7 +35,11 @@ $commit = ProcessRunner::run(array('git', '-c', 'safe.directory=' . $gitSafeDire
 if (1 !== preg_match('/^[a-f0-9]{40}$/D', $commit)) {
 	throw new RuntimeException('The requested source is not a recorded Git commit.');
 }
-$epoch = (int) ProcessRunner::run(array('git', '-c', 'safe.directory=' . $gitSafeDirectory, 'show', '-s', '--format=%ct', $commit), $root);
+$commitObject = ProcessRunner::run(array('git', '-c', 'safe.directory=' . $gitSafeDirectory, 'cat-file', 'commit', $commit), $root);
+if (1 !== preg_match('/^committer .* ([0-9]+) [+-][0-9]{4}$/m', $commitObject, $timestampMatch)) {
+	throw new RuntimeException('The recorded commit timestamp could not be read.');
+}
+$epoch = (int) $timestampMatch[1];
 $temporaryBase = sys_get_temp_dir();
 $temporary = $temporaryBase . DIRECTORY_SEPARATOR . 'dreamax-lm-' . bin2hex(random_bytes(8));
 if (! mkdir($temporary, 0777, true) && ! is_dir($temporary)) {
