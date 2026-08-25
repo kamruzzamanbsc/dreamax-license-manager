@@ -13,6 +13,7 @@ use Dreamax\LicenseManager\Api\RateLimiter;
 use Dreamax\LicenseManager\Api\SourceAddress;
 use Dreamax\LicenseManager\Database\Transaction;
 use Dreamax\LicenseManager\Encryption\Crypto;
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Support\PublicId;
 use RuntimeException;
@@ -229,7 +230,7 @@ final class GuestClaimService {
 					throw new RuntimeException( 'The delivered guest claim could not be activated.' );
 				}
 				$this->events->append(
-					'guest_claim_issued',
+					AuditEventCatalog::GUEST_CLAIM_ISSUED,
 					null,
 					'customer',
 					$user_id,
@@ -237,7 +238,8 @@ final class GuestClaimService {
 					array(
 						'order_id'         => $order_id,
 						'lifetime_seconds' => $lifetime,
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 			}
 		);
@@ -278,7 +280,7 @@ final class GuestClaimService {
 						$this->invalidate_claim( (int) $claim['id'], 'expired' === $failure ? 'expired' : 'invalidated' );
 					}
 					$this->events->append(
-						$this->policy->failure_event( $failure ),
+						AuditEventCatalog::guest_claim_failure( $failure ),
 						null,
 						'customer',
 						$user_id,
@@ -286,7 +288,8 @@ final class GuestClaimService {
 						array(
 							'order_id' => $order_id,
 							'failure'  => $failure,
-						)
+						),
+						AuditEventCatalog::SCHEMA_V1
 					);
 					return $this->policy->public_failure();
 				}
@@ -294,7 +297,7 @@ final class GuestClaimService {
 				$licenses = $this->license_rows( $order_id, true );
 				if ( array() === $licenses || ( (int) $order->get_customer_id() > 0 && (int) $order->get_customer_id() !== $user_id ) ) {
 					$this->events->append(
-						'guest_claim_conflict_failed',
+						AuditEventCatalog::GUEST_CLAIM_CONFLICT_FAILED,
 						null,
 						'customer',
 						$user_id,
@@ -302,14 +305,15 @@ final class GuestClaimService {
 						array(
 							'order_id' => $order_id,
 							'failure'  => 'conflict',
-						)
+						),
+						AuditEventCatalog::SCHEMA_V1
 					);
 					return $this->policy->public_failure();
 				}
 				foreach ( $licenses as $license ) {
 					if ( ! empty( $license['customer_id'] ) && (int) $license['customer_id'] !== $user_id ) {
 						$this->events->append(
-							'guest_claim_conflict_failed',
+							AuditEventCatalog::GUEST_CLAIM_CONFLICT_FAILED,
 							null,
 							'customer',
 							$user_id,
@@ -317,7 +321,8 @@ final class GuestClaimService {
 							array(
 								'order_id' => $order_id,
 								'failure'  => 'conflict',
-							)
+							),
+							AuditEventCatalog::SCHEMA_V1
 						);
 						return $this->policy->public_failure();
 					}
@@ -354,7 +359,7 @@ final class GuestClaimService {
 				}
 				$this->invalidate_other_claims( $order_id, (int) $claim['id'] );
 				$this->events->append(
-					'guest_claim_succeeded',
+					AuditEventCatalog::GUEST_CLAIM_SUCCEEDED,
 					null,
 					'customer',
 					$user_id,
@@ -362,7 +367,8 @@ final class GuestClaimService {
 					array(
 						'order_id'      => $order_id,
 						'license_count' => count( $licenses ),
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				return array(
 					'success' => true,
@@ -397,7 +403,7 @@ final class GuestClaimService {
 					if ( is_string( $claim['ownership_hash'] ) && $this->policy->ownership_changed( $claim['ownership_hash'], $current_hash ) ) {
 						$this->invalidate_claim( (int) $claim['id'], 'invalidated' );
 						$this->events->append(
-							'guest_claim_conflict_failed',
+							AuditEventCatalog::GUEST_CLAIM_CONFLICT_FAILED,
 							null,
 							'woocommerce',
 							null,
@@ -405,7 +411,8 @@ final class GuestClaimService {
 							array(
 								'order_id' => $order_id,
 								'failure'  => 'ownership_changed',
-							)
+							),
+							AuditEventCatalog::SCHEMA_V1
 						);
 					}
 				}
@@ -444,7 +451,7 @@ final class GuestClaimService {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The unique ownership row is removed only by confirmed release.
 				$wpdb->delete( $wpdb->prefix . 'dreamax_lm_order_owners', array( 'order_id' => $order_id ), array( '%d' ) );
 				$this->events->append(
-					'guest_claim_released',
+					AuditEventCatalog::GUEST_CLAIM_RELEASED,
 					null,
 					'administrator',
 					$actor_id,
@@ -452,7 +459,8 @@ final class GuestClaimService {
 					array(
 						'order_id'      => $order_id,
 						'license_count' => count( $licenses ),
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 			}
 		);
@@ -489,7 +497,7 @@ final class GuestClaimService {
 				}
 				$this->store_owner( $order_id, $customer_id, null, $this->ownership_hash( $order ), 'admin_override', $owner );
 				$this->events->append(
-					'guest_claim_administrator_override',
+					AuditEventCatalog::GUEST_CLAIM_ADMINISTRATOR_OVERRIDE,
 					null,
 					'administrator',
 					$actor_id,
@@ -498,7 +506,8 @@ final class GuestClaimService {
 						'order_id'      => $order_id,
 						'customer_id'   => $customer_id,
 						'license_count' => count( $licenses ),
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 			}
 		);

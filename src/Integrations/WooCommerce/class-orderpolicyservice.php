@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Dreamax\LicenseManager\Integrations\WooCommerce;
 
 use Dreamax\LicenseManager\Database\Transaction;
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
 use RuntimeException;
@@ -92,7 +93,7 @@ final class OrderPolicyService {
 			} else {
 				++$result['unmapped'];
 				$this->events->append(
-					'order_refund_unmapped',
+					AuditEventCatalog::ORDER_REFUND_UNMAPPED,
 					null,
 					'woocommerce',
 					null,
@@ -101,7 +102,8 @@ final class OrderPolicyService {
 						'order_id'  => $order_id,
 						'refund_id' => $refund_id,
 						'reason'    => 'No refunded line-item quantity was provided.',
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 			}
 			return $result;
@@ -260,9 +262,8 @@ final class OrderPolicyService {
 					throw new RuntimeException( 'The order policy could not be stored.' );
 				}
 
-				$event = 'refund' === $context ? 'order_refund_policy_applied' : 'order_cancellation_policy_applied';
 				$this->events->append(
-					$event,
+					'refund' === $context ? AuditEventCatalog::ORDER_REFUND_POLICY_APPLIED : AuditEventCatalog::ORDER_CANCELLATION_POLICY_APPLIED,
 					(int) $row['id'],
 					'woocommerce',
 					null,
@@ -270,13 +271,14 @@ final class OrderPolicyService {
 					array(
 						'order_id'          => $order_id,
 						'refund_id'         => $refund_id,
-						'order_item_id'     => $row['order_item_id'],
-						'quantity_slot'     => $row['quantity_slot'],
+						'order_item_id'     => null === $row['order_item_id'] ? null : (int) $row['order_item_id'],
+						'quantity_slot'     => null === $row['quantity_slot'] ? null : (int) $row['quantity_slot'],
 						'configured_policy' => $policy,
 						'effective_policy'  => $effective,
 						'before_status'     => $before,
 						'after_status'      => $after,
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				return array(
 					'replayed'  => false,

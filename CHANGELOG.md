@@ -2,6 +2,8 @@
 
 ## 0.3.0 — WooCommerce order-policy milestone
 
+- Added the authoritative F32 catalog for all 44 production audit types and four non-persistable legacy published names, with explicit schema versions at every emitter.
+- Added actor/reference/metadata validation, recursive key/value redaction, compatibility-labeled historical reads, consumer fixtures/guidance, ADR 0004, and local F32 evidence.
 - Completed the privileged Bearer credential lifecycle with exact parsing, uniform authentication failures, per-credential limits, expiration, coalesced usage timestamps, zero-overlap versioned rotation, and irreversible idempotent revocation.
 - Added nonce/capability-protected credential inventory and mutation actions, recursive credential redaction, schema v3 migration fields, an atomic-lifecycle ADR, operating documentation, and F31 local evidence.
 - Added an authenticated, emailed one-time-code workflow for claiming paid guest orders without accepting email-only or URL-based proof.

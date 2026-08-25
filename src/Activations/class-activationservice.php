@@ -11,6 +11,7 @@ namespace Dreamax\LicenseManager\Activations;
 
 use Dreamax\LicenseManager\Database\Transaction;
 use Dreamax\LicenseManager\Encryption\Crypto;
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Licenses\LicenseException;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
@@ -141,7 +142,6 @@ final class ActivationService {
 					}
 					$activation_id = (int) $existing['id'];
 					$public_id     = (string) $existing['public_id'];
-					$event         = 'license_reactivated';
 				} else {
 					$public_id = PublicId::generate( 'act' );
 					$sql       = $wpdb->prepare(
@@ -163,16 +163,16 @@ final class ActivationService {
 						throw new LicenseException( 'server_unavailable', 'Activation could not be stored.', 503 );
 					}
 					$activation_id = (int) $wpdb->insert_id;
-					$event         = 'license_activated';
 				}
 
 				$this->events->append(
-					$event,
+					is_array( $existing ) ? AuditEventCatalog::LICENSE_REACTIVATED : AuditEventCatalog::LICENSE_ACTIVATED,
 					(int) $license['id'],
 					'public_api',
 					null,
 					$request_id,
-					array( 'activation_public_id' => $public_id )
+					array( 'activation_public_id' => $public_id ),
+					AuditEventCatalog::SCHEMA_V1
 				);
 
 				$activation = array(
@@ -253,7 +253,7 @@ final class ActivationService {
 				if ( 1 !== $updated ) {
 					throw new LicenseException( 'server_unavailable', 'Deactivation could not be stored.', 503 );
 				}
-				$this->events->append( 'license_deactivated', (int) $license['id'], 'public_api', null, $request_id, array( 'activation_public_id' => $activation['public_id'] ) );
+				$this->events->append( AuditEventCatalog::LICENSE_DEACTIVATED, (int) $license['id'], 'public_api', null, $request_id, array( 'activation_public_id' => $activation['public_id'] ), AuditEventCatalog::SCHEMA_V1 );
 				return array(
 					'license_public_id'    => $license['public_id'],
 					'activation_public_id' => $activation['public_id'],

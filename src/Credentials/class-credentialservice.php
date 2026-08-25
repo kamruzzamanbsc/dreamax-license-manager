@@ -11,6 +11,7 @@ namespace Dreamax\LicenseManager\Credentials;
 
 use Dreamax\LicenseManager\Api\RateLimiter;
 use Dreamax\LicenseManager\Database\Transaction;
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Licenses\LicenseException;
 use RuntimeException;
@@ -113,7 +114,7 @@ final class CredentialService {
 						throw new RuntimeException( 'The credential could not be stored.' );
 					}
 					$this->events->append(
-						'credential_created',
+						AuditEventCatalog::CREDENTIAL_CREATED,
 						null,
 						'administrator',
 						$actor_id,
@@ -122,7 +123,8 @@ final class CredentialService {
 							'credential_public_id' => $public_id,
 							'scopes'               => $scopes,
 							'expires'              => null !== $expires_at,
-						)
+						),
+						AuditEventCatalog::SCHEMA_V1
 					);
 				}
 			);
@@ -164,12 +166,13 @@ final class CredentialService {
 		if ( null !== $failure ) {
 			if ( 'expired' === $failure && is_array( $row ) ) {
 				$this->events->append(
-					'credential_expired_authentication_failed',
+					AuditEventCatalog::CREDENTIAL_EXPIRED_AUTHENTICATION_FAILED,
 					null,
 					'api_credential',
 					(int) $row['id'],
 					$request_id,
-					array( 'credential_public_id' => (string) $row['public_id'] )
+					array( 'credential_public_id' => (string) $row['public_id'] ),
+					AuditEventCatalog::SCHEMA_V1
 				);
 			}
 			return null;
@@ -200,7 +203,7 @@ final class CredentialService {
 				$row = $this->row_by_public_id( $public_id, false );
 				if ( ! is_array( $row ) || ! $this->policy->usable( $row, $authenticated_version, time() ) ) {
 					if ( is_array( $row ) && $this->policy->expired( $row['expires_at'] ?? null, time() ) ) {
-						$this->events->append( 'credential_expired_authentication_failed', null, 'api_credential', (int) $row['id'], $request_id, array( 'credential_public_id' => $public_id ) );
+						$this->events->append( AuditEventCatalog::CREDENTIAL_EXPIRED_AUTHENTICATION_FAILED, null, 'api_credential', (int) $row['id'], $request_id, array( 'credential_public_id' => $public_id ), AuditEventCatalog::SCHEMA_V1 );
 					}
 					$this->throw_authentication_failure();
 				}
@@ -209,7 +212,7 @@ final class CredentialService {
 				$safe = $this->safe_row( $row );
 				if ( ! $this->has_scope( $safe, $required_scope ) ) {
 					$this->events->append(
-						'credential_insufficient_scope',
+						AuditEventCatalog::CREDENTIAL_INSUFFICIENT_SCOPE,
 						null,
 						'api_credential',
 						(int) $row['id'],
@@ -217,14 +220,15 @@ final class CredentialService {
 						array(
 							'credential_public_id' => $public_id,
 							'required_scope'       => $required_scope,
-						)
+						),
+						AuditEventCatalog::SCHEMA_V1
 					);
 					throw new LicenseException( 'insufficient_scope', 'The credential does not have the required scope.', 403 );
 				}
 
 				$this->touch_last_used( $row );
 				$this->events->append(
-					'credential_authentication_used',
+					AuditEventCatalog::CREDENTIAL_AUTHENTICATION_USED,
 					null,
 					'api_credential',
 					(int) $row['id'],
@@ -232,7 +236,8 @@ final class CredentialService {
 					array(
 						'credential_public_id' => $public_id,
 						'required_scope'       => $required_scope,
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				return $callback();
 			}
@@ -294,7 +299,7 @@ final class CredentialService {
 								throw new RuntimeException( 'The credential rotation could not be completed.' );
 							}
 							$this->events->append(
-								'credential_rotation_succeeded',
+								AuditEventCatalog::CREDENTIAL_ROTATION_SUCCEEDED,
 								null,
 								'administrator',
 								$actor_id,
@@ -303,7 +308,8 @@ final class CredentialService {
 									'credential_public_id' => $public_id,
 									'previous_version'     => $expected_version,
 									'new_version'          => $new_version,
-								)
+								),
+								AuditEventCatalog::SCHEMA_V1
 							);
 							return $new_version;
 						}
@@ -315,7 +321,7 @@ final class CredentialService {
 				sodium_memzero( $secret );
 			}
 			$this->events->append(
-				'credential_rotation_failed',
+				AuditEventCatalog::CREDENTIAL_ROTATION_FAILED,
 				null,
 				'administrator',
 				$actor_id,
@@ -324,7 +330,8 @@ final class CredentialService {
 					'credential_public_id' => $public_id,
 					'expected_version'     => $expected_version,
 					'failure'              => 'not_completed',
-				)
+				),
+				AuditEventCatalog::SCHEMA_V1
 			);
 			throw new RuntimeException( 'The credential rotation could not be completed.' );
 		}
@@ -380,7 +387,7 @@ final class CredentialService {
 							if ( 1 !== $updated ) {
 								throw new RuntimeException( 'The credential revocation could not be completed.' );
 							}
-							$this->events->append( 'credential_revoked', null, 'administrator', $actor_id, null, array( 'credential_public_id' => $public_id ) );
+							$this->events->append( AuditEventCatalog::CREDENTIAL_REVOKED, null, 'administrator', $actor_id, null, array( 'credential_public_id' => $public_id ), AuditEventCatalog::SCHEMA_V1 );
 						} finally {
 							sodium_memzero( $replacement_secret );
 						}

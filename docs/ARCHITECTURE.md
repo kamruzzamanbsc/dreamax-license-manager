@@ -11,7 +11,7 @@ This is a new plugin with no inherited repository architecture. WordPress and Wo
 - `Database`: schema, installation, transactions, migrations.
 - `Encryption`: master-key contract, purpose-separated derivation, authenticated encryption, blind indexes.
 - `Licenses`, `Generators`, `Activations`: lifecycle, key production, normalization, atomic capacity. `LifecycleService` owns confirmed administrator transitions, retry-safe extension/reset, reassignment, and guarded deletion.
-- `Events`: append-only, schema-versioned audit evidence.
+- `Events`: append-oriented audit evidence with a central type/version/actor/reference/metadata catalog, recursive redaction, validated writes, and non-destructive legacy read classification. See ADR 0004.
 - `Api`, `Credentials`: public v1 routes, transport guards, idempotency, rate limits, scoped Bearer authentication, version-guarded zero-overlap rotation, and irreversible revocation.
 - `Integrations/WooCommerce`: snapshotted product policies, deterministic order-slot allocation, refund/cancellation transitions, guarded quantity edits, resend, and preview-confirmed historical backfill.
 - `CustomerPortal`, `Admin`, `ImportExport`, `Privacy`: human workflows and WordPress integration. `GuestClaimService` owns emailed single-use guest-order proofs, atomic account ownership, invalidation, and privacy integration.

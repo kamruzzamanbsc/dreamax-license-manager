@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\Integrations\WooCommerce;
 
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
 use Dreamax\LicenseManager\Licenses\LicenseService;
@@ -247,7 +248,7 @@ final class OrderLicensing {
 					}
 					++$result['failed'];
 					$this->events->append(
-						'order_allocation_failed',
+						AuditEventCatalog::ORDER_ALLOCATION_FAILED,
 						null,
 						$actor_type,
 						$actor_id,
@@ -257,7 +258,8 @@ final class OrderLicensing {
 							'order_item_id' => (int) $item_id,
 							'quantity_slot' => $slot,
 							'source'        => $policy['source'],
-						)
+						),
+						AuditEventCatalog::SCHEMA_V1
 					);
 					break;
 				}
@@ -266,7 +268,7 @@ final class OrderLicensing {
 
 		if ( $result['allocated'] > 0 ) {
 			$this->events->append(
-				$explicit ? 'order_explicit_allocation_completed' : 'order_automatic_allocation_completed',
+				$explicit ? AuditEventCatalog::ORDER_EXPLICIT_ALLOCATION_COMPLETED : AuditEventCatalog::ORDER_AUTOMATIC_ALLOCATION_COMPLETED,
 				null,
 				$actor_type,
 				$actor_id,
@@ -276,7 +278,8 @@ final class OrderLicensing {
 					'allocated' => $result['allocated'],
 					'existing'  => $result['existing'],
 					'failed'    => $result['failed'],
-				)
+				),
+				AuditEventCatalog::SCHEMA_V1
 			);
 			/* translators: %d: Number of licenses allocated. */
 			$order->add_order_note( sprintf( __( 'Dreamax allocated %d license(s).', 'dreamax-license-manager' ), $result['allocated'] ) );
@@ -351,7 +354,7 @@ final class OrderLicensing {
 			$result = $this->policies->refund( $order_id, $refund_id );
 			if ( $result['affected'] > 0 || $result['unmapped'] > 0 ) {
 				$this->events->append(
-					'order_refunded',
+					AuditEventCatalog::ORDER_REFUNDED,
 					null,
 					'woocommerce',
 					null,
@@ -362,7 +365,8 @@ final class OrderLicensing {
 						'licenses_affected' => $result['affected'],
 						'licenses_replayed' => $result['replayed'],
 						'unmapped_items'    => $result['unmapped'],
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 				/* translators: 1: Number of affected licenses. 2: Number of unmapped refund items. */
 				$order->add_order_note( sprintf( __( 'Dreamax refund policy processed %1$d license(s); %2$d refund item(s) could not be mapped automatically.', 'dreamax-license-manager' ), $result['affected'], $result['unmapped'] ) );
@@ -437,7 +441,7 @@ final class OrderLicensing {
 			}
 			$order->add_order_note( $message );
 			$this->events->append(
-				'order_quantity_changed_after_delivery',
+				AuditEventCatalog::ORDER_QUANTITY_CHANGED_AFTER_DELIVERY,
 				(int) $rows[0]['id'],
 				'woocommerce',
 				null,
@@ -448,7 +452,8 @@ final class OrderLicensing {
 					'delivery_quantity'  => $delivered_quantity,
 					'requested_quantity' => $current_quantity,
 					'policy_result'      => $change,
-				)
+				),
+				AuditEventCatalog::SCHEMA_V1
 			);
 		}
 	}
@@ -471,7 +476,7 @@ final class OrderLicensing {
 		}
 		foreach ( $rows as $row ) {
 			$this->events->append(
-				'order_item_deleted_after_delivery',
+				AuditEventCatalog::ORDER_ITEM_DELETED_AFTER_DELIVERY,
 				(int) $row['id'],
 				'woocommerce',
 				null,
@@ -480,7 +485,8 @@ final class OrderLicensing {
 					'order_id'                 => $order_id,
 					'order_item_id'            => $item_id,
 					'license_history_retained' => true,
-				)
+				),
+				AuditEventCatalog::SCHEMA_V1
 			);
 		}
 	}
@@ -565,7 +571,7 @@ final class OrderLicensing {
 		}
 		foreach ( $rows as $row ) {
 			$this->events->append(
-				'license_resent',
+				AuditEventCatalog::LICENSE_RESENT,
 				(int) $row['id'],
 				$actor_type,
 				$actor_id,
@@ -573,7 +579,8 @@ final class OrderLicensing {
 				array(
 					'order_id' => $order_id,
 					'channel'  => 'billing_email',
-				)
+				),
+				AuditEventCatalog::SCHEMA_V1
 			);
 		}
 		/* translators: %d: Number of licenses resent. */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\Tests\Unit;
 
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use PHPUnit\Framework\TestCase;
 
 final class GuestClaimSourceContractTest extends TestCase {
@@ -57,9 +58,11 @@ final class GuestClaimSourceContractTest extends TestCase {
 	}
 
 	public function test_required_claim_audit_events_are_present_without_token_metadata(): void {
-		foreach ( array( 'guest_claim_issued', 'guest_claim_succeeded', 'guest_claim_replay_failed', 'guest_claim_expired_failed', 'guest_claim_conflict_failed', 'guest_claim_released', 'guest_claim_administrator_override' ) as $event ) {
-			self::assertStringContainsString( $event, $this->service . file_get_contents( dirname( __DIR__, 2 ) . '/src/CustomerPortal/class-guestclaimpolicy.php' ) );
+		$contracts = AuditEventCatalog::contracts();
+		foreach ( array( AuditEventCatalog::GUEST_CLAIM_ISSUED, AuditEventCatalog::GUEST_CLAIM_SUCCEEDED, AuditEventCatalog::GUEST_CLAIM_REPLAY_FAILED, AuditEventCatalog::GUEST_CLAIM_EXPIRED_FAILED, AuditEventCatalog::GUEST_CLAIM_CONFLICT_FAILED, AuditEventCatalog::GUEST_CLAIM_RELEASED, AuditEventCatalog::GUEST_CLAIM_ADMINISTRATOR_OVERRIDE ) as $event ) {
+			self::assertArrayHasKey( $event, $contracts );
 		}
+		self::assertStringContainsString( 'AuditEventCatalog::', $this->service );
 		self::assertStringNotContainsString( "array( 'token'", $this->service );
 		self::assertStringNotContainsString( "array( 'license_key'", $this->service );
 	}

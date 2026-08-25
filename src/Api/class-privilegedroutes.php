@@ -11,6 +11,7 @@ namespace Dreamax\LicenseManager\Api;
 
 use Dreamax\LicenseManager\Credentials\CredentialService;
 use Dreamax\LicenseManager\Database\Transaction;
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Licenses\KeyNormalizer;
 use Dreamax\LicenseManager\Licenses\LicenseException;
@@ -389,7 +390,7 @@ final class PrivilegedRoutes {
 				if ( false === $wpdb->update( $table, $updates, array( 'id' => (int) $row['id'] ) ) ) {
 					throw new LicenseException( 'server_unavailable', 'The license could not be updated.', 503 );
 				}
-				( new EventRepository() )->append( $terminal ? 'license_revoked' : 'license_updated', (int) $row['id'], 'api_credential', null, null, array( 'changed_fields' => array_keys( $updates ) ) );
+				( new EventRepository() )->append( $terminal ? AuditEventCatalog::LICENSE_REVOKED : AuditEventCatalog::LICENSE_UPDATED, (int) $row['id'], 'api_credential', null, null, array( 'changed_fields' => array_keys( $updates ) ), AuditEventCatalog::SCHEMA_V1 );
 				return array(
 					'code' => $terminal ? 'license_revoked' : 'license_updated',
 					'data' => array(

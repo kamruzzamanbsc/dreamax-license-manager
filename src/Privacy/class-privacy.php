@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Dreamax\LicenseManager\Privacy;
 
 use Dreamax\LicenseManager\Database\Transaction;
+use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 
 /**
@@ -179,7 +180,7 @@ final class Privacy {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Removing the direct claimed-owner row permits a later authoritative reclaim after privacy erasure.
 				$wpdb->delete( $wpdb->prefix . 'dreamax_lm_order_owners', array( 'customer_id' => (int) $user->ID ), array( '%d' ) );
 				( new EventRepository() )->append(
-					'privacy_data_anonymized',
+					AuditEventCatalog::PRIVACY_DATA_ANONYMIZED,
 					null,
 					'privacy_tool',
 					null,
@@ -188,7 +189,8 @@ final class Privacy {
 						'license_count' => count( $ids ),
 						'claim_count'   => $claim_count,
 						'owner_count'   => $owner_count,
-					)
+					),
+					AuditEventCatalog::SCHEMA_V1
 				);
 			}
 		);
