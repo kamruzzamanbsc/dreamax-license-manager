@@ -123,8 +123,8 @@ foreach (array_keys($classes) as $class) {
 	}
 }
 
-if (52 !== count($classes)) {
-	$errors[] = 'Expected 52 production symbols; found ' . count($classes);
+if (55 !== count($classes)) {
+	$errors[] = 'Expected 55 production symbols; found ' . count($classes);
 }
 
 if ($errors) {
@@ -132,4 +132,4 @@ if ($errors) {
 	exit(1);
 }
 
-echo 'PASS: 52 unique production symbols; exact case-sensitive runtime paths; Composer classmap and runtime autoload both resolved every class/interface; no case-only or non-portable path collision.' . PHP_EOL;
+echo 'PASS: 55 unique production symbols; exact case-sensitive runtime paths; Composer classmap and runtime autoload both resolved every class/interface; no case-only or non-portable path collision.' . PHP_EOL;

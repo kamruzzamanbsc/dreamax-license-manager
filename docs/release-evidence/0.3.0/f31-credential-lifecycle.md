@@ -1,6 +1,7 @@
 # F31 privileged credential lifecycle evidence — 0.3.0
 
 - Date: 2026-08-25
+- Updated: 2026-08-26
 - Classification: `MANUAL_ENVIRONMENT_REQUIRED`
 - Scope: source, local unit/static contract, coding-standard, static-analysis, syntax, portable-autoload, and secret-scan evidence
 - Secret handling: this artifact contains no Bearer value, secret, stored credential verifier, Authorization header, private key, license key, customer data, or request body.
@@ -16,6 +17,7 @@
 - Site-local per-credential rate bucket and conditional five-minute `last_used_at` write coalescing.
 - Site-local MySQL advisory lock shared by API use, rotation, and revocation, with a fresh status/expiry/version recheck before business processing.
 - Transactional row/version-guarded rotation with zero overlap, preserved attributes by default, one returned replacement secret, and rollback-safe failure.
+- User/action/context-bound one-time administrator operation tokens plus an atomic site-local reservation prevent refreshed or concurrent create/rotation POSTs from repeating the mutation; replay responses contain no mutation result.
 - Transactional immediate, idempotent, terminal revocation that replaces the old verifier and creates no duplicate event.
 - Version-1 created/use/rotation-success/rotation-failure/revoked/expired/scope audit events and recursive credential/verifier/body redaction.
 - Additive schema v3 migration and confirmed permanent-uninstall coverage.
@@ -28,6 +30,8 @@ The final branch run passed: optimized Composer autoload generated 1,601 classes
 
 F31 is not PASS. A disposable integration environment must still demonstrate:
 
+- live in-place replacement retesting that refresh/repost after successful credential creation and rotation creates no additional business effect and reveals no credential data;
+
 - schema v2-to-v3 migration twice against real MySQL/InnoDB with existing credentials;
 - real WordPress REST handling for missing, duplicate raw, proxy-forwarded, malformed, body, and query credentials;
 - exact administrator/Shop Manager/custom-role page and nonce boundaries;
@@ -39,3 +43,11 @@ F31 is not PASS. A disposable integration environment must still demonstrate:
 - audit/support/log inspection confirming no secret, verifier, Authorization header, or sensitive body.
 
 F32's central published event contract and consumer compatibility work is implemented separately; its remaining live-environment evidence is recorded in `f32-audit-event-contract.md`.
+
+## Disposable runtime defect evidence
+
+Before this correction, refreshing one successful credential-creation POST response repeatedly created seven active credential rows from the same submitted form. Fresh navigation to the credential inventory revealed no stored plaintext, confirming duplicate creation rather than secret recovery. All seven disposable test credentials were later revoked through the existing idempotent UI workflow. This evidence contains counts and state only; it contains no credential, verifier, nonce, operation value, identifier, or request content. Post-fix live replacement retesting remains required, so F31 stays blocked.
+
+## Focused replay correction automated evidence
+
+The final focused branch run generated 1,615 optimized Composer classes without ambiguity; Composer validation and full WordPress PHPCS passed; PHPStan passed 55/55 source files; PHPUnit passed 162 tests with 1,008 assertions; production syntax passed 57/57 PHP files; portable autoload passed 55 production symbols; and the rename verifier passed all 41 main-baseline identities plus 14 intentional additions. Version metadata remains `0.3.0`. Diff checks and the non-content secret/private-path/prohibited-artifact scan passed with no finding. These local results do not replace the live retest or promote F31 to PASS.
