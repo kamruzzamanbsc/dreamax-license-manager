@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\Admin;
 
+use Dreamax\LicenseManager\Credentials\CredentialAdminOperation;
 use Dreamax\LicenseManager\Credentials\CredentialService;
 use Dreamax\LicenseManager\Encryption\Crypto;
 use Dreamax\LicenseManager\Events\AuditEventCatalog;
@@ -276,14 +277,18 @@ final class Admin {
 	 */
 	public function credentials_page(): void {
 		$this->authorize( Capabilities::CREDENTIALS );
-		$service = new CredentialService();
-		$rows    = $service->list_safe();
+		$service          = new CredentialService();
+		$operations       = new CredentialAdminOperation();
+		$actor_id         = get_current_user_id();
+		$create_operation = $operations->issue( CredentialAdminOperation::CREATE, '', $actor_id );
+		$rows             = $service->list_safe();
 		echo '<div class="wrap"><h1>' . esc_html__( 'API credentials', 'dreamax-license-manager' ) . '</h1><p>' . esc_html__( 'A new or rotated secret is shown once. Store it in a server-side secret manager; never embed it in distributed client software. Lost or revoked secrets cannot be recovered.', 'dreamax-license-manager' ) . '</p>';
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-action status notice behind the credential capability.
 		if ( isset( $_GET['credential_revoked'] ) ) {
 			echo '<div class="notice notice-success"><p>' . esc_html__( 'The credential is revoked. Repeating revocation has no additional effect.', 'dreamax-license-manager' ) . '</p></div>';
 		}
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_create_credential">';
+		$this->credential_operation_fields( $create_operation );
 		wp_nonce_field( 'dreamax_lm_create_credential' );
 		echo '<p><label>' . esc_html__( 'Name', 'dreamax-license-manager' ) . ' <input name="name" maxlength="191" required></label></p><p><label>' . esc_html__( 'Expiration (UTC, optional)', 'dreamax-license-manager' ) . ' <input type="datetime-local" name="expires_at"></label></p>';
 		foreach ( array( 'licenses:read', 'licenses:write', 'activations:read', 'generators:read' ) as $scope ) {
@@ -297,7 +302,9 @@ final class Admin {
 			$status    = (string) $row['effective_status'];
 			echo '<tr><td><strong>' . esc_html( (string) $row['name'] ) . '</strong><br><code>' . esc_html( $public_id ) . '</code><br>' . esc_html__( 'Secret version:', 'dreamax-license-manager' ) . ' ' . esc_html( (string) $row['secret_version'] ) . '</td><td>' . esc_html( $scopes ) . '</td><td>' . esc_html( $status ) . '</td><td>' . esc_html( $row['expires_at'] ? (string) $row['expires_at'] . ' UTC' : __( 'Never', 'dreamax-license-manager' ) ) . '<br>' . esc_html( $row['last_used_at'] ? (string) $row['last_used_at'] . ' UTC' : __( 'Never used', 'dreamax-license-manager' ) ) . '</td><td>';
 			if ( 'active' === $status ) {
+				$rotate_operation = $operations->issue( CredentialAdminOperation::ROTATE, $this->credential_rotation_context( $public_id, (int) $row['secret_version'] ), $actor_id );
 				echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_rotate_credential"><input type="hidden" name="public_id" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="expected_version" value="' . esc_attr( (string) $row['secret_version'] ) . '">';
+				$this->credential_operation_fields( $rotate_operation );
 				wp_nonce_field( 'dreamax_lm_rotate_credential_' . $public_id );
 				echo '<label><input type="checkbox" name="confirm_rotation" value="1" required> ' . esc_html__( 'Invalidate the old secret immediately', 'dreamax-license-manager' ) . '</label>';
 				submit_button( __( 'Rotate', 'dreamax-license-manager' ), 'secondary', 'submit', false );
@@ -529,15 +536,36 @@ final class Admin {
 	public function create_credential(): void {
 		$this->authorize( Capabilities::CREDENTIALS );
 		check_admin_referer( 'dreamax_lm_create_credential' );
-		nocache_headers();
-		$name    = isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['name'] ) ) : '';
-		$scopes  = isset( $_POST['scopes'] ) && is_array( $_POST['scopes'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['scopes'] ) ) : array();
-		$expires = isset( $_POST['expires_at'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['expires_at'] ) ) : '';
+		$this->credential_secret_response_headers();
+		$name            = isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['name'] ) ) : '';
+		$scopes          = isset( $_POST['scopes'] ) && is_array( $_POST['scopes'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['scopes'] ) ) : array();
+		$expires         = isset( $_POST['expires_at'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['expires_at'] ) ) : '';
+		$operation_id    = isset( $_POST['credential_operation_id'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['credential_operation_id'] ) ) : '';
+		$operation_nonce = isset( $_POST['credential_operation_nonce'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['credential_operation_nonce'] ) ) : '';
+		$actor_id        = get_current_user_id();
+		sort( $scopes, SORT_STRING );
 		try {
-			$result = ( new CredentialService() )->create( $name, $scopes, '' === $expires ? null : $expires, get_current_user_id() );
+			$outcome = ( new CredentialAdminOperation() )->execute(
+				$operation_id,
+				$operation_nonce,
+				CredentialAdminOperation::CREATE,
+				'',
+				$actor_id,
+				array(
+					'name'       => $name,
+					'scopes'     => $scopes,
+					'expires_at' => $expires,
+				),
+				static fn(): array => ( new CredentialService() )->create( $name, $scopes, '' === $expires ? null : $expires, $actor_id )
+			);
 		} catch ( Throwable $error ) {
 			wp_die( esc_html__( 'The credential could not be created. Check the submitted fields and try again.', 'dreamax-license-manager' ) );
 		}
+		if ( ! $outcome['processed'] || ! is_array( $outcome['result'] ) ) {
+			$this->credential_operation_rejected();
+			return;
+		}
+		$result = $outcome['result'];
 		echo '<!doctype html><meta charset="utf-8"><title>' . esc_html__( 'API credential created', 'dreamax-license-manager' ) . '</title><h1>' . esc_html__( 'Copy this credential once', 'dreamax-license-manager' ) . '</h1><p>' . esc_html__( 'Store it in a server-side secret manager. It cannot be recovered later.', 'dreamax-license-manager' ) . '</p><pre>' . esc_html( $result['credential'] ) . '</pre>';
 		exit;
 	}
@@ -554,14 +582,69 @@ final class Admin {
 		if ( '1' !== $confirmed || $version < 1 ) {
 			wp_die( esc_html__( 'Explicit rotation confirmation and a current secret version are required.', 'dreamax-license-manager' ) );
 		}
-		nocache_headers();
+		$this->credential_secret_response_headers();
+		$operation_id    = isset( $_POST['credential_operation_id'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['credential_operation_id'] ) ) : '';
+		$operation_nonce = isset( $_POST['credential_operation_nonce'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['credential_operation_nonce'] ) ) : '';
+		$actor_id        = get_current_user_id();
 		try {
-			$result = ( new CredentialService() )->rotate( $public_id, $version, array(), get_current_user_id() );
+			$outcome = ( new CredentialAdminOperation() )->execute(
+				$operation_id,
+				$operation_nonce,
+				CredentialAdminOperation::ROTATE,
+				$this->credential_rotation_context( $public_id, $version ),
+				$actor_id,
+				array(
+					'public_id'        => $public_id,
+					'expected_version' => $version,
+				),
+				static fn(): array => ( new CredentialService() )->rotate( $public_id, $version, array(), $actor_id )
+			);
 		} catch ( Throwable $error ) {
 			wp_die( esc_html__( 'The credential could not be rotated. Refresh the credential list before retrying.', 'dreamax-license-manager' ) );
 		}
+		if ( ! $outcome['processed'] || ! is_array( $outcome['result'] ) ) {
+			$this->credential_operation_rejected();
+			return;
+		}
+		$result = $outcome['result'];
 		echo '<!doctype html><meta charset="utf-8"><title>' . esc_html__( 'API credential rotated', 'dreamax-license-manager' ) . '</title><h1>' . esc_html__( 'Copy this replacement credential once', 'dreamax-license-manager' ) . '</h1><p>' . esc_html__( 'The prior secret is already invalid. Store this replacement in a server-side secret manager; it cannot be recovered later.', 'dreamax-license-manager' ) . '</p><pre>' . esc_html( $result['credential'] ) . '</pre>';
 		exit;
+	}
+
+	/**
+	 * Renders a one-time operation identifier and its user-bound nonce.
+	 *
+	 * @param array $operation Issued operation fields.
+	 * @phpstan-param array{id:string,nonce:string} $operation Issued operation fields.
+	 */
+	private function credential_operation_fields( array $operation ): void {
+		echo '<input type="hidden" name="credential_operation_id" value="' . esc_attr( $operation['id'] ) . '"><input type="hidden" name="credential_operation_nonce" value="' . esc_attr( $operation['nonce'] ) . '">';
+	}
+
+	/**
+	 * Builds the non-secret target context for one rotation form.
+	 *
+	 * @param string $public_id Credential public ID.
+	 * @param int    $version Expected secret version.
+	 */
+	private function credential_rotation_context( string $public_id, int $version ): string {
+		return $public_id . '|' . $version;
+	}
+
+	/**
+	 * Prevents browsers and intermediaries from retaining a one-time secret response.
+	 */
+	private function credential_secret_response_headers(): void {
+		nocache_headers();
+		header( 'Cache-Control: no-store, private, max-age=0', true );
+		header( 'Referrer-Policy: no-referrer', true );
+	}
+
+	/**
+	 * Returns one generic response for replayed, expired, or foreign operation tokens.
+	 */
+	private function credential_operation_rejected(): void {
+		wp_die( esc_html__( 'This credential operation was already processed or expired. Return to API credentials and start a new operation.', 'dreamax-license-manager' ) );
 	}
 
 	/**
