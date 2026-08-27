@@ -5,6 +5,7 @@
 - Explicitly enforce the private no-store cache-header contract on authenticated My Account license and reveal responses.
 - Added a guarded live WordPress capability-isolation verifier and action-boundary regression coverage.
 - Added a guarded live simple paid-order verifier with loopback-only processing-email capture and sensitive-value-free cleanup checks.
+- Added guarded duplicate Processing/Completed allocation-hook replay verification with exact no-duplicate row, event, and order-note assertions.
 - Store site KDF salts as strictly validated versioned base64url options, with atomic first initialization, authoritative read-back, protected-data guards, and key-preserving legacy raw-salt migration.
 - Prevent refreshed or concurrent credential create/rotation administration POSTs from repeating mutations, without persisting or replaying plaintext results.
 - Added sequential schema v1/v2/v3 migration contracts and a disposable source verifier.
