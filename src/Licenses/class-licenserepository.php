@@ -142,6 +142,59 @@ final class LicenseRepository {
 	}
 
 	/**
+	 * Finds a presented key without assuming a product identity.
+	 *
+	 * This is used only after a product-scoped lookup fails so the public API can
+	 * distinguish a documented product mismatch from an unknown key. The raw
+	 * presented value is normalized and keyed-hashed in memory and is never used
+	 * in a query or persisted.
+	 *
+	 * @param string $presented Presented value.
+	 * @return array<string,mixed>|null
+	 */
+	public function find_presented_any_product( string $presented ): ?array {
+		global $wpdb;
+		$table = $wpdb->prefix . 'dreamax_lm_licenses';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- A bounded set of plugin-owned normalization profiles is required for a keyed lookup.
+		$configurations = $wpdb->get_results(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
+			"SELECT DISTINCT normalization_profile, normalization_separator FROM {$table} LIMIT 32",
+			ARRAY_A
+		);
+
+		if ( ! is_array( $configurations ) || array() === $configurations ) {
+			$this->crypto->fingerprint( $presented );
+			return null;
+		}
+
+		foreach ( $configurations as $configuration ) {
+			try {
+				$canonical   = $this->normalizer->normalize(
+					$presented,
+					(string) $configuration['normalization_profile'],
+					null === $configuration['normalization_separator'] ? null : (string) $configuration['normalization_separator']
+				);
+				$fingerprint = bin2hex( $this->crypto->fingerprint( $canonical ) );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The keyed fingerprint performs a fresh exact lookup without querying the raw key.
+				$row = $wpdb->get_row(
+					$wpdb->prepare(
+						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
+						"SELECT * FROM {$table} WHERE key_fingerprint = UNHEX(%s) LIMIT 1",
+						$fingerprint
+					),
+					ARRAY_A
+				);
+				if ( is_array( $row ) ) {
+					return $row;
+				}
+			} catch ( Throwable $error ) {
+				continue;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Handles the lock by id operation.
 	 *
 	 * @param int $id Id value.
