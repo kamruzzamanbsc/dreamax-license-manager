@@ -14,7 +14,8 @@
 - Added guarded customer-list, reveal-IDOR, and registered-order isolation verification with transaction-scoped attacker cleanup.
 - Added guarded public-API enumeration, proxy-spoof, rejection-timing, and failure-rate-limit verification with exact option and rate-state restoration.
 - Added guarded authenticated direct and loopback-intermediary cache-header verification for My Account document and reveal responses with exact session/audit restoration.
-- Added guarded paid variable-product verification for two explicit variation identities and policies, with exact per-quantity/per-item allocation and full transaction rollback.
+- Added guarded paid variable-product verification for two explicit variation identities and policies, with exact per-quantity/per-item allocation and ownership-scoped cleanup.
+- Added guarded live WordPress privacy export/erasure verification across the 100-row boundary, repeated erasure, cross-customer isolation, audit, and exact owned cleanup.
 - Store site KDF salts as strictly validated versioned base64url options, with atomic first initialization, authoritative read-back, protected-data guards, and key-preserving legacy raw-salt migration.
 - Prevent refreshed or concurrent credential create/rotation administration POSTs from repeating mutations, without persisting or replaying plaintext results.
 - Added sequential schema v1/v2/v3 migration contracts and a disposable source verifier.
