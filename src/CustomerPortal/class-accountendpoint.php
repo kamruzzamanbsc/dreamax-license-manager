@@ -73,7 +73,7 @@ final class AccountEndpoint {
 	 * Handles the render operation.
 	 */
 	public function render(): void {
-		nocache_headers();
+		$this->send_private_cache_headers();
 		$rows = $this->licenses->for_customer( get_current_user_id() );
 		if ( array() === $rows ) {
 			echo '<p>' . esc_html__( 'You do not have any licenses yet.', 'dreamax-license-manager' ) . '</p>';
@@ -152,7 +152,7 @@ final class AccountEndpoint {
 	 * Handles the reveal operation.
 	 */
 	public function reveal(): void {
-		nocache_headers();
+		$this->send_private_cache_headers();
 		check_ajax_referer( 'dreamax_lm_reveal', 'nonce' );
 		$public_id = isset( $_POST['license'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['license'] ) ) : '';
 		$license   = $this->licenses->by_public_id( $public_id );
@@ -161,6 +161,16 @@ final class AccountEndpoint {
 		}
 		( new EventRepository() )->append( AuditEventCatalog::LICENSE_REVEALED, (int) $license['id'], 'customer', get_current_user_id(), null, array( 'channel' => 'my_account' ), AuditEventCatalog::SCHEMA_V1 );
 		wp_send_json_success( array( 'key' => $this->licenses->decrypt_key( $license ) ) );
+	}
+
+	/**
+	 * Sends the private cache contract for customer license responses.
+	 */
+	private function send_private_cache_headers(): void {
+		nocache_headers();
+		header( 'Cache-Control: no-store, no-cache, must-revalidate, private, max-age=0', true );
+		header( 'Pragma: no-cache', true );
+		header( 'Expires: Wed, 11 Jan 1984 05:00:00 GMT', true );
 	}
 
 	/**
