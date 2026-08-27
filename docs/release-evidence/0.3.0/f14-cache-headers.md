@@ -18,4 +18,12 @@ The response therefore demonstrated private, no-store application behavior for t
 
 ## Evidence limit
 
-F14 is not `PASS_WITH_EVIDENCE`. The published cache contract also requires `Pragma: no-cache` and verification that REST responses, page caches, reverse proxies, and CDNs preserve the protective headers. Those checks remain open, so F14 remains `MANUAL_ENVIRONMENT_REQUIRED`.
+The missing application-level `Pragma` guarantee was corrected on 2026-08-27. Both the authenticated My Account licenses document and its reveal response now use one explicit private-cache helper that sends:
+
+- `Cache-Control: no-store, no-cache, must-revalidate, private, max-age=0`
+- `Pragma: no-cache`
+- `Expires: Wed, 11 Jan 1984 05:00:00 GMT`
+
+Source-contract regression coverage verifies both response paths and all three required headers. This implementation evidence does not replace a live response check.
+
+F14 is not `PASS_WITH_EVIDENCE`. A sanitized live re-test must confirm the corrected My Account and reveal headers, and page-cache, reverse-proxy, or CDN preservation remains unverified. Those checks remain open, so F14 remains `MANUAL_ENVIRONMENT_REQUIRED`.
