@@ -70,10 +70,7 @@ final class ActivationService {
 	 */
 	public function activate( string $key, string $product_public_id, string $instance_id, ?string $label, string $request_id ): array {
 		$this->guard_inputs( $product_public_id, $instance_id, $label );
-		$found = $this->licenses->find_presented( $key, $product_public_id );
-		if ( null === $found ) {
-			throw new LicenseException( 'invalid_license', 'The license could not be validated.', 404 );
-		}
+		$found = $this->find_for_product( $key, $product_public_id );
 
 		$instance_fingerprint = $this->crypto->fingerprint( $instance_id, 'instance-identity' );
 
@@ -198,10 +195,7 @@ final class ActivationService {
 	 */
 	public function deactivate( string $key, string $product_public_id, string $instance_id, string $request_id ): array {
 		$this->guard_inputs( $product_public_id, $instance_id, null );
-		$found = $this->licenses->find_presented( $key, $product_public_id );
-		if ( null === $found ) {
-			throw new LicenseException( 'invalid_license', 'The license could not be validated.', 404 );
-		}
+		$found       = $this->find_for_product( $key, $product_public_id );
 		$fingerprint = $this->crypto->fingerprint( $instance_id, 'instance-identity' );
 
 		return $this->transaction->run(
@@ -278,10 +272,7 @@ final class ActivationService {
 		if ( null !== $instance_id ) {
 			$this->guard_inputs( $product_public_id, $instance_id, null );
 		}
-		$license = $this->licenses->find_presented( $key, $product_public_id );
-		if ( null === $license ) {
-			throw new LicenseException( 'invalid_license', 'The license could not be validated.', 404 );
-		}
+		$license = $this->find_for_product( $key, $product_public_id );
 		$this->assert_eligible( $license );
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
@@ -296,6 +287,25 @@ final class ActivationService {
 				'limit'  => null === $license['activation_limit'] ? null : (int) $license['activation_limit'],
 			),
 		);
+	}
+
+	/**
+	 * Finds a license for the presented key and product contract.
+	 *
+	 * @param string $key Presented key.
+	 * @param string $product_public_id Product public ID.
+	 * @throws LicenseException When the key is unknown or belongs to another product.
+	 * @return array<string,mixed>
+	 */
+	private function find_for_product( string $key, string $product_public_id ): array {
+		$license = $this->licenses->find_presented( $key, $product_public_id );
+		if ( is_array( $license ) ) {
+			return $license;
+		}
+		if ( is_array( $this->licenses->find_presented_any_product( $key ) ) ) {
+			throw new LicenseException( 'product_mismatch', 'The license does not belong to the requested product.', 409 );
+		}
+		throw new LicenseException( 'invalid_license', 'The license could not be validated.', 404 );
 	}
 
 	/**

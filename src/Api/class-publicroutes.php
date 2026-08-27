@@ -200,7 +200,7 @@ final class PublicRoutes {
 			$payload = $this->payload( $request, true );
 			$this->apply_protective_limits( $operation );
 
-			$idempotency_key = $request->get_header( 'Idempotency-Key' );
+			$idempotency_key = (string) $request->get_header( 'Idempotency-Key' );
 			if ( '' !== $idempotency_key ) {
 				$reservation = $this->idempotency->reserve( $idempotency_key, $operation, $payload );
 				$scope       = $reservation['scope'];
@@ -356,6 +356,7 @@ final class PublicRoutes {
 			'license_deactivated'  => 'The activation was deactivated.',
 			'license_valid'        => 'The license is valid.',
 			'invalid_license'      => 'The license could not be validated.',
+			'product_mismatch'     => 'The license does not belong to the requested product.',
 			'license_expired'      => 'The license has expired.',
 			'license_suspended'    => 'The license is temporarily disabled.',
 			'license_revoked'      => 'The license is permanently revoked.',
