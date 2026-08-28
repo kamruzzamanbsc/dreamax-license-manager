@@ -20,6 +20,7 @@
 - Added guarded authenticated direct and loopback-intermediary cache-header verification for My Account document and reveal responses with exact session/audit restoration.
 - Added guarded paid variable-product verification for two explicit variation identities and policies, with exact per-quantity/per-item allocation and ownership-scoped cleanup.
 - Added guarded live WordPress privacy export/erasure verification across the 100-row boundary, repeated erasure, cross-customer isolation, audit, and exact owned cleanup.
+- Added guarded private-clone compatibility verification with repeated equivalent paid-order outcomes across HPOS/Checkout Block and classic-storage/classic-checkout modes, physical datastore assertions, source preservation, and exact cleanup.
 - Added guarded parallel-worker pool-allocation and activation concurrency verification with proven in-flight contenders, exact outcome/event contracts, private input transport, and ownership-scoped cleanup.
 - Added guarded multipart CSV safety verification for upload and row boundaries, bounded memory, preview no-write, duplicate and normalization behavior, capability-separated exports, formula escaping, audit, and exact cleanup.
 - Added guarded live 10,000-license/50,000-event performance verification with bounded pagination, duplicate-slot rejection, streamed masked export, fixed memory ceilings, and exact owned-fixture cleanup.
