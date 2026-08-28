@@ -5,6 +5,7 @@
 - Added guarded fresh single-site WordPress prefix bootstrap and Dreamax activation verification for exact InnoDB schema, role defaults, scheduled cleanup, replay convergence, and exact temporary-table cleanup.
 - Added guarded real-MariaDB v1/v2/v3 migration, replay, interruption recovery, data/index preservation, second-prefix isolation, and future-version refusal verification with exact cleanup.
 - Added guarded missing/wrong master-key recovery verification on a private disposable clone, and fail public licensing routes closed before key-dependent work when encryption is not ready.
+- Added guarded complete database-plus-key disaster-recovery verification with an independent restore, database-only recovery proof, pre-backup license validation, protected-state preservation, and exact temporary database/clone cleanup.
 - Explicitly enforce the private no-store cache-header contract on authenticated My Account license and reveal responses.
 - Added a guarded live WordPress capability-isolation verifier and action-boundary regression coverage.
 - Added a guarded live simple paid-order verifier with loopback-only processing-email capture and sensitive-value-free cleanup checks.
