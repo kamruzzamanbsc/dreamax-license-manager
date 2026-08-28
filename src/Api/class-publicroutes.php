@@ -60,6 +60,12 @@ final class PublicRoutes {
 	 * @var SourceAddress
 	 */
 	private SourceAddress $source;
+	/**
+	 * Encryption readiness guard.
+	 *
+	 * @var Crypto
+	 */
+	private Crypto $crypto;
 
 	/**
 	 * Initializes the service.
@@ -71,6 +77,7 @@ final class PublicRoutes {
 		$this->idempotency = new IdempotencyRepository();
 		$this->responses   = new ResponseFactory();
 		$this->source      = new SourceAddress();
+		$this->crypto      = new Crypto();
 	}
 
 	/**
@@ -196,6 +203,7 @@ final class PublicRoutes {
 		$request_id = PublicId::generate( 'req' );
 		$scope      = null;
 		try {
+			$this->assert_ready();
 			$this->transport->assert_public_request();
 			$payload = $this->payload( $request, true );
 			$this->apply_protective_limits( $operation );
@@ -251,6 +259,7 @@ final class PublicRoutes {
 	private function read_operation( WP_REST_Request $request, string $operation ): \WP_REST_Response {
 		$request_id = PublicId::generate( 'req' );
 		try {
+			$this->assert_ready();
 			$this->transport->assert_public_request();
 			$payload = $this->payload( $request, false );
 			$this->apply_protective_limits( $operation );
@@ -267,6 +276,17 @@ final class PublicRoutes {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Records only an opaque request ID; no request data or secrets are logged.
 			error_log( 'Dreamax License Manager request failed. Request ID: ' . $request_id );
 			return $this->responses->make( false, 'server_unavailable', 'The licensing service is temporarily unavailable.', $request_id, array(), 503 );
+		}
+	}
+
+	/**
+	 * Fails closed before any key-dependent rate, idempotency, or license work.
+	 *
+	 * @throws LicenseException When encryption is not ready.
+	 */
+	private function assert_ready(): void {
+		if ( ! $this->crypto->ready() ) {
+			throw new LicenseException( 'server_unavailable', 'The licensing service is temporarily unavailable.', 503 );
 		}
 	}
 
