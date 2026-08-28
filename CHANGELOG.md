@@ -18,6 +18,7 @@
 - Added guarded live WordPress privacy export/erasure verification across the 100-row boundary, repeated erasure, cross-customer isolation, audit, and exact owned cleanup.
 - Added guarded parallel-worker pool-allocation and activation concurrency verification with proven in-flight contenders, exact outcome/event contracts, private input transport, and ownership-scoped cleanup.
 - Added guarded multipart CSV safety verification for upload and row boundaries, bounded memory, preview no-write, duplicate and normalization behavior, capability-separated exports, formula escaping, audit, and exact cleanup.
+- Added guarded live 10,000-license/50,000-event performance verification with bounded pagination, duplicate-slot rejection, streamed masked export, fixed memory ceilings, and exact owned-fixture cleanup.
 - Store site KDF salts as strictly validated versioned base64url options, with atomic first initialization, authoritative read-back, protected-data guards, and key-preserving legacy raw-salt migration.
 - Prevent refreshed or concurrent credential create/rotation administration POSTs from repeating mutations, without persisting or replaying plaintext results.
 - Added sequential schema v1/v2/v3 migration contracts and a disposable source verifier.
