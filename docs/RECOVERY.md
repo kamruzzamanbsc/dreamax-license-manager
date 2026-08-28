@@ -21,6 +21,10 @@ A complete backup contains the WordPress database, the exact external `DREAMAX_L
 
 Restore into a separate, disposable site/database; restore the same root constant; keep the copied site salt/options; confirm the non-secret key identifier; reveal and validate a pre-backup license; record environment, date, reviewer, and evidence in the release gate. Never test this by replacing the production key.
 
+### Recorded disaster-recovery drill
+
+On 2026-08-29, a guarded private-clone drill copied the complete disposable database into a verifier-owned backup database and then into a distinct restore database. The schema, row counts, and table checksums matched across the source, backup, and pre-boot restore. A database-only restore entered recovery mode, emitted the critical recovery signal, and blocked decryption. Restoring the exact backed-up external-key configuration returned encryption to Ready and allowed a pre-backup license to decrypt and validate. Plugin-owned rows and server-side hashes of the key identifier and KDF salt remained unchanged, the original configuration and database retained their starting digests, and exact cleanup removed both temporary databases and the private clone. No protected value or private path was retained.
+
 ## Missing or wrong key
 
 Recovery mode blocks key-dependent reads and all sensitive writes. Do not generate a replacement, reset metadata, or alter ciphertext. Restore the correct constant. Recovery clears only after the identifier matches and authenticated decryption/self-test succeeds. Contact the person responsible for backups if the external key is unavailable; encrypted keys cannot be reconstructed from the database alone.
@@ -29,7 +33,7 @@ Recovery mode blocks key-dependent reads and all sensitive writes. Do not genera
 
 On 2026-08-29, a guarded private-clone matrix booted the recorded disposable WordPress/MariaDB runtime with the correct configuration, without the constant, with deterministic synthetic wrong-key material, and with the exact correct configuration restored. Missing and wrong modes showed recovery health, blocked creation/import/assignment/reveal work, and returned the uniform public `503 server_unavailable` response before key-dependent rate, idempotency, or license work. An internal digest covering every plugin row and the key-identifier/KDF-salt options remained unchanged. The original configuration was never modified, the clone was restored byte-for-byte before cleanup, authenticated decryption succeeded again after restoration, and zero clone residue remained. No key, salt, ciphertext, fingerprint, identifier value, private path, or configuration content was retained.
 
-This drill closes only the missing/wrong-key gate. It does not replace the database-plus-key restore drill under F12 or the multisite separation work under F29/F30.
+This drill closes only the missing/wrong-key gate. The separate database-plus-key restore drill under F12 is also recorded above; multisite separation remains under F29/F30.
 
 ## Multisite
 

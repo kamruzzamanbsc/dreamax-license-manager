@@ -15,7 +15,7 @@ Build status: development version `0.3.0`; no production-readiness claim.
 | Privacy erasure/retention | `Privacy`, `PRIVACY-RETENTION.md` | Foundation; cross-customer/repeated integration tests pending |
 | Frozen v1 client | `tests/fixtures/reference-client/v1` | Fixture added; live server execution pending |
 | HTTPS/request bounds/proxy | `TransportGuard`, `SourceAddress` | Foundation; deployment matrix pending |
-| Encryption provisioning/recovery | `MasterKey`, `Crypto`, setup snippet, recovery guide | Missing/wrong-key recovery, uniform public failure, restored readiness, and exact non-mutation verified; database-plus-key restore remains under F12 and multisite under F29/F30 |
+| Encryption provisioning/recovery | `MasterKey`, `Crypto`, setup snippet, recovery guide | Missing/wrong-key recovery, uniform public failure, database-only warning, complete database-plus-key restoration, restored license validation, and exact non-mutation verified; multisite remains under F29/F30 |
 | Product public identity | product settings/duplicate hook, ADR | Foundation; variation/delete/restore/remap tests pending |
 | Multisite site ownership | blog-prefixed schema, site derivation/network activation | Foundation; two-site tests pending |
 | Least privilege | `Capabilities` | Implemented map; security tests pending |
@@ -37,7 +37,7 @@ Build status: development version `0.3.0`; no production-readiness claim.
 | Data model | `Schema`, ADRs 0001/0002/0003/0004, `docs/MIGRATIONS.md` | Sequential v1/v2/v3 additive snapshots, real-MariaDB preservation/interruption/replay, current indexes, future-version refusal, and isolated second-site-style prefix verified; actual multisite network acceptance remains under F30 |
 | Architecture/threat/privacy/performance/i18n/a11y | dedicated docs and code conventions | Deterministic performance smoke and bounded export implemented; live full-scale and other manual verification remains incomplete |
 | Unit/integration/REST/security/compatibility tests | test tree and must-pass table | Unit/reference foundations plus guarded disposable WordPress/WooCommerce/HPOS/InnoDB acceptance across recorded gates; remaining environment matrices stay open |
-| Definition of done | `FREE-V1-MUST-PASS.md` | 25 of 33 gates have evidence; 8 manual environment gates remain; no unsupported pass statements |
+| Definition of done | `FREE-V1-MUST-PASS.md` | 26 of 33 gates have evidence; 7 manual environment gates remain; no unsupported pass statements |
 | Documentation deliverables | `docs/` index and guides | Core guides present; specialized launch guides remain blockers |
 | Milestone/output contract | roadmap and changelog | Followed; F25, F31, and F32 are complete at source/local-contract level; live acceptance and customer activation management remain |
 
