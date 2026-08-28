@@ -34,10 +34,10 @@ Build status: development version `0.3.0`; no production-readiness claim.
 | P0 setup/diagnostics | requirements, Site Health, master-key snippet | Partial smoke tests and system report |
 | P1 migration/webhooks/tooling/reminders/renewal | Milestone 6 roadmap | Intentionally not implemented before stable P0 |
 | P2 blocks/background tools/dashboard | Milestone 7 roadmap | Intentionally not implemented before P1 |
-| Data model | `Schema`, ADRs 0001/0002/0003/0004, `docs/MIGRATIONS.md` | Sequential v1/v2/v3 additive snapshots and source replay verified; live MySQL preservation/interruption/multisite evidence pending |
+| Data model | `Schema`, ADRs 0001/0002/0003/0004, `docs/MIGRATIONS.md` | Sequential v1/v2/v3 additive snapshots, real-MariaDB preservation/interruption/replay, current indexes, future-version refusal, and isolated second-site-style prefix verified; actual multisite network acceptance remains under F30 |
 | Architecture/threat/privacy/performance/i18n/a11y | dedicated docs and code conventions | Deterministic performance smoke and bounded export implemented; live full-scale and other manual verification remains incomplete |
 | Unit/integration/REST/security/compatibility tests | test tree and must-pass table | Unit/reference foundations plus guarded disposable WordPress/WooCommerce/HPOS/InnoDB acceptance across recorded gates; remaining environment matrices stay open |
-| Definition of done | `FREE-V1-MUST-PASS.md` | 23 of 33 gates have evidence; 10 manual environment gates remain; no unsupported pass statements |
+| Definition of done | `FREE-V1-MUST-PASS.md` | 24 of 33 gates have evidence; 9 manual environment gates remain; no unsupported pass statements |
 | Documentation deliverables | `docs/` index and guides | Core guides present; specialized launch guides remain blockers |
 | Milestone/output contract | roadmap and changelog | Followed; F25, F31, and F32 are complete at source/local-contract level; live acceptance and customer activation management remain |
 
