@@ -36,4 +36,10 @@ For fresh v3 and starting versions 1 and 2:
 6. Repeat on a second multisite blog prefix and confirm no cross-prefix reads or writes.
 7. Set a synthetic future version above 3, load this code without writes, and confirm neither schema nor stored version is lowered.
 
-Production data must never be copied into or touched by this procedure. Until this matrix runs on real WordPress/MySQL, F02 remains `MANUAL_ENVIRONMENT_REQUIRED`.
+Production data must never be copied into or touched by this procedure.
+
+## Recorded live acceptance
+
+On 2026-08-28, `scripts/verify-live-migration-matrix.php` completed the guarded disposable matrix on WordPress 7.1, PHP 8.2.4, and MariaDB 10.4.28. Fresh v3 and replay, v1-to-v3 and v2-to-v3 opaque-row preservation, interruption and recovery at every v1/v2/v3 checkpoint, current InnoDB columns/indexes, second-site-style prefix isolation, and synthetic future-version refusal all passed. The verifier removed all 84 fixed-prefix temporary objects, a final diagnosis found zero residue, existing plugin aggregates were unchanged, and no outbound email was sent.
+
+Actual multisite network lifecycle testing remains governed by F30; F02's schema migration and prefix-isolation contract is `PASS_WITH_EVIDENCE`.
