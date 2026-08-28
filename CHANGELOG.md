@@ -2,6 +2,7 @@
 
 ## 0.3.0 — WooCommerce order-policy milestone
 
+- Added guarded fresh single-site WordPress prefix bootstrap and Dreamax activation verification for exact InnoDB schema, role defaults, scheduled cleanup, replay convergence, and exact temporary-table cleanup.
 - Explicitly enforce the private no-store cache-header contract on authenticated My Account license and reveal responses.
 - Added a guarded live WordPress capability-isolation verifier and action-boundary regression coverage.
 - Added a guarded live simple paid-order verifier with loopback-only processing-email capture and sensitive-value-free cleanup checks.
