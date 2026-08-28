@@ -36,7 +36,8 @@
 - Added safe post-delivery quantity increase/decrease/delete behavior without silent key deletion or reuse.
 - Added authorized order-action resend and a bounded preview/confirm tool for missing-slot historical backfill and resend.
 - Added pure order-slot policy unit test sources and WooCommerce order-policy operating documentation.
-- WordPress/WooCommerce runtime, mail, concurrency, HPOS, and authorization acceptance evidence remains blocked in this environment.
+- Corrected cancellation-policy audit metadata to encode its not-applicable refund field within the published non-negative contract.
+- Added guarded WordPress/WooCommerce/HPOS/InnoDB acceptance for the complete F13 refund, cancellation, quantity, pool, lifecycle, backfill, resend, replay, audit, and cleanup matrix.
 
 ## 0.2.0 — lifecycle administration milestone
 

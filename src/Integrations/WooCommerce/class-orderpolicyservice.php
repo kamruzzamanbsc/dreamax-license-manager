@@ -270,7 +270,7 @@ final class OrderPolicyService {
 					$operation_id,
 					array(
 						'order_id'          => $order_id,
-						'refund_id'         => $refund_id,
+						'refund_id'         => null === $refund_id ? 0 : $refund_id,
 						'order_item_id'     => null === $row['order_item_id'] ? null : (int) $row['order_item_id'],
 						'quantity_slot'     => null === $row['quantity_slot'] ? null : (int) $row['quantity_slot'],
 						'configured_policy' => $policy,

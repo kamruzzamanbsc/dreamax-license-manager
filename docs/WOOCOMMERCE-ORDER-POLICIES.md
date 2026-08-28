@@ -1,10 +1,10 @@
 # WooCommerce order policies
 
-Review date: 2026-08-24
+Review date: 2026-08-28
 
 Applies to development version: 0.3.0
 
-This document defines the order behavior implemented at source level. Runtime acceptance evidence remains open in `FREE-V1-MUST-PASS.md`.
+This document defines the implemented order behavior. Guarded runtime acceptance for the F13 refund, cancellation, quantity, backfill, resend, pool, lifecycle, replay, audit, and cleanup matrix is recorded in `release-evidence/0.3.0/f13-order-policy-matrix.md`.
 
 ## Product and variation policy
 
@@ -54,14 +54,8 @@ The database stores only a purpose-separated keyed hash of the code. Claim and o
 
 Administrators can release or override a claim from **License Manager -> Order tools** only with the management capability, nonce verification, and explicit confirmation. See `GUEST-ORDER-CLAIMS.md` for customer and merchant instructions and `adr/0002-secure-guest-order-claims.md` for the security decision.
 
-## Required acceptance tests
+## Runtime acceptance status
 
-The following still require a real WordPress, WooCommerce, PHP, database, and mail-capture environment:
+The guarded F13 matrix passed every refund and cancellation policy, partial/full/unmapped refund handling, repeated operations, before/after-delivery quantity boundaries, pool exhaustion and release safety, lifecycle edits, confirmed backfill, and resend failure recovery on the recorded HPOS/InnoDB environment. It intercepted outbound mail and removed only exact owned fixtures with unchanged final aggregates.
 
-- simple and variable products in both issuance modes;
-- duplicate and concurrent paid-order hooks;
-- every refund/cancellation policy, including repeated and partial refunds;
-- quantity increase/decrease/delete before and after delivery;
-- pool exhaustion, eligible release, and blocked release;
-- HPOS order edits, preview/confirm authorization, resend delivery, and failure recovery.
-- guest-order claim mail, replay, expiry, ownership conflict, concurrent verification, release/override, rate limits, privacy, and audit behavior under classic storage and HPOS.
+Broader release gates still require the guest-order claim mail/replay/expiry/concurrency matrix and classic-storage parity. Those remain separate from the completed F13 evidence and must not be inferred as passed.
