@@ -15,9 +15,9 @@ Build status: development version `0.3.0`; no production-readiness claim.
 | Privacy erasure/retention | `Privacy`, `PRIVACY-RETENTION.md` | Foundation; cross-customer/repeated integration tests pending |
 | Frozen v1 client | `tests/fixtures/reference-client/v1` | Fixture added; live server execution pending |
 | HTTPS/request bounds/proxy | `TransportGuard`, `SourceAddress` | Foundation; deployment matrix pending |
-| Encryption provisioning/recovery | `MasterKey`, `Crypto`, setup snippet, recovery guide | Missing/wrong-key recovery, uniform public failure, database-only warning, complete database-plus-key restoration, restored license validation, and exact non-mutation verified; multisite remains under F29/F30 |
+| Encryption provisioning/recovery | `MasterKey`, `Crypto`, setup snippet, recovery guide | Missing/wrong-key recovery, uniform public failure, database-only warning, complete database-plus-key restoration, restored license validation, exact non-mutation, and multisite key separation/site-local restore verified |
 | Product public identity | product settings/duplicate hook, ADR | Foundation; variation/delete/restore/remap tests pending |
-| Multisite site ownership | blog-prefixed schema, site derivation/network activation | Foundation; two-site tests pending |
+| Multisite site ownership | blog-prefixed schema, site derivation/network activation, future-site hook, network deactivation, guarded private-clone verifier | Existing and future sites, keys, storage, credentials, API/export selection, audit, jobs, restore, and uninstall isolation verified across three sites |
 | Least privilege | `Capabilities` | Implemented map; security tests pending |
 | Privileged Bearer API | `CredentialService`, `CredentialToken`, `CredentialPolicy`, `PrivilegedRoutes`, ADR 0003 | Lifecycle implemented; live REST/proxy/MySQL/multisite concurrency evidence pending |
 | Versioned audit | `AuditEventCatalog`, `EventRepository`, published catalog/consumer guide, fixtures | Source contract complete for 44 emitted v1 types and four legacy names; live WordPress/MySQL/privacy/multisite evidence pending |
@@ -34,11 +34,11 @@ Build status: development version `0.3.0`; no production-readiness claim.
 | P0 setup/diagnostics | requirements, Site Health, master-key snippet | Partial smoke tests and system report |
 | P1 migration/webhooks/tooling/reminders/renewal | Milestone 6 roadmap | Intentionally not implemented before stable P0 |
 | P2 blocks/background tools/dashboard | Milestone 7 roadmap | Intentionally not implemented before P1 |
-| Data model | `Schema`, ADRs 0001/0002/0003/0004, `docs/MIGRATIONS.md` | Sequential v1/v2/v3 additive snapshots, real-MariaDB preservation/interruption/replay, current indexes, future-version refusal, and isolated second-site-style prefix verified; actual multisite network acceptance remains under F30 |
+| Data model | `Schema`, ADRs 0001/0002/0003/0004, `docs/MIGRATIONS.md` | Sequential v1/v2/v3 additive snapshots, real-MariaDB preservation/interruption/replay, current indexes, future-version refusal, isolated second-prefix behavior, and actual three-site network acceptance verified |
 | Architecture/threat/privacy/performance/i18n/a11y | dedicated docs and code conventions | Deterministic performance smoke and bounded export implemented; live full-scale and other manual verification remains incomplete |
 | Unit/integration/REST/security/compatibility tests | test tree and must-pass table | Unit/reference foundations plus guarded disposable WordPress/WooCommerce/HPOS/InnoDB acceptance across recorded gates; remaining environment matrices stay open |
-| Definition of done | `FREE-V1-MUST-PASS.md` | 29 of 33 gates have evidence; 4 manual environment gates remain; no unsupported pass statements |
+| Definition of done | `FREE-V1-MUST-PASS.md` | 31 of 33 gates have evidence; 2 manual environment gates remain; no unsupported pass statements |
 | Documentation deliverables | `docs/` index and guides | Core guides present; specialized launch guides remain blockers |
-| Milestone/output contract | roadmap and changelog | Followed; F25 and the complete F26 degraded matrix are live-verified; F29-F32 remain the final manual gates |
+| Milestone/output contract | roadmap and changelog | Followed; F29/F30 multisite acceptance is live-verified; F31/F32 remain the final manual gates |
 
 The ledger is deliberately strict: a requirement is not complete merely because a class or screen exists. It closes only with the command/procedure and observed evidence recorded in `FREE-V1-MUST-PASS.md`.

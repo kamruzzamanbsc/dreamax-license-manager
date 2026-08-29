@@ -6,4 +6,6 @@ Credential-use/rotation/revocation advisory locks include the current blog ident
 
 Audit-event contracts are code-global but event rows, internal references, reads, and uninstall operations remain site-local through the current blog table prefix. The catalog introduces no network-global event store or cross-site enumeration.
 
-Network activation initializes current sites independently. Future-site initialization must be handled explicitly. Deactivation retains data and capabilities. Permanent uninstall is disabled by default and may remove only the current site's records after an explicit capability-protected choice. Network-wide licensing is a future feature.
+Network activation initializes every existing site independently. While the plugin remains network-active, WordPress's `wp_initialize_site` lifecycle initializes each newly created site's schema, capabilities, salt, and cleanup schedule. Network-wide deactivation clears the cleanup schedule on every existing site while retaining data and capabilities.
+
+Permanent uninstall is disabled by default and accepts only the explicit enabled setting. It removes only the current site's prefixed tables and site-local options; it never enumerates other sites. A guarded three-site private-clone matrix verified existing-site and future-site initialization, per-site encryption/restore, site-local data/API/export/jobs, and current-site-only uninstall. Network-global licensing remains a future feature.

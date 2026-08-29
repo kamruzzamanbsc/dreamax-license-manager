@@ -33,8 +33,10 @@ Recovery mode blocks key-dependent reads and all sensitive writes. Do not genera
 
 On 2026-08-29, a guarded private-clone matrix booted the recorded disposable WordPress/MariaDB runtime with the correct configuration, without the constant, with deterministic synthetic wrong-key material, and with the exact correct configuration restored. Missing and wrong modes showed recovery health, blocked creation/import/assignment/reveal work, and returned the uniform public `503 server_unavailable` response before key-dependent rate, idempotency, or license work. An internal digest covering every plugin row and the key-identifier/KDF-salt options remained unchanged. The original configuration was never modified, the clone was restored byte-for-byte before cleanup, authenticated decryption succeeded again after restoration, and zero clone residue remained. No key, salt, ciphertext, fingerprint, identifier value, private path, or configuration content was retained.
 
-This drill closes only the missing/wrong-key gate. The separate database-plus-key restore drill under F12 is also recorded above; multisite separation remains under F29/F30.
+This drill closes only the missing/wrong-key gate. The separate database-plus-key restore drill under F12 is also recorded above; F29/F30 independently verifies site-local multisite key separation and restore behavior.
 
 ## Multisite
 
 One root may be present in network `wp-config.php`, but derived keys include the blog identity and a random per-site salt. Restore each site's options with its tables. Never copy only ciphertext into another site's namespace and expect it to decrypt.
+
+The guarded F29/F30 private-clone drill proved that distinct site salts and blog-bound derived keys reject cross-site ciphertext, a missing salt with protected rows fails only that site closed, restoration of that exact site's salt returns it to Ready, and another site remains unaffected. The drill retained no key, salt, ciphertext, identifier value, configuration content, or private path.
