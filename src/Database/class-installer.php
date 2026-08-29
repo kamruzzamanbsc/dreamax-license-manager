@@ -68,10 +68,53 @@ final class Installer {
 
 	/**
 	 * Handles the deactivate operation.
+	 *
+	 * @param bool $network_wide Whether the plugin was network-active.
 	 */
-	public static function deactivate(): void {
+	public static function deactivate( bool $network_wide = false ): void {
+		if ( is_multisite() && $network_wide ) {
+			$site_ids = get_sites(
+				array(
+					'fields' => 'ids',
+					'number' => 0,
+				)
+			);
+			foreach ( $site_ids as $site_id ) {
+				switch_to_blog( (int) $site_id );
+				self::deactivate_site();
+				restore_current_blog();
+			}
+			return;
+		}
+
+		self::deactivate_site();
+	}
+
+	/**
+	 * Deactivates the current site without removing retained data.
+	 */
+	private static function deactivate_site(): void {
 		wp_clear_scheduled_hook( 'dreamax_lm_cleanup' );
 		flush_rewrite_rules();
+	}
+
+	/**
+	 * Initializes a site created after network activation.
+	 *
+	 * @param object $site WordPress site object.
+	 */
+	public static function initialize_site( object $site ): void {
+		$site_id = isset( $site->blog_id ) ? (int) $site->blog_id : 0;
+		if ( $site_id < 1 ) {
+			return;
+		}
+
+		switch_to_blog( $site_id );
+		try {
+			self::install_site();
+		} finally {
+			restore_current_blog();
+		}
 	}
 
 	/**

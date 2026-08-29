@@ -31,6 +31,13 @@ final class Plugin {
 	 */
 	public function register(): void {
 		Installer::maybe_upgrade();
+		if ( is_multisite() ) {
+			$network_plugins = (array) get_site_option( 'active_sitewide_plugins', array() );
+			$plugin_root     = defined( 'DREAMAX_LM_FILE' ) ? constant( 'DREAMAX_LM_FILE' ) : '';
+			if ( is_string( $plugin_root ) && '' !== $plugin_root && isset( $network_plugins[ plugin_basename( $plugin_root ) ] ) ) {
+				add_action( 'wp_initialize_site', array( Installer::class, 'initialize_site' ), 200, 1 );
+			}
+		}
 		( new PublicRoutes() )->register();
 		( new PrivilegedRoutes() )->register();
 		( new ProductSettings() )->register();

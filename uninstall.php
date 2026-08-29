@@ -7,7 +7,8 @@
 
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
-if ( true !== get_option( 'dreamax_lm_permanent_delete_on_uninstall', false ) ) {
+$permanent_delete = get_option( 'dreamax_lm_permanent_delete_on_uninstall', false );
+if ( ! in_array( $permanent_delete, array( true, 1, '1' ), true ) ) {
 	return;
 }
 
