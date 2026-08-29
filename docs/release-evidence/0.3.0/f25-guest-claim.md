@@ -1,49 +1,52 @@
-# F25 guest-order claim evidence — 0.3.0
+# F25 guest-order claim evidence - 0.3.0
 
-- Date: 2026-08-25
-- Classification: `MANUAL_ENVIRONMENT_REQUIRED`
-- Scope: source, local unit/static contract, coding-standard, static-analysis, syntax, and secret-scan evidence
-- Secret handling: this artifact contains no claim code/hash, license key, credential, customer email, private key, or request payload.
+- Date: 2026-08-29
+- Classification: `PASS_WITH_EVIDENCE`
+- Environment: WordPress 7.1; WooCommerce 11.0.1; PHP 8.2.4; MariaDB 10.4.28; HPOS enabled; Dreamax License Manager 0.3.0; loopback-only Mailpit
+- Scope: guest-order eligibility; local email delivery; proof storage and disclosure; uniform failure behavior; replay and parallel-worker consumption; expiry and ownership invalidation; administrator release/override; audit redaction; exact cleanup
+- Sensitive-data handling: no claim proof/hash, license value, customer email, credential, Cookie value, nonce, request payload, private identifier, URL, database name, or private path is retained.
 
 ## Implemented controls
 
-- WooCommerce verified order hook context plus `WC_Order::key_is_valid()` gates guest display; registered display requires the matching authenticated account.
 - Authenticated nonce-protected POST issuance and verification; no claim proof is accepted from a URL.
-- 32 random bytes per code; purpose-separated keyed hash only; 30-minute default; five-minute minimum; 24-hour hard maximum.
-- Unique active claim per order, unique claimed owner per order, claim/owner/license row locks, guarded one-row consumption, and proof-hash clearing.
-- Separate keyed user/network/order rate-limit buckets for issuance and verification.
-- Uniform public issuance response and uniform verification failure shape.
-- Authoritative ownership-change, success, expiry, reissue, privacy, release, and override invalidation paths.
-- WooCommerce CRUD-only order ownership changes for HPOS compatibility.
-- Versioned claim audit events with recursive secret-field removal.
-- Claim privacy export and erasure/anonymization handling.
+- The billing email supplied by the signed-in customer must match both the account and the authoritative paid guest order; email knowledge alone is insufficient.
+- Each proof contains 32 random bytes and is stored only as a purpose-separated keyed hash, with bounded lifetime, unique active-claim storage, row locking, guarded one-row consumption, and hash clearing.
+- Separate keyed user, network, and order rate-limit buckets protect issuance and verification.
+- Verification failures use one stable public shape while versioned audit events retain only sanitized classifications.
+- Ownership changes invalidate outstanding proofs; administrator release and override use WooCommerce CRUD for HPOS compatibility.
+- Privacy export and erasure handling covers claim and owner records.
 
-## Local automated evidence
+## Guarded live verification
 
-On 2026-08-25, the required branch QA produced:
+The verifier required the explicit disposable-environment marker, the active plugin, InnoDB for every touched table, a clean owned-fixture baseline, and a loopback-only mail catcher. It created temporary customers, one licensed virtual product, and three paid guest orders.
 
-- optimized Composer autoload: exit 0, 1,596 generated classes, no ambiguity;
-- Composer validation: exit 0;
-- full WordPress PHPCS: exit 0, no errors or warnings;
-- PHPStan: exit 0, 46/46 source files, no errors;
-- PHPUnit: exit 0, 66/66 tests and 122 assertions;
-- production PHP syntax: exit 0, 48/48 files;
-- portable Composer/runtime autoload verification: exit 0, 46/46 production classes;
-- main-baseline rename/addition verification: exit 0, 41 baseline identities plus 5 F25 classes;
-- high-confidence secret-signature scan: exit 0, 38/38 intended changed files, no finding and no prohibited changed path;
-- `git diff --check`: exit 0.
+The live run demonstrated:
 
-The configured tests cover guest display authorization, email-only insufficiency, authenticated account-email binding, authenticated success policy, wrong-account/order conflict, expiry, replay/single-use state, token entropy/format, keyed-hash-only schema, lifetime bounds, rate policies, uniform failure shapes, ownership invalidation, administrator action policy, database concurrency constraints, HPOS CRUD source contract, privacy handling, and audit redaction.
+- a request based only on another account's matching billing email disclosed nothing and sent no message;
+- three eligible requests each produced exactly one locally captured message for the authoritative recipient;
+- the message contained one valid one-time proof and no URL-based proof;
+- wrong-account, wrong-order, and replay attempts returned the same public failure shape;
+- two worker processes were simultaneously in flight against one claim and exactly one completed it;
+- the successful claim consumed the proof once, cleared its stored hash, linked the owner row, order, and assigned license, and rejected replay;
+- an expired proof failed closed and cleared its stored hash;
+- an authoritative billing-email change invalidated the outstanding proof;
+- administrator release followed by override produced the expected final ownership; and
+- all claim audit payloads excluded proof, billing email, license value, and authorization material.
 
-## Remaining live evidence
+The run removed every verifier-owned claim, owner, order, product, license, event, rate-limit change, user, barrier, and captured message. Plugin-table aggregates matched the starting snapshot and zero owned fixture rows remained. No external email was sent.
 
-F25 is not PASS. A disposable integration environment must still demonstrate:
+## Related release evidence
 
-- schema v1→v2 migration twice against real MySQL/InnoDB;
-- guest checkout/order-received display with current WooCommerce session, order-key, and email-verification behavior;
-- mail capture showing one code, no URL proof, correct recipient, and expiry messaging;
-- successful, wrong-account, wrong-order, expired, replay, ownership-change, release, and override requests through real nonces/roles;
-- simultaneous two-account verification against the same order under classic storage and HPOS;
-- issuance/verification rate limits through HTTP and trusted/untrusted proxy cases;
-- privacy export/erasure ordering with WooCommerce's erasers;
-- audit rows confirming no proof, billing email, raw network, or full license key.
+The complete acceptance picture also includes the real migration/replay matrix in F02, proxy and rate-limit abuse checks in F15, HPOS/classic-storage parity in F20, and repeated privacy export/erasure behavior in F27. Source contracts cover the authenticated nonce-protected actions, proof transport boundary, guarded worker inputs, cleanup ownership, and sanitized output.
+
+## Regression verification
+
+- PHPUnit: 235 tests and 1,457 assertions passed.
+- WordPress coding standards passed.
+- PHPStan completed without errors.
+- Composer validation and release metadata validation passed.
+- `git diff --check` passed.
+
+## Result
+
+The guarded live WordPress/WooCommerce/InnoDB/mail/parallel-worker contract passed with exact cleanup. F25 is `PASS_WITH_EVIDENCE`.
