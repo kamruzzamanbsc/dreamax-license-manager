@@ -11,7 +11,7 @@ Build status: development version `0.3.0`; no production-readiness claim.
 | Atomic activation | `ActivationService`, transaction and unique schema | Implemented foundation; real concurrency test blocks release |
 | REST idempotency | `IdempotencyRepository` | Implemented foundation; bounded wait and full fixture evidence pending |
 | Generator entropy | `KeyGenerator`, ADR, unit tests | Implemented foundation |
-| Degraded modes | `DEGRADED-MODES.md`, recovery notice | Missing/wrong-key recovery and exact non-mutation verified; broader fault-injection matrix remains under F26 |
+| Degraded modes | `DEGRADED-MODES.md`, Site Health recovery signals, guarded F11/F12/F26 private-clone verifiers | Missing/wrong-key, plugin-storage, audit-storage, WordPress-cron, upload-temporary-storage, and WooCommerce dependency failures plus exact recovery/non-mutation are verified |
 | Privacy erasure/retention | `Privacy`, `PRIVACY-RETENTION.md` | Foundation; cross-customer/repeated integration tests pending |
 | Frozen v1 client | `tests/fixtures/reference-client/v1` | Fixture added; live server execution pending |
 | HTTPS/request bounds/proxy | `TransportGuard`, `SourceAddress` | Foundation; deployment matrix pending |
@@ -37,8 +37,8 @@ Build status: development version `0.3.0`; no production-readiness claim.
 | Data model | `Schema`, ADRs 0001/0002/0003/0004, `docs/MIGRATIONS.md` | Sequential v1/v2/v3 additive snapshots, real-MariaDB preservation/interruption/replay, current indexes, future-version refusal, and isolated second-site-style prefix verified; actual multisite network acceptance remains under F30 |
 | Architecture/threat/privacy/performance/i18n/a11y | dedicated docs and code conventions | Deterministic performance smoke and bounded export implemented; live full-scale and other manual verification remains incomplete |
 | Unit/integration/REST/security/compatibility tests | test tree and must-pass table | Unit/reference foundations plus guarded disposable WordPress/WooCommerce/HPOS/InnoDB acceptance across recorded gates; remaining environment matrices stay open |
-| Definition of done | `FREE-V1-MUST-PASS.md` | 28 of 33 gates have evidence; 5 manual environment gates remain; no unsupported pass statements |
+| Definition of done | `FREE-V1-MUST-PASS.md` | 29 of 33 gates have evidence; 4 manual environment gates remain; no unsupported pass statements |
 | Documentation deliverables | `docs/` index and guides | Core guides present; specialized launch guides remain blockers |
-| Milestone/output contract | roadmap and changelog | Followed; F25 live acceptance is complete; F31 and F32 remain partial, and customer activation management remains |
+| Milestone/output contract | roadmap and changelog | Followed; F25 and the complete F26 degraded matrix are live-verified; F29-F32 remain the final manual gates |
 
 The ledger is deliberately strict: a requirement is not complete merely because a class or screen exists. It closes only with the command/procedure and observed evidence recorded in `FREE-V1-MUST-PASS.md`.

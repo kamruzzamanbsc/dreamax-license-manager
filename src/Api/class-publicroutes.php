@@ -12,6 +12,7 @@ namespace Dreamax\LicenseManager\Api;
 use Dreamax\LicenseManager\Activations\ActivationService;
 use Dreamax\LicenseManager\Encryption\Crypto;
 use Dreamax\LicenseManager\Licenses\LicenseException;
+use Dreamax\LicenseManager\Support\Health;
 use Dreamax\LicenseManager\Support\PublicId;
 use Throwable;
 use WP_HTTP_Response;
@@ -156,6 +157,12 @@ final class PublicRoutes {
 	 */
 	public function ping(): \WP_REST_Response {
 		$request_id = PublicId::generate( 'req' );
+		try {
+			$this->assert_ready();
+		} catch ( Throwable $error ) {
+			unset( $error );
+			return $this->responses->make( false, 'server_unavailable', 'The licensing service is temporarily unavailable.', $request_id, array(), 503 );
+		}
 		return $this->responses->make(
 			true,
 			'system_available',
@@ -285,7 +292,7 @@ final class PublicRoutes {
 	 * @throws LicenseException When encryption is not ready.
 	 */
 	private function assert_ready(): void {
-		if ( ! $this->crypto->ready() ) {
+		if ( ! $this->crypto->ready() || ! Health::storage_ready() ) {
 			throw new LicenseException( 'server_unavailable', 'The licensing service is temporarily unavailable.', 503 );
 		}
 	}

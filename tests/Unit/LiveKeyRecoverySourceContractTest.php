@@ -51,7 +51,8 @@ final class LiveKeyRecoverySourceContractTest extends TestCase {
 
 	public function test_public_routes_fail_closed_before_key_dependent_work(): void {
 		self::assertStringContainsString( 'private Crypto $crypto;', $this->public_routes );
-		self::assertSame( 2, substr_count( $this->public_routes, '$this->assert_ready();' ) );
+		self::assertSame( 3, substr_count( $this->public_routes, '$this->assert_ready();' ) );
+		self::assertStringContainsString( '! Health::storage_ready()', $this->public_routes );
 		self::assertStringContainsString( "throw new LicenseException( 'server_unavailable', 'The licensing service is temporarily unavailable.', 503 );", $this->public_routes );
 		self::assertLessThan(
 			strpos( $this->public_routes, '$this->transport->assert_public_request();' ),
