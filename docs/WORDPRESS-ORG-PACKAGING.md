@@ -10,7 +10,7 @@ Official requirements were checked on 2026-08-25:
 - https://developer.woocommerce.com/docs/contribution/contributing/version-support-policy/
 - https://developer.woocommerce.com/releases/
 
-Current official release pages identified WordPress 7.1 and WooCommerce 11.0.1. This project has not tested that matrix, so it does not claim it. Existing metadata remains WordPress `Requires at least: 6.9`, `Tested up to: 6.9`, WooCommerce `WC requires at least: 10.8`, and `WC tested up to: 10.8` until live compatibility evidence exists.
+Current official release pages identified WordPress 7.1 and WooCommerce 11.0.1. Subsequent guarded release-gate runs tested that matrix, including HPOS/Checkout Block and classic-storage/classic-checkout compatibility. Release metadata now retains WordPress `Requires at least: 6.9` and WooCommerce `WC requires at least: 10.8`, while accurately advancing `Tested up to: 7.1` and `WC tested up to: 11.0.1`.
 
 ## Verified locally
 
@@ -26,4 +26,4 @@ Current official release pages identified WordPress 7.1 and WooCommerce 11.0.1. 
 - No paid service requirement, telemetry, trialware, remote licensing dependency, or fake Pro interface is included.
 - The deterministic allowlist excludes repository/development/local/secret/build artifacts and lints every shipped PHP file.
 
-Run `composer release:validate` for the reproducible local header/readme structure check. The official hosted readme validator requires form submission, and official Plugin Check requires a WordPress/WP-CLI runtime; neither complete hosted/runtime result is available in this environment. The release-candidate ZIP must therefore not be called production-ready, and F22 remains `MANUAL_ENVIRONMENT_REQUIRED`.
+Run `composer release:validate` for the reproducible local header/readme structure check. The hosted WordPress.org readme validator has accepted the release readme; official Plugin Check remains a separate pre-submission runtime check. F22 is `PASS_WITH_EVIDENCE`, while the ZIP remains an unshipped release candidate until a separately authorized publication workflow.

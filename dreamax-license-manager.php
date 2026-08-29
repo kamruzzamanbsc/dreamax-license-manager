@@ -13,7 +13,7 @@
  * Domain Path: /languages
  * Requires Plugins: woocommerce
  * WC requires at least: 10.8
- * WC tested up to: 10.8
+ * WC tested up to: 11.0.1
  *
  * @package DreamaxLicenseManager
  */

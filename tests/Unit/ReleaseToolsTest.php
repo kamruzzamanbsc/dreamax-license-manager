@@ -68,6 +68,8 @@ final class ReleaseToolsTest extends TestCase {
 		$headers = ReadmeHeaderValidator::validate( $root );
 		self::assertSame( '0.3.0', $headers['Version'] );
 		self::assertSame( 'dreamax-license-manager', $headers['Text Domain'] );
+		self::assertSame( '7.1', $headers['Tested up to'] );
+		self::assertSame( '11.0.1', $headers['WC tested up to'] );
 		$files = BuildPolicy::distributionFiles( $root );
 		self::assertContains( 'dreamax-license-manager.php', $files );
 		self::assertContains( 'docs/BUILDING.md', $files );
@@ -119,6 +121,11 @@ final class ReleaseToolsTest extends TestCase {
 		self::assertStringContainsString( "'sha256_match' => true", $builder );
 		self::assertStringContainsString( "'inventory_match' => true", $builder );
 		self::assertStringContainsString( "'source_state' => 'clean_recorded_commit'", $builder );
+		self::assertStringContainsString( "'wordpress_tested' => \$headers['Tested up to']", $builder );
+		self::assertStringContainsString( "'woocommerce_tested' => \$headers['WC tested up to']", $builder );
+		self::assertStringContainsString( "'wordpress' => array(\$first['wordpress_tested'])", $builder );
+		self::assertStringContainsString( "'woocommerce' => array(\$first['woocommerce_tested'])", $builder );
+		self::assertStringNotContainsString( 'Manual release gates remain', $builder );
 	}
 
 	public function test_dependency_license_inventory_covers_every_locked_package(): void {
