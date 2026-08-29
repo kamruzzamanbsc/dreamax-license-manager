@@ -1,7 +1,7 @@
 # F32 live activity-rendering partial evidence — 0.3.0
 
 - Date: 2026-08-27
-- Classification: `MANUAL_ENVIRONMENT_REQUIRED`
+- Classification: preserved partial observation; superseded by the completed `PASS_WITH_EVIDENCE` matrix in `f32-audit-event-contract.md`
 - Environment: WordPress 7.1; WooCommerce 11.0.1; PHP 8.2.4; MariaDB 10.4.28; HPOS enabled; Dreamax License Manager 0.3.0
 - Scope: administrator activity rendering plus sanitized database aggregates on the disposable environment
 - Sensitive-data handling: no screenshot, event metadata value, public or internal identifier, license value, credential data, Cookie, session value, URL, or private path is retained or referenced.
@@ -14,6 +14,6 @@
 - A database read-only transaction independently counted exactly one created, one assigned, and one delivered event for the most recent licensed order, with zero duplicate required-event groups.
 - No activity filter, write, export, privacy operation, credential operation, or database mutation was performed during this check.
 
-## Evidence limit
+## Evidence relationship
 
-F32 is not `PASS_WITH_EVIDENCE`. Rejected writes and rollback, legacy/unknown/malformed/unsupported-version rendering, privacy exporter/eraser integration, mixed historical rows, REST paths, and multisite isolation remain unverified. F32 therefore remains `MANUAL_ENVIRONMENT_REQUIRED`.
+This read-only observation remains valid historical evidence. The later guarded F32 verifier completed rejected writes, validation and persistence rollback, every compatibility status, recursive read redaction, warning-free mixed-history rendering, byte-stable storage, and exact cleanup. Accepted F08, F27, F29/F30, and F31 evidence supplies the REST, privacy, multisite, and credential producer contracts. The completed result is recorded in `f32-audit-event-contract.md`.
