@@ -1,6 +1,6 @@
 # Guest order license claims
 
-Applies to development version 0.3.0. Live acceptance evidence remains open.
+Applies to unshipped release candidate 0.3.0. Live acceptance evidence is recorded under F25, F27, and F32.
 
 ## Customer instructions
 

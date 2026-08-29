@@ -46,6 +46,8 @@
 - Added pure order-slot policy unit test sources and WooCommerce order-policy operating documentation.
 - Corrected cancellation-policy audit metadata to encode its not-applicable refund field within the published non-negative contract.
 - Added guarded WordPress/WooCommerce/HPOS/InnoDB acceptance for the complete F13 refund, cancellation, quantity, pool, lifecycle, backfill, resend, replay, audit, and cleanup matrix.
+- Completed the guarded F32 audit compatibility matrix for accepted/rejected writes, validation and persistence rollback, all six historical compatibility statuses, recursive redaction, warning-free administrator rendering, byte-stable history, and exact cleanup; all 33 Free V1 gates now have evidence.
+- Reconciled the unshipped 0.3.0 release-candidate headers, tested-version claims, build manifest, and provenance guidance with the accepted WordPress 7.1 and WooCommerce 11.0.1 runtime matrix.
 
 ## 0.2.0 — lifecycle administration milestone
 

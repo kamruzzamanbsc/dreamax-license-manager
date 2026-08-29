@@ -2,7 +2,7 @@
 Contributors: dreamaxsoft
 Tags: woocommerce, license manager, software licensing
 Requires at least: 6.9
-Tested up to: 6.9
+Tested up to: 7.1
 Requires PHP: 8.0
 Stable tag: 0.3.0
 License: GPLv2 or later
@@ -12,9 +12,9 @@ Self-hosted software licensing, activation, delivery, and migration for WooComme
 
 == Description ==
 
-This package is a development build. It includes encrypted license storage, generator and imported-pool foundations, WooCommerce allocation, secure guest-order account claims, scoped and rotatable privileged API credentials, a versioned REST API, customer license display, and data portability. It does not depend on a paid API or remote SaaS.
+This package is an unshipped 0.3.0 release candidate. It includes encrypted license storage, generator and imported-pool foundations, WooCommerce allocation, secure guest-order account claims, scoped and rotatable privileged API credentials, a versioned REST API, customer license display, and data portability. It does not depend on a paid API or remote SaaS.
 
-Do not deploy this development build to a live store until every item in `docs/FREE-V1-MUST-PASS.md` has verified evidence.
+All 33 Free V1 acceptance gates have recorded evidence. Tagging, publication, and production deployment remain separate release decisions; validate backups, HTTPS, InnoDB, mail, cache/proxy behavior, and the external master key in the target environment before deployment.
 
 == Installation ==
 
@@ -42,8 +42,8 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 
 = 0.3.0 =
 
-* Added secure one-time-code guest-order claims, atomic privileged credential rotation/revocation, a central validated versioned audit-event contract, snapshotted refund/cancellation policies, deterministic partial-refund mapping, guarded quantity edits, explicit post-delivery allocation, resend, and preview-confirmed historical-order backfill. Still not a production Free V1 release.
-* Added sequential migration verification, deterministic packaging/provenance, and seeded performance fixtures. Live release gates still prevent production shipment.
+* Added secure one-time-code guest-order claims, atomic privileged credential rotation/revocation, a central validated versioned audit-event contract, snapshotted refund/cancellation policies, deterministic partial-refund mapping, guarded quantity edits, explicit post-delivery allocation, resend, and preview-confirmed historical-order backfill.
+* Added sequential migration verification, deterministic packaging/provenance, seeded performance fixtures, and guarded live evidence for all 33 Free V1 acceptance gates. This remains an unshipped release candidate.
 
 = 0.2.0 =
 

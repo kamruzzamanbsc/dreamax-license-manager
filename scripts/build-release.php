@@ -47,7 +47,7 @@ if (! mkdir($temporary, 0777, true) && ! is_dir($temporary)) {
 }
 
 /**
- * @return array{zip:string,sha256:string,lock_sha256:string,inventory:list<array{path:string,size:int,sha256:string}>,paths:list<string>,version:string}
+ * @return array{zip:string,sha256:string,lock_sha256:string,inventory:list<array{path:string,size:int,sha256:string}>,paths:list<string>,version:string,wordpress_tested:string,woocommerce_tested:string}
  */
 function build_once(string $root, string $gitSafeDirectory, string $commit, int $epoch, string $temporary, string $label): array {
 	$snapshot = $temporary . DIRECTORY_SEPARATOR . 'dreamax-lm-' . $label;
@@ -90,13 +90,15 @@ function build_once(string $root, string $gitSafeDirectory, string $commit, int 
 		'inventory' => $inventory,
 		'paths' => $paths,
 		'version' => $headers['Version'],
+		'wordpress_tested' => $headers['Tested up to'],
+		'woocommerce_tested' => $headers['WC tested up to'],
 	);
 }
 
 try {
 	$first = build_once($root, $gitSafeDirectory, $commit, $epoch, $temporary, 'first');
 	$second = build_once($root, $gitSafeDirectory, $commit, $epoch, $temporary, 'second');
-	$identical = hash_equals($first['sha256'], $second['sha256']) && hash_equals($first['lock_sha256'], $second['lock_sha256']) && $first['inventory'] === $second['inventory'] && $first['paths'] === $second['paths'];
+	$identical = hash_equals($first['sha256'], $second['sha256']) && hash_equals($first['lock_sha256'], $second['lock_sha256']) && $first['inventory'] === $second['inventory'] && $first['paths'] === $second['paths'] && $first['wordpress_tested'] === $second['wordpress_tested'] && $first['woocommerce_tested'] === $second['woocommerce_tested'];
 	if (! $identical) {
 		throw new RuntimeException('The two clean builds differ; no release-candidate artifact was published.');
 	}
@@ -124,7 +126,7 @@ try {
 		'distribution_zip_sha256' => $first['sha256'],
 		'dependency_lock_sha256' => $first['lock_sha256'],
 		'dependency_license_inventory_reference' => 'docs/DEPENDENCIES.md',
-		'tested_versions' => array('wordpress' => array(), 'woocommerce' => array(), 'php' => array(PHP_VERSION)),
+		'tested_versions' => array('wordpress' => array($first['wordpress_tested']), 'woocommerce' => array($first['woocommerce_tested']), 'php' => array(PHP_VERSION)),
 		'build_test_utc' => gmdate('Y-m-d\TH:i:s\Z'),
 		'release_gate_evidence_reference' => 'docs/release-evidence/0.3.0/',
 		'build_tool_versions' => array('php' => PHP_VERSION, 'composer' => $composerVersion, 'git' => $gitVersion, 'ziparchive' => (string) phpversion('zip')),
@@ -133,7 +135,7 @@ try {
 		'file_count' => count($first['inventory']),
 		'source_date_epoch' => $epoch,
 		'reproducibility_result' => array('status' => 'identical', 'builds' => 2, 'sha256_match' => true, 'inventory_match' => true),
-		'limitations' => array('No WordPress or WooCommerce runtime version was tested by this build command.', 'Manual release gates remain; this is not a production-ready release.'),
+		'limitations' => array('The build command does not execute WordPress or WooCommerce; runtime versions come from recorded release-gate evidence.', 'This artifact remains an unshipped release candidate; tagging and publication are separate authorized operations.'),
 	);
 	$encodedManifest = json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL;
 	if (preg_match('#(?:[A-Za-z]:[\\\\/]|/Users/|/home/|Authorization|Bearer\s|password|secret|token)#i', $encodedManifest)) {

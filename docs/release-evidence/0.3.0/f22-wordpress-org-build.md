@@ -4,7 +4,7 @@
 - Classification: `PASS_WITH_EVIDENCE`
 - Artifact status: unshipped release-candidate verification only; not production-ready.
 
-Official sources checked on 2026-08-25 are recorded in `docs/WORDPRESS-ORG-PACKAGING.md`. WordPress 7.1 and WooCommerce 11.0.1 were current, but no untested compatibility claim was added. The plugin retains its actually claimed 6.9/10.8 metadata.
+Official sources checked on 2026-08-25 are recorded in `docs/WORDPRESS-ORG-PACKAGING.md`. WordPress 7.1 and WooCommerce 11.0.1 were current; later guarded compatibility and gate matrices tested that runtime, so final release-candidate metadata accurately advances the tested versions while retaining the 6.9/10.8 minimum requirements.
 
 The official hosted WordPress.org readme validator accepted `readme.txt` without errors. It emitted only optional/advisory notes: one tag was not widely used, and no Upgrade Notice, Screenshots, or Donate Link was present. No placeholder content was added to silence optional notes. The local validator confirms slug, main file, complete header, literal text domain, WooCommerce dependency slug, numeric version/stable tag, GPL metadata, and required readme sections.
 
