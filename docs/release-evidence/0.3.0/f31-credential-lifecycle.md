@@ -44,7 +44,7 @@ The remaining F31 matrix was completed without exposing or retaining any credent
 
 The completed F31 branch passed 252 PHPUnit tests with 1,557 assertions, full WordPress PHPCS, PHPStan across 55 source files, Composer validation, and release metadata validation. The added source contract covers the live verifier's HTTP scope/transport, rate/coalescing, audit rollback, parallel lifecycle, cleanup, and sensitive-output boundaries. Whitespace and non-content secret/private-path checks are required again immediately before commit.
 
-F32's central published event contract and consumer compatibility work remains independent; its remaining live-environment evidence is recorded in `f32-audit-event-contract.md`.
+F32's independent central event contract and consumer compatibility matrix subsequently completed with guarded live evidence recorded in `f32-audit-event-contract.md`.
 
 ## Disposable runtime defect evidence
 

@@ -1,6 +1,6 @@
 # ADR 0004: Versioned audit-event contract
 
-Status: accepted for development; live integration evidence pending
+Status: accepted; live integration evidence complete
 
 Date: 2026-08-25
 
@@ -30,4 +30,4 @@ Consumers dispatch on `(event_type, schema_version)`, consume required fields, i
 
 This is append-oriented operational evidence, not a cryptographic ledger. It cannot and does not claim tamper-proofing against a fully compromised WordPress installation or database administrator.
 
-Live WordPress/MySQL transaction rollback, multisite, privacy-tool, administrator rendering, and mixed historical-row evidence remains required; F32 therefore becomes manual-environment-required rather than fully passed.
+Guarded live WordPress/InnoDB evidence now covers accepted and rejected writes, rollback on catalog validation and audit persistence failure, every compatibility status, recursive read redaction, warning-free administrator rendering, byte-for-byte historical-row preservation, and exact cleanup. Accepted WooCommerce, REST, CSV, claim, privacy, credential, and private multisite evidence completes the integrated producer and site-ownership matrix. F32 is therefore `PASS_WITH_EVIDENCE`.
