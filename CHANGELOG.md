@@ -36,6 +36,7 @@
 - Added an authenticated, emailed one-time-code workflow for claiming paid guest orders without accepting email-only or URL-based proof.
 - Added transactional single-use claim/ownership records, rate limits, ownership invalidation, HPOS-safe order updates, privacy handling, and versioned redacted audit events.
 - Added unit and source-contract coverage plus an ADR, customer/merchant instructions, and guarded live F25 WordPress/WooCommerce/InnoDB/mail/parallel-worker acceptance with exact cleanup.
+- Added generic storage and cleanup Site Health recovery signals plus guarded private-clone F26 fault injection for plugin storage, required audit storage, WordPress cron, upload temporary storage, and WooCommerce dependency loss, with fail-closed public behavior, transaction rollback, full recovery, source preservation, and exact cleanup.
 - Added product and variation refund/cancellation settings with per-license policy snapshots.
 - Added deterministic per-quantity and per-item refund mapping plus retry-safe cancellation handling.
 - Added safe post-delivery quantity increase/decrease/delete behavior without silent key deletion or reuse.
