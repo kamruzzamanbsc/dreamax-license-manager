@@ -31,7 +31,7 @@ Activation and deactivation clients should send a unique `Idempotency-Key` of 8â
 - `GET /activations`
 - `GET /generators`
 
-Authenticate with `Authorization: Bearer dlm_v1_<public-id>.<secret>`. The exact required scope depends on the route. The creation response is the only time a secret or newly generated license key is returned.
+Authenticate with exactly one `Authorization: Bearer dlm_v1_<22-character-public-id>.<43-character-secret>` header. Credentials in URLs or bodies, multiple/comma-joined headers, malformed syntax, controls, and values over 256 bytes are rejected before privileged business processing. Unknown, incorrect, expired, and revoked credentials share the same authentication failure envelope. The exact required scope depends on the route and is checked only after authentication. Creation and rotation responses are the only times a credential secret is returned. See `API-CREDENTIALS.md` for lifecycle and recovery operations.
 
 ## Envelope and errors
 

@@ -11,10 +11,10 @@ This is a new plugin with no inherited repository architecture. WordPress and Wo
 - `Database`: schema, installation, transactions, migrations.
 - `Encryption`: master-key contract, purpose-separated derivation, authenticated encryption, blind indexes.
 - `Licenses`, `Generators`, `Activations`: lifecycle, key production, normalization, atomic capacity. `LifecycleService` owns confirmed administrator transitions, retry-safe extension/reset, reassignment, and guarded deletion.
-- `Events`: append-only, schema-versioned audit evidence.
-- `Api`, `Credentials`: public v1 routes, transport guards, idempotency, rate limits, scoped Bearer authentication.
+- `Events`: append-oriented audit evidence with a central type/version/actor/reference/metadata catalog, recursive redaction, validated writes, and non-destructive legacy read classification. See ADR 0004.
+- `Api`, `Credentials`: public v1 routes, transport guards, idempotency, rate limits, scoped Bearer authentication, version-guarded zero-overlap rotation, and irreversible revocation.
 - `Integrations/WooCommerce`: snapshotted product policies, deterministic order-slot allocation, refund/cancellation transitions, guarded quantity edits, resend, and preview-confirmed historical backfill.
-- `CustomerPortal`, `Admin`, `ImportExport`, `Privacy`: human workflows and WordPress integration.
+- `CustomerPortal`, `Admin`, `ImportExport`, `Privacy`: human workflows and WordPress integration. `GuestClaimService` owns emailed single-use guest-order proofs, atomic account ownership, invalidation, and privacy integration.
 
 Hook adapters must remain thin. Domain services must not render HTML. No module may query another module's table except through a documented repository/service boundary; the current development foundation still contains a few direct read-only administration queries tracked in `SPEC-COVERAGE.md` for refactoring.
 
@@ -55,9 +55,13 @@ Product edits/restores retain the ID. Ordinary duplication generates a new ID. H
 
 Allocation identities use the order-item ID plus quantity slot and are protected by a database unique constraint. Product/variation order-policy values are snapshotted in license metadata. Partial refunds map to stable quantity slots; each per-license policy operation is transactionally claimed. Delivered or generated keys cannot re-enter a shared pool. WooCommerce order reads and writes use its CRUD objects for HPOS compatibility, while the plugin's own tables remain behind repositories/services.
 
+Guest account claiming adds one unique active-proof slot and one unique claimed-owner row per order. Verification locks the proof, claimed owner, and all associated license rows before WooCommerce CRUD and plugin ownership updates occur in the same database transaction. See ADR 0002.
+
 ## Time, cache, and transport
 
 Server UTC is authoritative. Sensitive responses are private/no-store. Production credential-bearing requests require HTTPS; forwarded protocol/address headers are honored only when the direct source is an explicitly configured trusted proxy. HTTP is permitted only when the local exception is explicitly enabled and the resolved source is loopback.
+
+Privileged API use, rotation, and revocation share a site-derived MySQL advisory lock. Under that lock, API use rechecks status, expiry, and secret version before scope enforcement and business processing; mutations additionally row-lock the credential in an InnoDB transaction. Schema v3 adds only secret-version and rotation/revocation timestamps to the existing credential table. See ADR 0003.
 
 ## Multisite
 

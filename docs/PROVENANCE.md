@@ -1,0 +1,7 @@
+# Reproducible build and provenance
+
+`docs/release-manifest.schema.json` is the machine-readable v1 sidecar schema. `scripts/build-release.php` accepts only an explicit recorded commit and output below ignored `build/`. It exports that commit twice, installs production Composer dependencies from `composer.lock` in each isolated snapshot, applies the same allowlist, lints included PHP, and writes deterministic ZIP entries in lexical order with the commit timestamp and normalized Unix permissions.
+
+Both ZIP SHA-256 values, per-file SHA-256 inventories, and exact path lists must match. Any mismatch aborts without publishing an artifact. The output manifest remains outside the ZIP it hashes and records the source commit/state, stable command/profile, artifact and lock digests, dependency inventory, actually tested versions, UTC test time, evidence reference, tool versions, inventory digest, source epoch, and comparison result. It contains no absolute build path, local username, database value, credential, token, key, or other secret.
+
+The build command includes no WordPress or WooCommerce runtime. The manifest therefore records WordPress 7.1 and WooCommerce 11.0.1 from the accepted release-gate evidence, and states explicitly that those versions were not executed by the packaging command itself. PHP is recorded from the interpreter that lints every included PHP file. This separation preserves accurate provenance without turning the local build into a publication or deployment claim.

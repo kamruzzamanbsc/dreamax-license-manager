@@ -1,20 +1,19 @@
 <?php
 /**
  * Plugin Name: Dreamax License Manager
- * Plugin URI: https://example.invalid/dreamax-license-manager
  * Description: Self-hosted software licensing, activation, delivery, and migration for WooCommerce.
  * Version: 0.3.0
  * Requires at least: 6.9
  * Requires PHP: 8.0
  * Author: Dreamax Soft
- * Author URI: https://example.invalid/
+ * Author URI: https://dreamaxsoft.com/
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: dreamax-license-manager
  * Domain Path: /languages
  * Requires Plugins: woocommerce
  * WC requires at least: 10.8
- * WC tested up to: 10.8
+ * WC tested up to: 11.0.1
  *
  * @package DreamaxLicenseManager
  */
@@ -26,7 +25,7 @@ define( 'DREAMAX_LM_FILE', __FILE__ );
 define( 'DREAMAX_LM_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DREAMAX_LM_URL', plugin_dir_url( __FILE__ ) );
 
-require_once DREAMAX_LM_DIR . 'src/Support/Autoloader.php';
+require_once DREAMAX_LM_DIR . 'src/Support/class-autoloader.php';
 
 Dreamax\LicenseManager\Support\Autoloader::register();
 

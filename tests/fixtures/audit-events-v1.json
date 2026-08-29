@@ -1,0 +1,19 @@
+[
+  {"event_type":"guest_claim_issued","schema_version":1,"license_id":null,"actor_type":"customer","actor_id":7,"request_id":"clm_AAAAAAAAAAAAAAAAAAAAAA","metadata":{"order_id":101,"lifetime_seconds":1800}},
+  {"event_type":"guest_claim_succeeded","schema_version":1,"license_id":null,"actor_type":"customer","actor_id":7,"request_id":"clm_AAAAAAAAAAAAAAAAAAAAAA","metadata":{"order_id":101,"license_count":2}},
+  {"event_type":"guest_claim_replay_failed","schema_version":1,"license_id":null,"actor_type":"customer","actor_id":7,"request_id":"clm_AAAAAAAAAAAAAAAAAAAAAA","metadata":{"order_id":101,"failure":"replay"}},
+  {"event_type":"guest_claim_expired_failed","schema_version":1,"license_id":null,"actor_type":"customer","actor_id":7,"request_id":"clm_AAAAAAAAAAAAAAAAAAAAAA","metadata":{"order_id":101,"failure":"expired"}},
+  {"event_type":"guest_claim_conflict_failed","schema_version":1,"license_id":null,"actor_type":"customer","actor_id":7,"request_id":"clm_AAAAAAAAAAAAAAAAAAAAAA","metadata":{"order_id":101,"failure":"conflict"}},
+  {"event_type":"guest_claim_released","schema_version":1,"license_id":null,"actor_type":"administrator","actor_id":1,"request_id":null,"metadata":{"order_id":101,"license_count":2}},
+  {"event_type":"guest_claim_administrator_override","schema_version":1,"license_id":null,"actor_type":"administrator","actor_id":1,"request_id":null,"metadata":{"order_id":101,"customer_id":7,"license_count":2}},
+  {"event_type":"credential_created","schema_version":1,"license_id":null,"actor_type":"administrator","actor_id":1,"request_id":null,"metadata":{"credential_public_id":"BBBBBBBBBBBBBBBBBBBBBB","scopes":["licenses:read"],"expires":false}},
+  {"event_type":"credential_authentication_used","schema_version":1,"license_id":null,"actor_type":"api_credential","actor_id":9,"request_id":"req_CCCCCCCCCCCCCCCCCCCCCC","metadata":{"credential_public_id":"BBBBBBBBBBBBBBBBBBBBBB","required_scope":"licenses:read"}},
+  {"event_type":"credential_rotation_succeeded","schema_version":1,"license_id":null,"actor_type":"administrator","actor_id":1,"request_id":null,"metadata":{"credential_public_id":"BBBBBBBBBBBBBBBBBBBBBB","previous_version":1,"new_version":2}},
+  {"event_type":"credential_rotation_failed","schema_version":1,"license_id":null,"actor_type":"administrator","actor_id":1,"request_id":null,"metadata":{"credential_public_id":"BBBBBBBBBBBBBBBBBBBBBB","expected_version":1,"failure":"not_completed"}},
+  {"event_type":"credential_revoked","schema_version":1,"license_id":null,"actor_type":"administrator","actor_id":1,"request_id":null,"metadata":{"credential_public_id":"BBBBBBBBBBBBBBBBBBBBBB"}},
+  {"event_type":"credential_expired_authentication_failed","schema_version":1,"license_id":null,"actor_type":"api_credential","actor_id":9,"request_id":"req_CCCCCCCCCCCCCCCCCCCCCC","metadata":{"credential_public_id":"BBBBBBBBBBBBBBBBBBBBBB"}},
+  {"event_type":"credential_insufficient_scope","schema_version":1,"license_id":null,"actor_type":"api_credential","actor_id":9,"request_id":"req_CCCCCCCCCCCCCCCCCCCCCC","metadata":{"credential_public_id":"BBBBBBBBBBBBBBBBBBBBBB","required_scope":"licenses:write"}},
+  {"event_type":"license_created","schema_version":1,"license_id":5,"actor_type":"system","actor_id":null,"request_id":null,"metadata":{"source":"generated","public_id":"lic_DDDDDDDDDDDDDDDDDDDDDD","normalization_profile":"generated-ascii-v1"}},
+  {"event_type":"license_revoked","schema_version":1,"license_id":5,"actor_type":"administrator","actor_id":1,"request_id":"req_EEEEEEEEEEEEEEEEEEEEEE","metadata":{"from":"assigned","to":"revoked","reason":"Confirmed administrative action"}},
+  {"event_type":"license_revoked","schema_version":1,"license_id":5,"actor_type":"api_credential","actor_id":null,"request_id":null,"metadata":{"changed_fields":["lifecycle_status","updated_at"]}}
+]

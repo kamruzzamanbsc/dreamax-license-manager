@@ -9,7 +9,8 @@ Review date: 2026-08-24
 | Key guessing/enumeration | 128-bit default entropy; layered keyed buckets; uniform privacy-safe failures | Network timing cannot be perfectly constant; test shapes and timing distributions |
 | Activation last-slot race | Per-license InnoDB lock, unique logical activation row, same-transaction event | Requires real concurrent integration test |
 | Request replay | Natural-key idempotency plus caller idempotency record | Frozen client must cover replay/conflict |
-| Cross-customer disclosure/IDOR | Customer ID/order ownership checks; nonces; opaque IDs; private responses | Guest claim workflow is not complete and blocks Free V1 |
+| Privileged credential theft/race | One-time plaintext display, password verifier only, strict Bearer parser, exact scopes, per-credential limits, site-local use/mutation lock, version-guarded zero-overlap rotation, terminal revocation | Live proxy/header, timing, MySQL concurrency, role, and multisite evidence remains required |
+| Cross-customer disclosure/IDOR | WooCommerce verified order context/key checks; customer IDs; nonce-protected emailed single-use guest claim; opaque IDs; private responses | Live guest-session, HPOS, role, replay, timing, and concurrency evidence remains required |
 | Client tampering | Treat distributed code as inspectable; enforce all rules server-side | Cannot guarantee piracy prevention |
 | Plain HTTP/proxy spoof | HTTPS guard; exact trusted proxies; loopback-only explicit exception | Deployment misconfiguration remains possible; health checks/documentation required |
 | Cache/CDN leakage | No-store/private headers; no secrets in URLs; conservative CORS | Must verify representative caches/CDNs |

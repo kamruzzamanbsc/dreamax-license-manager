@@ -7,12 +7,13 @@
 
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
-if ( true !== get_option( 'dreamax_lm_permanent_delete_on_uninstall', false ) ) {
+$permanent_delete = get_option( 'dreamax_lm_permanent_delete_on_uninstall', false );
+if ( ! in_array( $permanent_delete, array( true, 1, '1' ), true ) ) {
 	return;
 }
 
 global $wpdb;
-$tables = array( 'rate_limits', 'idempotency', 'api_credentials', 'generators', 'events', 'activations', 'licenses' );
+$tables = array( 'order_owners', 'guest_claims', 'rate_limits', 'idempotency', 'api_credentials', 'generators', 'events', 'activations', 'licenses' );
 foreach ( $tables as $name ) {
 	$table = $wpdb->prefix . 'dreamax_lm_' . $name;
 	$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" );

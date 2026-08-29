@@ -1,0 +1,23 @@
+{
+  "current_version": "3",
+  "versions": [
+    {
+      "version": "1",
+      "source_commit": "c7701de",
+      "table_count": 7,
+      "introduced": ["licenses", "activations", "events", "generators", "api_credentials", "idempotency", "rate_limits"]
+    },
+    {
+      "version": "2",
+      "source_commit": "3e0739f",
+      "table_count": 9,
+      "introduced": ["guest_claims", "order_owners"]
+    },
+    {
+      "version": "3",
+      "source_commit": "8e47d74",
+      "table_count": 9,
+      "introduced": ["secret_version", "rotated_at", "revoked_at"]
+    }
+  ]
+}

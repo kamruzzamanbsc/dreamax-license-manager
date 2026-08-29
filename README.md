@@ -1,6 +1,6 @@
 # Dreamax License Manager
 
-Dreamax License Manager is a self-hosted WooCommerce licensing plugin under staged development. The current tree is a development foundation, not a production release.
+Dreamax License Manager is a self-hosted WooCommerce licensing plugin. The current tree is the unshipped `0.3.0` release candidate; tagging and publication are separate release operations.
 
 ## Current baseline
 
@@ -9,6 +9,8 @@ Dreamax License Manager is a self-hosted WooCommerce licensing plugin under stag
 - PHP 8.0 or later with `ext-sodium`
 - HTTPS for every credential-bearing API call
 - InnoDB for transactional activation enforcement
+
+The recorded acceptance matrix used WordPress 7.1, WooCommerce 11.0.1, PHP 8.2.4, MariaDB 10.4.28, HPOS and classic order storage, Checkout Block and classic checkout, Apache loopback HTTP, and a private disposable multisite clone where applicable.
 
 ## Development setup
 
@@ -26,4 +28,4 @@ License keys use XChaCha20-Poly1305 authenticated encryption and a separate keye
 
 ## Project status
 
-The source implements the initial schema, key protection, generator/normalization rules, atomic activation core, public and scoped management REST foundations, WooCommerce allocation/delivery, a customer endpoint, CSV transfer, privacy hooks, and health diagnostics. Version `0.3.0` adds snapshotted refund/cancellation policies, deterministic partial-refund slot mapping, safe quantity-edit handling, explicit post-delivery allocation, resend, and preview-confirmed historical-order backfill. The coverage ledger records missing release work. Do not treat this development version as Free V1.
+The source implements the initial schema, key protection, generator/normalization rules, atomic activation core, public and scoped management REST foundations, WooCommerce allocation/delivery, a customer endpoint, CSV transfer, privacy hooks, and health diagnostics. Version `0.3.0` adds snapshotted order policies, secure guest-order account claims, the complete privileged API credential lifecycle, a central versioned audit-event contract, sequential migration verification, deterministic packaging/provenance, and seeded performance fixtures. All 33 Free V1 gates are `PASS_WITH_EVIDENCE`. See `docs/BUILDING.md`, `docs/RELEASE.md`, and the coverage ledger for the unshipped release-candidate procedure.

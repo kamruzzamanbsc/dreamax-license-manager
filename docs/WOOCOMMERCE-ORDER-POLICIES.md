@@ -1,10 +1,10 @@
 # WooCommerce order policies
 
-Review date: 2026-08-24
+Review date: 2026-08-28
 
 Applies to development version: 0.3.0
 
-This document defines the order behavior implemented at source level. Runtime acceptance evidence remains open in `FREE-V1-MUST-PASS.md`.
+This document defines the implemented order behavior. Guarded runtime acceptance for the F13 refund, cancellation, quantity, backfill, resend, pool, lifecycle, replay, audit, and cleanup matrix is recorded in `release-evidence/0.3.0/f13-order-policy-matrix.md`.
 
 ## Product and variation policy
 
@@ -46,13 +46,16 @@ The WooCommerce order-action menu can resend currently `assigned` keys to the or
 
 Historical allocation creates only missing eligible slots for paid, non-cancelled, non-failed, non-refunded orders. Retried allocation converges on existing slots. Resend uses a database-unique, expiring operation claim to prevent concurrent duplicate email for the same confirmed request. Resend and allocation record actor, order, request identity, counts, and outcomes without placing clear keys in audit metadata.
 
-## Required acceptance tests
+## Guest-order account claims
 
-The following still require a real WordPress, WooCommerce, PHP, database, and mail-capture environment:
+Guest order license output is shown only inside WooCommerce's verified order context with a valid order key. A billing email address by itself never proves access. An authenticated customer can request a one-time claim code for a paid guest order whose normalized billing email exactly matches the account email. The code is delivered to that billing address, expires after 30 minutes by default, and is accepted only through a nonce-protected POST over HTTPS.
 
-- simple and variable products in both issuance modes;
-- duplicate and concurrent paid-order hooks;
-- every refund/cancellation policy, including repeated and partial refunds;
-- quantity increase/decrease/delete before and after delivery;
-- pool exhaustion, eligible release, and blocked release;
-- HPOS order edits, preview/confirm authorization, resend delivery, and failure recovery.
+The database stores only a purpose-separated keyed hash of the code. Claim and ownership rows are locked during verification, the active-order and owner constraints prevent concurrent account claims, and successful consumption clears the hash. A successful claim updates the WooCommerce customer through order CRUD and reassigns the order's licenses to the same account. Reissue, expiry, ownership changes, privacy erasure, administrator release, and administrator override invalidate outstanding proofs.
+
+Administrators can release or override a claim from **License Manager -> Order tools** only with the management capability, nonce verification, and explicit confirmation. See `GUEST-ORDER-CLAIMS.md` for customer and merchant instructions and `adr/0002-secure-guest-order-claims.md` for the security decision.
+
+## Runtime acceptance status
+
+The guarded F13 matrix passed every refund and cancellation policy, partial/full/unmapped refund handling, repeated operations, before/after-delivery quantity boundaries, pool exhaustion and release safety, lifecycle edits, confirmed backfill, and resend failure recovery on the recorded HPOS/InnoDB environment. It intercepted outbound mail and removed only exact owned fixtures with unchanged final aggregates.
+
+Broader release gates still require the guest-order claim mail/replay/expiry/concurrency matrix and classic-storage parity. Those remain separate from the completed F13 evidence and must not be inferred as passed.
