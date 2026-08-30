@@ -101,8 +101,8 @@ final class LicenseRepository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 		$configurations = $wpdb->get_results(
 			$wpdb->prepare(
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-				"SELECT DISTINCT normalization_profile, normalization_separator FROM {$table} WHERE product_public_id = %s LIMIT 32",
+				'SELECT DISTINCT normalization_profile, normalization_separator FROM %i WHERE product_public_id = %s LIMIT 32',
+				$table,
 				$product_public_id
 			),
 			ARRAY_A
@@ -124,8 +124,8 @@ final class LicenseRepository {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 				$row = $wpdb->get_row(
 					$wpdb->prepare(
-						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-						"SELECT * FROM {$table} WHERE key_fingerprint = UNHEX(%s) AND product_public_id = %s LIMIT 1",
+						'SELECT * FROM %i WHERE key_fingerprint = UNHEX(%s) AND product_public_id = %s LIMIT 1',
+						$table,
 						$fingerprint,
 						$product_public_id
 					),
@@ -157,8 +157,7 @@ final class LicenseRepository {
 		$table = $wpdb->prefix . 'dreamax_lm_licenses';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- A bounded set of plugin-owned normalization profiles is required for a keyed lookup.
 		$configurations = $wpdb->get_results(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-			"SELECT DISTINCT normalization_profile, normalization_separator FROM {$table} LIMIT 32",
+			$wpdb->prepare( 'SELECT DISTINCT normalization_profile, normalization_separator FROM %i LIMIT 32', $table ),
 			ARRAY_A
 		);
 
@@ -178,8 +177,8 @@ final class LicenseRepository {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The keyed fingerprint performs a fresh exact lookup without querying the raw key.
 				$row = $wpdb->get_row(
 					$wpdb->prepare(
-						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-						"SELECT * FROM {$table} WHERE key_fingerprint = UNHEX(%s) LIMIT 1",
+						'SELECT * FROM %i WHERE key_fingerprint = UNHEX(%s) LIMIT 1',
+						$table,
 						$fingerprint
 					),
 					ARRAY_A

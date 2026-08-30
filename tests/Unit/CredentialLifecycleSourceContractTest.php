@@ -64,6 +64,7 @@ final class CredentialLifecycleSourceContractTest extends TestCase {
 		self::assertLessThan( $authorized, $authenticate );
 		self::assertStringContainsString( 'AuditEventCatalog::CREDENTIAL_INSUFFICIENT_SCOPE', $this->service );
 		self::assertStringContainsString( 'AuditEventCatalog::CREDENTIAL_AUTHENTICATION_USED', $this->service );
+		self::assertStringContainsString( "(string) \$request->get_header( 'Authorization' )", $this->routes );
 	}
 
 	public function test_per_credential_limit_and_coalesced_last_used_write_are_present(): void {
@@ -75,7 +76,7 @@ final class CredentialLifecycleSourceContractTest extends TestCase {
 	public function test_query_and_body_credentials_are_rejected_before_route_callback(): void {
 		self::assertStringContainsString( 'assert_no_body_credentials', $this->transport );
 		self::assertStringContainsString( 'body_contains_credential', $this->transport );
-		self::assertStringContainsString( '$request->get_body()', $this->routes );
+		self::assertStringContainsString( '(string) $request->get_body()', $this->routes );
 		self::assertStringContainsString( 'assert_no_query_secrets', $this->transport );
 	}
 

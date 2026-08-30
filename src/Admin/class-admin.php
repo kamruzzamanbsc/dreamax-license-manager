@@ -32,6 +32,7 @@ final class Admin {
 	public function register(): void {
 		// Register the parent before separately owned submenus so WordPress creates matching page hooks and admin.php routes.
 		add_action( 'admin_menu', array( $this, 'menu' ), 9 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'assets' ) );
 		add_action( 'admin_post_dreamax_lm_create_license', array( $this, 'create_license' ) );
 		add_action( 'admin_post_dreamax_lm_bulk_lifecycle', array( $this, 'bulk_lifecycle' ) );
 		add_action( 'admin_post_dreamax_lm_reassign_license', array( $this, 'reassign_license' ) );
@@ -39,6 +40,40 @@ final class Admin {
 		add_action( 'admin_post_dreamax_lm_create_credential', array( $this, 'create_credential' ) );
 		add_action( 'admin_post_dreamax_lm_rotate_credential', array( $this, 'rotate_credential' ) );
 		add_action( 'admin_post_dreamax_lm_revoke_credential', array( $this, 'revoke_credential' ) );
+	}
+
+	/**
+	 * Loads the focused administration experience only on plugin-owned screens.
+	 *
+	 * @param string $hook_suffix Current WordPress administration page hook.
+	 */
+	public function assets( string $hook_suffix ): void {
+		unset( $hook_suffix );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- The page slug is used only to scope static administration assets.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( (string) $_GET['page'] ) ) : '';
+		if ( ! str_starts_with( $page, 'dreamax-license-manager' ) ) {
+			return;
+		}
+
+		wp_enqueue_style( 'dreamax-lm-admin', DREAMAX_LM_URL . 'assets/css/admin.css', array(), DREAMAX_LM_VERSION );
+		wp_enqueue_script( 'dreamax-lm-admin', DREAMAX_LM_URL . 'assets/js/admin.js', array(), DREAMAX_LM_VERSION, true );
+		wp_localize_script(
+			'dreamax-lm-admin',
+			'dreamaxLmAdmin',
+			array(
+				'noneSelected'    => __( 'Select one or more licenses to continue.', 'dreamax-license-manager' ),
+				'oneSelected'     => __( '1 license selected', 'dreamax-license-manager' ),
+				/* translators: %d: Number of selected licenses. */
+				'manySelected'    => __( '%d licenses selected', 'dreamax-license-manager' ),
+				'showKey'         => __( 'Show', 'dreamax-license-manager' ),
+				'hideKey'         => __( 'Hide', 'dreamax-license-manager' ),
+				'noFileSelected'  => __( 'No file selected', 'dreamax-license-manager' ),
+				'checkImport'     => __( 'Check import', 'dreamax-license-manager' ),
+				'commitImport'    => __( 'Import licenses', 'dreamax-license-manager' ),
+				'safeExport'      => __( 'Download safe export', 'dreamax-license-manager' ),
+				'sensitiveExport' => __( 'Download sensitive export', 'dreamax-license-manager' ),
+			)
+		);
 	}
 
 	/**
@@ -72,45 +107,67 @@ final class Admin {
 		$order_id    = isset( $_GET['order_id'] ) ? max( 0, (int) $_GET['order_id'] ) : 0;
 		$customer_id = isset( $_GET['customer_id'] ) ? max( 0, (int) $_GET['customer_id'] ) : 0;
 		$expiry      = isset( $_GET['expiry'] ) ? sanitize_key( wp_unslash( (string) $_GET['expiry'] ) ) : '';
-		$clauses     = array();
-		$args        = array();
-		if ( '' !== $search ) {
-			$clauses[] = '(l.public_id LIKE %s OR l.product_public_id LIKE %s)';
-			$args[]    = '%' . $wpdb->esc_like( $search ) . '%';
-			$args[]    = '%' . $wpdb->esc_like( $search ) . '%';
-		}
-		if ( in_array( $status, array( 'available', 'assigned', 'suspended', 'revoked' ), true ) ) {
-			$clauses[] = 'l.lifecycle_status=%s';
-			$args[]    = $status;
-		}
-		if ( $order_id > 0 ) {
-			$clauses[] = 'l.order_id=%d';
-			$args[]    = $order_id;
-		}
-		if ( $customer_id > 0 ) {
-			$clauses[] = 'l.customer_id=%d';
-			$args[]    = $customer_id;
-		}
-		$now = gmdate( 'Y-m-d H:i:s' );
-		if ( 'expired' === $expiry ) {
-			$clauses[] = 'l.expires_at IS NOT NULL AND l.expires_at<=%s';
-			$args[]    = $now;
-		} elseif ( 'soon' === $expiry ) {
-			$clauses[] = 'l.expires_at>%s AND l.expires_at<=%s';
-			$args[]    = $now;
-			$args[]    = gmdate( 'Y-m-d H:i:s', time() + 30 * DAY_IN_SECONDS );
-		} elseif ( 'lifetime' === $expiry ) {
-			$clauses[] = 'l.expires_at IS NULL';
-		}
-		$where            = $clauses ? ' WHERE ' . implode( ' AND ', $clauses ) : '';
+		$created_id  = isset( $_GET['created'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['created'] ) ) : '';
+
+		$valid_status     = in_array( $status, array( 'available', 'assigned', 'suspended', 'revoked' ), true ) ? $status : '';
+		$valid_expiry     = in_array( $expiry, array( 'expired', 'soon', 'lifetime' ), true ) ? $expiry : '';
+		$search_pattern   = '%' . $wpdb->esc_like( $search ) . '%';
+		$now              = gmdate( 'Y-m-d H:i:s' );
+		$soon             = gmdate( 'Y-m-d H:i:s', time() + 30 * DAY_IN_SECONDS );
 		$table            = $wpdb->prefix . 'dreamax_lm_licenses';
 		$activation_table = $wpdb->prefix . 'dreamax_lm_activations';
-		$sql              = "SELECT l.*, COALESCE(a.active_count,0) AS active_count FROM {$table} l LEFT JOIN (SELECT license_id,COUNT(*) AS active_count FROM {$activation_table} WHERE status='active' GROUP BY license_id) a ON a.license_id=l.id{$where} ORDER BY l.created_at DESC LIMIT 50 OFFSET %d";
-		$args[]           = ( $page - 1 ) * 50;
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Trusted table/clause fragments are combined with prepared values; this administration query must be fresh.
-		$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$args ), ARRAY_A );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- This administration query must be fresh.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT l.*, COALESCE(a.active_count,0) AS active_count
+				FROM %i l
+				LEFT JOIN (SELECT license_id,COUNT(*) AS active_count FROM %i WHERE status='active' GROUP BY license_id) a ON a.license_id=l.id
+				WHERE (%d=0 OR l.public_id LIKE %s OR l.product_public_id LIKE %s)
+				AND (%d=0 OR l.lifecycle_status=%s)
+				AND (%d=0 OR l.order_id=%d)
+				AND (%d=0 OR l.customer_id=%d)
+				AND (%s='' OR (%s='expired' AND l.expires_at IS NOT NULL AND l.expires_at<=%s) OR (%s='soon' AND l.expires_at>%s AND l.expires_at<=%s) OR (%s='lifetime' AND l.expires_at IS NULL))
+				ORDER BY l.created_at DESC LIMIT 50 OFFSET %d",
+				$table,
+				$activation_table,
+				'' === $search ? 0 : 1,
+				$search_pattern,
+				$search_pattern,
+				'' === $valid_status ? 0 : 1,
+				$valid_status,
+				$order_id > 0 ? 1 : 0,
+				$order_id,
+				$customer_id > 0 ? 1 : 0,
+				$customer_id,
+				$valid_expiry,
+				$valid_expiry,
+				$now,
+				$valid_expiry,
+				$now,
+				$soon,
+				$valid_expiry,
+				( $page - 1 ) * 50
+			),
+			ARRAY_A
+		);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- This dashboard aggregate must be current.
+		$summary     = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) AS total, SUM(CASE WHEN lifecycle_status='available' THEN 1 ELSE 0 END) AS available, SUM(CASE WHEN lifecycle_status='assigned' THEN 1 ELSE 0 END) AS assigned, SUM(CASE WHEN lifecycle_status IN ('suspended','revoked') OR (expires_at IS NOT NULL AND expires_at<=%s) THEN 1 ELSE 0 END) AS attention FROM %i", $now, $table ), ARRAY_A );
+		$summary     = is_array( $summary ) ? $summary : array();
+		$has_filters = '' !== $search || '' !== $status || $order_id > 0 || $customer_id > 0 || '' !== $expiry;
+		$add_url     = admin_url( 'admin.php?page=dreamax-license-manager-add' );
+		$clear_url   = admin_url( 'admin.php?page=dreamax-license-manager' );
 
-		echo '<div class="wrap"><h1>' . esc_html__( 'Licenses', 'dreamax-license-manager' ) . ' <a class="page-title-action" href="' . esc_url( admin_url( 'admin.php?page=dreamax-license-manager-add' ) ) . '">' . esc_html__( 'Add license', 'dreamax-license-manager' ) . '</a></h1>';
+		echo '<div class="wrap dreamax-lm-admin"><header class="dreamax-lm-page-header"><div><p class="dreamax-lm-eyebrow">' . esc_html__( 'License operations', 'dreamax-license-manager' ) . '</p><h1>' . esc_html__( 'Licenses', 'dreamax-license-manager' ) . '</h1><p class="dreamax-lm-page-intro">' . esc_html__( 'Review ownership, lifecycle, activation use, and expiry from one workspace.', 'dreamax-license-manager' ) . '</p></div><a class="button button-primary dreamax-lm-primary-action" href="' . esc_url( $add_url ) . '"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>' . esc_html__( 'Add license', 'dreamax-license-manager' ) . '</a></header>';
+		if ( '' !== $created_id ) {
+			$created_url = add_query_arg(
+				array(
+					'page'    => 'dreamax-license-manager-license',
+					'license' => $created_id,
+				),
+				admin_url( 'admin.php' )
+			);
+			echo '<div class="notice notice-success is-dismissible dreamax-lm-notice"><p><strong>' . esc_html__( 'License created successfully.', 'dreamax-license-manager' ) . '</strong> <a href="' . esc_url( $created_url ) . '">' . esc_html__( 'View license details', 'dreamax-license-manager' ) . '</a></p></div>';
+		}
 		if ( isset( $_GET['changed'] ) ) {
 			/* translators: %d: Number of completed license operations. */
 			echo '<div class="notice notice-success"><p>' . esc_html( sprintf( __( '%d license operation(s) completed.', 'dreamax-license-manager' ), max( 0, (int) $_GET['changed'] ) ) ) . '</p></div>';
@@ -120,9 +177,20 @@ final class Admin {
 			echo '<div class="notice notice-warning"><p>' . esc_html( sprintf( __( '%d operation(s) were rejected. Review the activity log and license state.', 'dreamax-license-manager' ), (int) $_GET['failed'] ) ) . '</p></div>';
 		}
 		/* phpcs:enable WordPress.Security.NonceVerification.Recommended */
-		echo '<form method="get"><input type="hidden" name="page" value="dreamax-license-manager"><p class="tablenav top">';
-		echo '<input type="search" name="s" placeholder="' . esc_attr__( 'Public or product ID', 'dreamax-license-manager' ) . '" value="' . esc_attr( $search ) . '"> ';
-		echo '<select name="status"><option value="">' . esc_html__( 'All states', 'dreamax-license-manager' ) . '</option>';
+		echo '<section class="dreamax-lm-summary" aria-label="' . esc_attr__( 'License summary', 'dreamax-license-manager' ) . '">';
+		$this->summary_card( __( 'Total licenses', 'dreamax-license-manager' ), (int) ( $summary['total'] ?? 0 ), 'portfolio' );
+		$this->summary_card( __( 'Available', 'dreamax-license-manager' ), (int) ( $summary['available'] ?? 0 ), 'yes-alt' );
+		$this->summary_card( __( 'In circulation', 'dreamax-license-manager' ), (int) ( $summary['assigned'] ?? 0 ), 'admin-users' );
+		$this->summary_card( __( 'Needs attention', 'dreamax-license-manager' ), (int) ( $summary['attention'] ?? 0 ), 'warning' );
+		echo '</section>';
+		echo '<section class="dreamax-lm-panel dreamax-lm-filter-panel"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Find licenses', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Combine filters to narrow the inventory.', 'dreamax-license-manager' ) . '</p></div>';
+		if ( $has_filters ) {
+			echo '<a class="button button-secondary" href="' . esc_url( $clear_url ) . '">' . esc_html__( 'Clear all filters', 'dreamax-license-manager' ) . '</a>';
+		}
+		echo '</div>';
+		echo '<form method="get" class="dreamax-lm-filter-form"><input type="hidden" name="page" value="dreamax-license-manager">';
+		echo '<div class="dreamax-lm-field dreamax-lm-field--search"><label for="dreamax-lm-search">' . esc_html__( 'License or product ID', 'dreamax-license-manager' ) . '</label><input id="dreamax-lm-search" type="search" name="s" placeholder="' . esc_attr__( 'Enter public or product ID', 'dreamax-license-manager' ) . '" value="' . esc_attr( $search ) . '"></div>';
+		echo '<div class="dreamax-lm-field"><label for="dreamax-lm-status">' . esc_html__( 'Lifecycle state', 'dreamax-license-manager' ) . '</label><select id="dreamax-lm-status" name="status"><option value="">' . esc_html__( 'All states', 'dreamax-license-manager' ) . '</option>';
 		foreach ( array(
 			'available' => __( 'Available', 'dreamax-license-manager' ),
 			'assigned'  => __( 'Assigned', 'dreamax-license-manager' ),
@@ -131,44 +199,74 @@ final class Admin {
 		) as $value => $label ) {
 			echo '<option value="' . esc_attr( $value ) . '"' . selected( $status, $value, false ) . '>' . esc_html( $label ) . '</option>';
 		}
-		echo '</select> <input type="number" min="1" name="order_id" placeholder="' . esc_attr__( 'Order ID', 'dreamax-license-manager' ) . '" value="' . esc_attr( $order_id ? $order_id : '' ) . '"> <input type="number" min="1" name="customer_id" placeholder="' . esc_attr__( 'Customer ID', 'dreamax-license-manager' ) . '" value="' . esc_attr( $customer_id ? $customer_id : '' ) . '"> ';
-		echo '<select name="expiry"><option value="">' . esc_html__( 'Any expiry', 'dreamax-license-manager' ) . '</option><option value="expired"' . selected( $expiry, 'expired', false ) . '>' . esc_html__( 'Expired', 'dreamax-license-manager' ) . '</option><option value="soon"' . selected( $expiry, 'soon', false ) . '>' . esc_html__( 'Expires within 30 days', 'dreamax-license-manager' ) . '</option><option value="lifetime"' . selected( $expiry, 'lifetime', false ) . '>' . esc_html__( 'Never expires', 'dreamax-license-manager' ) . '</option></select> <button class="button">' . esc_html__( 'Filter', 'dreamax-license-manager' ) . '</button></p></form>';
+		echo '</select></div><div class="dreamax-lm-field"><label for="dreamax-lm-order">' . esc_html__( 'Order ID', 'dreamax-license-manager' ) . '</label><input id="dreamax-lm-order" type="number" min="1" name="order_id" placeholder="' . esc_attr__( 'Any order', 'dreamax-license-manager' ) . '" value="' . esc_attr( $order_id ? $order_id : '' ) . '"></div><div class="dreamax-lm-field"><label for="dreamax-lm-customer">' . esc_html__( 'Customer ID', 'dreamax-license-manager' ) . '</label><input id="dreamax-lm-customer" type="number" min="1" name="customer_id" placeholder="' . esc_attr__( 'Any customer', 'dreamax-license-manager' ) . '" value="' . esc_attr( $customer_id ? $customer_id : '' ) . '"></div>';
+		echo '<div class="dreamax-lm-field"><label for="dreamax-lm-expiry">' . esc_html__( 'Expiry', 'dreamax-license-manager' ) . '</label><select id="dreamax-lm-expiry" name="expiry"><option value="">' . esc_html__( 'Any expiry', 'dreamax-license-manager' ) . '</option><option value="expired"' . selected( $expiry, 'expired', false ) . '>' . esc_html__( 'Expired', 'dreamax-license-manager' ) . '</option><option value="soon"' . selected( $expiry, 'soon', false ) . '>' . esc_html__( 'Expires within 30 days', 'dreamax-license-manager' ) . '</option><option value="lifetime"' . selected( $expiry, 'lifetime', false ) . '>' . esc_html__( 'Never expires', 'dreamax-license-manager' ) . '</option></select></div><div class="dreamax-lm-filter-submit"><button class="button button-secondary dreamax-lm-filter-button"><span class="dashicons dashicons-filter" aria-hidden="true"></span>' . esc_html__( 'Apply filters', 'dreamax-license-manager' ) . '</button></div></form></section>';
 
-		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_bulk_lifecycle"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
+		echo '<section class="dreamax-lm-panel dreamax-lm-inventory"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'License inventory', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Newest licenses appear first. Select rows to perform a controlled bulk action.', 'dreamax-license-manager' ) . '</p></div></div>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" data-dlm-bulk><input type="hidden" name="action" value="dreamax_lm_bulk_lifecycle"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
 		wp_nonce_field( 'dreamax_lm_bulk_lifecycle' );
-		echo '<table class="widefat striped"><thead><tr><td class="check-column"><input id="dreamax-lm-select-all" type="checkbox" aria-label="' . esc_attr__( 'Select all visible licenses', 'dreamax-license-manager' ) . '"></td><th>' . esc_html__( 'Public ID', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Product ID', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Customer / order', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Status', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Activation use', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Expires', 'dreamax-license-manager' ) . '</th></tr></thead><tbody>';
+		echo '<div class="dreamax-lm-table-scroll"><table class="widefat dreamax-lm-table"><thead><tr><td class="check-column"><input data-dlm-select-all type="checkbox" aria-label="' . esc_attr__( 'Select all visible licenses', 'dreamax-license-manager' ) . '"></td><th scope="col">' . esc_html__( 'License', 'dreamax-license-manager' ) . '</th><th scope="col">' . esc_html__( 'Product', 'dreamax-license-manager' ) . '</th><th scope="col">' . esc_html__( 'Ownership', 'dreamax-license-manager' ) . '</th><th scope="col">' . esc_html__( 'Status', 'dreamax-license-manager' ) . '</th><th scope="col">' . esc_html__( 'Activations', 'dreamax-license-manager' ) . '</th><th scope="col">' . esc_html__( 'Expiry', 'dreamax-license-manager' ) . '</th></tr></thead><tbody>';
 		foreach ( is_array( $rows ) ? $rows : array() as $row ) {
 			$count = (int) $row['active_count'];
-			/* translators: 1: Current activation count. 2: Activation limit. */
-			$usage  = null === $row['activation_limit'] ? sprintf( __( 'Unlimited; %d in use', 'dreamax-license-manager' ), $count ) : sprintf( __( '%1$d of %2$d in use', 'dreamax-license-manager' ), $count, (int) $row['activation_limit'] );
-			$detail = add_query_arg(
+			$limit = null === $row['activation_limit'] ? null : (int) $row['activation_limit'];
+			if ( null === $limit ) {
+				/* translators: %d: Current activation count for an unlimited license. */
+				$usage = sprintf( __( '%d active; unlimited', 'dreamax-license-manager' ), $count );
+			} else {
+				/* translators: 1: Current activation count. 2: Activation limit. */
+				$usage = sprintf( __( '%1$d of %2$d in use', 'dreamax-license-manager' ), $count, $limit );
+			}
+			$detail    = add_query_arg(
 				array(
 					'page'    => 'dreamax-license-manager-license',
 					'license' => (string) $row['public_id'],
 				),
 				admin_url( 'admin.php' )
 			);
-			/* translators: 1: License public ID. 2: Customer ID. 3: Order ID. */
-			echo '<tr><th class="check-column"><input class="dreamax-license-select" type="checkbox" name="license_ids[]" value="' . esc_attr( (string) $row['public_id'] ) . '" aria-label="' . esc_attr( sprintf( __( 'Select license %s', 'dreamax-license-manager' ), (string) $row['public_id'] ) ) . '"></th><td><a href="' . esc_url( $detail ) . '"><code>' . esc_html( (string) $row['public_id'] ) . '</code></a></td><td><code>' . esc_html( (string) $row['product_public_id'] ) . '</code></td><td>' . esc_html( sprintf( __( 'Customer %1$s / Order %2$s', 'dreamax-license-manager' ), $row['customer_id'] ? $row['customer_id'] : '—', $row['order_id'] ? $row['order_id'] : '—' ) ) . '</td><td>' . esc_html( $this->status_label( $row ) ) . '</td><td>' . esc_html( $usage ) . '</td><td>' . esc_html( $row['expires_at'] ? $row['expires_at'] : __( 'Never', 'dreamax-license-manager' ) ) . '</td></tr>';
+			$ownership = array();
+			if ( $row['customer_id'] ) {
+				/* translators: %d: WordPress customer ID. */
+				$ownership[] = sprintf( __( 'Customer #%d', 'dreamax-license-manager' ), (int) $row['customer_id'] );
+			}
+			if ( $row['order_id'] ) {
+				/* translators: %d: WooCommerce order ID. */
+				$ownership[] = sprintf( __( 'Order #%d', 'dreamax-license-manager' ), (int) $row['order_id'] );
+			}
+
+			/* translators: %s: License public ID. */
+			echo '<tr><th class="check-column"><input class="dreamax-license-select" data-dlm-license-checkbox type="checkbox" name="license_ids[]" value="' . esc_attr( (string) $row['public_id'] ) . '" aria-label="' . esc_attr( sprintf( __( 'Select license %s', 'dreamax-license-manager' ), (string) $row['public_id'] ) ) . '"></th>';
+			echo '<td><a class="dreamax-lm-license-link" href="' . esc_url( $detail ) . '"><code>' . esc_html( (string) $row['public_id'] ) . '</code><span class="dashicons dashicons-arrow-right-alt2" aria-hidden="true"></span></a><span class="dreamax-lm-cell-meta">' . esc_html__( 'View details', 'dreamax-license-manager' ) . '</span></td>';
+			echo '<td><code>' . esc_html( (string) $row['product_public_id'] ) . '</code></td><td><strong>' . esc_html( $ownership ? implode( ' · ', $ownership ) : __( 'Not linked', 'dreamax-license-manager' ) ) . '</strong>';
+			if ( ! $ownership ) {
+				echo '<span class="dreamax-lm-cell-meta">' . esc_html__( 'Created manually', 'dreamax-license-manager' ) . '</span>';
+			}
+			echo '</td><td><span class="dreamax-lm-status dreamax-lm-status--' . esc_attr( $this->status_key( $row ) ) . '"><span aria-hidden="true"></span>' . esc_html( $this->status_label( $row ) ) . '</span></td><td><strong>' . esc_html( $usage ) . '</strong>';
+			if ( null !== $limit ) {
+				echo '<progress max="' . esc_attr( (string) max( 1, $limit ) ) . '" value="' . esc_attr( (string) min( $count, max( 1, $limit ) ) ) . '" aria-label="' . esc_attr( $usage ) . '"></progress>';
+			}
+			echo '</td><td><strong>' . esc_html( $row['expires_at'] ? mysql2date( get_option( 'date_format' ), (string) $row['expires_at'], true ) : __( 'Never', 'dreamax-license-manager' ) ) . '</strong>';
+			if ( $row['expires_at'] ) {
+				echo '<span class="dreamax-lm-cell-meta">' . esc_html__( 'UTC', 'dreamax-license-manager' ) . '</span>';
+			}
+			echo '</td></tr>';
 		}
 		if ( ! $rows ) {
-			echo '<tr><td colspan="7">' . esc_html__( 'No licenses found.', 'dreamax-license-manager' ) . '</td></tr>';
+			echo '<tr><td class="dreamax-lm-empty" colspan="7"><span class="dashicons dashicons-search" aria-hidden="true"></span><strong>' . esc_html__( 'No licenses match these filters', 'dreamax-license-manager' ) . '</strong><p>' . esc_html__( 'Try clearing one or more filters, or add a new license.', 'dreamax-license-manager' ) . '</p></td></tr>';
 		}
-		echo '</tbody></table><div class="tablenav bottom"><div class="alignleft actions"><select name="bulk_operation" required><option value="">' . esc_html__( 'Bulk action', 'dreamax-license-manager' ) . '</option><option value="suspend">' . esc_html__( 'Suspend', 'dreamax-license-manager' ) . '</option><option value="restore">' . esc_html__( 'Restore', 'dreamax-license-manager' ) . '</option><option value="revoke">' . esc_html__( 'Permanently revoke', 'dreamax-license-manager' ) . '</option><option value="extend">' . esc_html__( 'Extend expiry', 'dreamax-license-manager' ) . '</option><option value="reset">' . esc_html__( 'Reset activations', 'dreamax-license-manager' ) . '</option>';
+		echo '</tbody></table></div><div class="dreamax-lm-bulk' . esc_attr( $rows ? '' : ' dreamax-lm-bulk--empty' ) . '"><div class="dreamax-lm-bulk-heading"><h3>' . esc_html__( 'Bulk action', 'dreamax-license-manager' ) . '</h3><p data-dlm-selection-status aria-live="polite">' . esc_html__( 'Select one or more licenses to continue.', 'dreamax-license-manager' ) . '</p></div><div class="dreamax-lm-bulk-grid"><label class="dreamax-lm-field"><span>' . esc_html__( 'Action', 'dreamax-license-manager' ) . '</span><select name="bulk_operation" data-dlm-operation required><option value="">' . esc_html__( 'Choose an action', 'dreamax-license-manager' ) . '</option><option value="suspend">' . esc_html__( 'Suspend', 'dreamax-license-manager' ) . '</option><option value="restore">' . esc_html__( 'Restore', 'dreamax-license-manager' ) . '</option><option value="revoke">' . esc_html__( 'Permanently revoke', 'dreamax-license-manager' ) . '</option><option value="extend">' . esc_html__( 'Extend expiry', 'dreamax-license-manager' ) . '</option><option value="reset">' . esc_html__( 'Reset activations', 'dreamax-license-manager' ) . '</option>';
 		if ( current_user_can( Capabilities::DELETE ) ) {
 			echo '<option value="delete">' . esc_html__( 'Permanently delete eligible pool records', 'dreamax-license-manager' ) . '</option>';
 		}
-		echo '</select> <input type="number" name="extension_days" min="1" max="3650" value="30" aria-label="' . esc_attr__( 'Extension days', 'dreamax-license-manager' ) . '"> <input type="text" name="reason" minlength="3" maxlength="500" required placeholder="' . esc_attr__( 'Required reason', 'dreamax-license-manager' ) . '"> <label><input type="checkbox" name="confirm_operation" value="1" required> ' . esc_html__( 'I confirm this operation', 'dreamax-license-manager' ) . '</label> <button class="button action">' . esc_html__( 'Apply', 'dreamax-license-manager' ) . '</button></div></div></form>';
-		wp_print_inline_script_tag( "document.getElementById('dreamax-lm-select-all')?.addEventListener('change',function(){document.querySelectorAll('.dreamax-license-select').forEach(function(box){box.checked=this.checked;},this);});" );
+		echo '</select></label><label class="dreamax-lm-field" data-dlm-extension hidden><span>' . esc_html__( 'Extension days', 'dreamax-license-manager' ) . '</span><input type="number" name="extension_days" min="1" max="3650" value="30"></label><label class="dreamax-lm-field dreamax-lm-field--reason"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input type="text" name="reason" minlength="3" maxlength="500" required placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label><label class="dreamax-lm-confirm"><input data-dlm-confirm type="checkbox" name="confirm_operation" value="1" required> <span>' . esc_html__( 'I reviewed the selected licenses and confirm this operation.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" data-dlm-submit>' . esc_html__( 'Apply action', 'dreamax-license-manager' ) . '</button></div></div></form></section>';
 		$base = remove_query_arg( 'paged' );
-		echo '<p>';
+		echo '<nav class="dreamax-lm-pagination" aria-label="' . esc_attr__( 'License pages', 'dreamax-license-manager' ) . '">';
 		if ( $page > 1 ) {
 			echo '<a class="button" href="' . esc_url( add_query_arg( 'paged', $page - 1, $base ) ) . '">' . esc_html__( 'Previous', 'dreamax-license-manager' ) . '</a> ';
 		}
 		if ( is_array( $rows ) && 50 === count( $rows ) ) {
 			echo '<a class="button" href="' . esc_url( add_query_arg( 'paged', $page + 1, $base ) ) . '">' . esc_html__( 'Next', 'dreamax-license-manager' ) . '</a>';
 		}
-		echo '</p></div>';
+		echo '</nav></div>';
 	}
 
 	/**
@@ -186,8 +284,27 @@ final class Admin {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 		$activations = $wpdb->get_results( $wpdb->prepare( "SELECT public_id,instance_label,status,first_activated_at,activated_at,deactivated_at,last_seen_at FROM {$wpdb->prefix}dreamax_lm_activations WHERE license_id=%d ORDER BY id DESC LIMIT 100", (int) $license['id'] ), ARRAY_A );
 		$events      = ( new EventRepository() )->for_license( (int) $license['id'], 100 );
+		$list_url    = admin_url( 'admin.php?page=dreamax-license-manager' );
+		$ownership   = array();
+		if ( $license['customer_id'] ) {
+			/* translators: %d: WordPress customer ID. */
+			$ownership[] = sprintf( __( 'Customer #%d', 'dreamax-license-manager' ), (int) $license['customer_id'] );
+		}
+		if ( $license['order_id'] ) {
+			/* translators: %d: WooCommerce order ID. */
+			$ownership[] = sprintf( __( 'Order #%d', 'dreamax-license-manager' ), (int) $license['order_id'] );
+		}
+		$owner_label = $ownership ? implode( ' · ', $ownership ) : __( 'Not linked', 'dreamax-license-manager' );
+		if ( null === $license['activation_limit'] ) {
+			$limit_label = __( 'Unlimited', 'dreamax-license-manager' );
+		} else {
+			$activation_limit = (int) $license['activation_limit'];
+			/* translators: %d: Activation limit. */
+			$limit_label = sprintf( _n( '%d installation', '%d installations', $activation_limit, 'dreamax-license-manager' ), $activation_limit );
+		}
+		$expiry_label = $license['expires_at'] ? mysql2date( get_option( 'date_format' ) . ' · ' . get_option( 'time_format' ), (string) $license['expires_at'], true ) . ' UTC' : __( 'Never expires', 'dreamax-license-manager' );
 
-		echo '<div class="wrap"><h1>' . esc_html__( 'License details', 'dreamax-license-manager' ) . '</h1><p><a href="' . esc_url( admin_url( 'admin.php?page=dreamax-license-manager' ) ) . '">&larr; ' . esc_html__( 'Back to licenses', 'dreamax-license-manager' ) . '</a></p>';
+		echo '<div class="wrap dreamax-lm-admin dreamax-lm-detail-page"><header class="dreamax-lm-page-header"><div><p class="dreamax-lm-eyebrow">' . esc_html__( 'License record', 'dreamax-license-manager' ) . '</p><h1>' . esc_html__( 'License details', 'dreamax-license-manager' ) . '</h1><p class="dreamax-lm-page-intro">' . esc_html__( 'Review identity, ownership, activation policy, and the complete audit history.', 'dreamax-license-manager' ) . '</p></div><a class="button button-secondary dreamax-lm-back-action" href="' . esc_url( $list_url ) . '"><span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span>' . esc_html__( 'Back to licenses', 'dreamax-license-manager' ) . '</a></header>';
 		if ( isset( $_GET['changed'] ) && (int) $_GET['changed'] > 0 ) {
 			echo '<div class="notice notice-success"><p>' . esc_html__( 'The license operation was completed.', 'dreamax-license-manager' ) . '</p></div>';
 		}
@@ -195,35 +312,37 @@ final class Admin {
 			echo '<div class="notice notice-warning"><p>' . esc_html__( 'The operation was rejected because it did not match the current license state or policy.', 'dreamax-license-manager' ) . '</p></div>';
 		}
 		/* phpcs:enable WordPress.Security.NonceVerification.Recommended */
-		echo '<table class="widefat striped"><tbody><tr><th>' . esc_html__( 'Public ID', 'dreamax-license-manager' ) . '</th><td><code>' . esc_html( $public_id ) . '</code></td></tr><tr><th>' . esc_html__( 'Status', 'dreamax-license-manager' ) . '</th><td>' . esc_html( $this->status_label( $license ) ) . '</td></tr><tr><th>' . esc_html__( 'Product public ID', 'dreamax-license-manager' ) . '</th><td><code>' . esc_html( (string) $license['product_public_id'] ) . '</code></td></tr><tr><th>' . esc_html__( 'Customer', 'dreamax-license-manager' ) . '</th><td>' . esc_html( (string) ( $license['customer_id'] ? $license['customer_id'] : '—' ) ) . '</td></tr><tr><th>' . esc_html__( 'Order', 'dreamax-license-manager' ) . '</th><td>' . esc_html( (string) ( $license['order_id'] ? $license['order_id'] : '—' ) ) . '</td></tr><tr><th>' . esc_html__( 'Activation limit', 'dreamax-license-manager' ) . '</th><td>' . esc_html( null === $license['activation_limit'] ? __( 'Unlimited', 'dreamax-license-manager' ) : (string) $license['activation_limit'] ) . '</td></tr><tr><th>' . esc_html__( 'Expiry (UTC)', 'dreamax-license-manager' ) . '</th><td>' . esc_html( $license['expires_at'] ? $license['expires_at'] : __( 'Never', 'dreamax-license-manager' ) ) . '</td></tr></tbody></table>';
+		echo '<section class="dreamax-lm-panel dreamax-lm-license-overview"><div class="dreamax-lm-license-identity"><div><span class="dreamax-lm-detail-label">' . esc_html__( 'License public ID', 'dreamax-license-manager' ) . '</span><code>' . esc_html( $public_id ) . '</code></div><span class="dreamax-lm-status dreamax-lm-status--' . esc_attr( $this->status_key( $license ) ) . '"><span aria-hidden="true"></span>' . esc_html( $this->status_label( $license ) ) . '</span></div><div class="dreamax-lm-detail-facts">';
+		echo '<article><span class="dashicons dashicons-products" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Product', 'dreamax-license-manager' ) . '</span><code>' . esc_html( (string) $license['product_public_id'] ) . '</code></div></article>';
+		echo '<article><span class="dashicons dashicons-admin-users" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Ownership', 'dreamax-license-manager' ) . '</span><strong>' . esc_html( $owner_label ) . '</strong>';
+		if ( ! $ownership ) {
+			echo '<small>' . esc_html__( 'Created manually', 'dreamax-license-manager' ) . '</small>';
+		}
+		echo '</div></article><article><span class="dashicons dashicons-admin-network" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Activation policy', 'dreamax-license-manager' ) . '</span><strong>' . esc_html( $limit_label ) . '</strong></div></article><article><span class="dashicons dashicons-calendar-alt" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Expiry', 'dreamax-license-manager' ) . '</span><strong>' . esc_html( $expiry_label ) . '</strong></div></article></div></section>';
 
-		echo '<h2>' . esc_html__( 'Lifecycle operation', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Extension adds days from the later of the current expiry or the current server time. A lifetime license cannot be extended. Revocation is permanent.', 'dreamax-license-manager' ) . '</p>';
-		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_bulk_lifecycle"><input type="hidden" name="license_ids[]" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="return_license" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
+		echo '<div class="dreamax-lm-detail-operation-grid"><section class="dreamax-lm-panel dreamax-lm-detail-operation"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Lifecycle operation', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Change availability, expiry, or active installations.', 'dreamax-license-manager' ) . '</p></div><span class="dashicons dashicons-update-alt" aria-hidden="true"></span></div>';
+		echo '<form class="dreamax-lm-operation-form" data-dlm-lifecycle-form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_bulk_lifecycle"><input type="hidden" name="license_ids[]" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="return_license" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
 		wp_nonce_field( 'dreamax_lm_bulk_lifecycle' );
-		echo '<p><label>' . esc_html__( 'Action', 'dreamax-license-manager' ) . ' <select name="bulk_operation" required><option value="suspend">' . esc_html__( 'Suspend temporarily', 'dreamax-license-manager' ) . '</option><option value="restore">' . esc_html__( 'Restore from suspension', 'dreamax-license-manager' ) . '</option><option value="revoke">' . esc_html__( 'Permanently revoke', 'dreamax-license-manager' ) . '</option><option value="extend">' . esc_html__( 'Extend expiry', 'dreamax-license-manager' ) . '</option><option value="reset">' . esc_html__( 'Reset all active installations', 'dreamax-license-manager' ) . '</option>';
+		echo '<div class="dreamax-lm-operation-body"><label class="dreamax-lm-field"><span>' . esc_html__( 'Action', 'dreamax-license-manager' ) . '</span><select name="bulk_operation" data-dlm-operation required><option value="">' . esc_html__( 'Choose an action', 'dreamax-license-manager' ) . '</option><option value="suspend">' . esc_html__( 'Suspend temporarily', 'dreamax-license-manager' ) . '</option><option value="restore">' . esc_html__( 'Restore from suspension', 'dreamax-license-manager' ) . '</option><option value="revoke">' . esc_html__( 'Permanently revoke', 'dreamax-license-manager' ) . '</option><option value="extend">' . esc_html__( 'Extend expiry', 'dreamax-license-manager' ) . '</option><option value="reset">' . esc_html__( 'Reset all active installations', 'dreamax-license-manager' ) . '</option>';
 		if ( current_user_can( Capabilities::DELETE ) ) {
 			echo '<option value="delete">' . esc_html__( 'Permanently delete eligible pool record', 'dreamax-license-manager' ) . '</option>';
 		}
-		echo '</select></label> <label>' . esc_html__( 'Extension days', 'dreamax-license-manager' ) . ' <input type="number" name="extension_days" min="1" max="3650" value="30"></label></p><p><label>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . ' <input class="regular-text" name="reason" minlength="3" maxlength="500" required></label></p><p><label><input type="checkbox" name="confirm_operation" value="1" required> ' . esc_html__( 'I understand and confirm this operation.', 'dreamax-license-manager' ) . '</label></p>';
-		submit_button( __( 'Apply operation', 'dreamax-license-manager' ), 'primary', 'submit', false );
-		echo '</form>';
+		echo '</select></label><label class="dreamax-lm-field" data-dlm-extension hidden><span>' . esc_html__( 'Extension days', 'dreamax-license-manager' ) . '</span><input type="number" name="extension_days" min="1" max="3650" value="30"></label><label class="dreamax-lm-field"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input name="reason" minlength="3" maxlength="500" required placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label><div class="dreamax-lm-operation-note"><span class="dashicons dashicons-info-outline" aria-hidden="true"></span><span>' . esc_html__( 'Extension starts from the later of the current expiry or current server time. Revocation is permanent.', 'dreamax-license-manager' ) . '</span></div><label class="dreamax-lm-confirm"><input data-dlm-confirm type="checkbox" name="confirm_operation" value="1" required><span>' . esc_html__( 'I understand the effect and confirm this operation.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" data-dlm-submit disabled>' . esc_html__( 'Apply operation', 'dreamax-license-manager' ) . '</button></div></form></section>';
 
-		echo '<h2>' . esc_html__( 'Reassign ownership', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Reassignment removes the old order-item link so the former owner can no longer view the key through that order. If an order is supplied, it must belong to the target customer.', 'dreamax-license-manager' ) . '</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_reassign_license"><input type="hidden" name="license" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
+		echo '<section class="dreamax-lm-panel dreamax-lm-detail-operation"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Reassign ownership', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Transfer this license to a verified customer and optional order.', 'dreamax-license-manager' ) . '</p></div><span class="dashicons dashicons-migrate" aria-hidden="true"></span></div><form class="dreamax-lm-operation-form" data-dlm-confirmed-form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_reassign_license"><input type="hidden" name="license" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
 		wp_nonce_field( 'dreamax_lm_reassign_license' );
-		echo '<table class="form-table"><tr><th><label for="target_customer_id">' . esc_html__( 'Target customer ID', 'dreamax-license-manager' ) . '</label></th><td><input type="number" min="1" required id="target_customer_id" name="target_customer_id"></td></tr><tr><th><label for="target_order_id">' . esc_html__( 'Target order ID', 'dreamax-license-manager' ) . '</label></th><td><input type="number" min="1" id="target_order_id" name="target_order_id"><p class="description">' . esc_html__( 'Optional. Leaving this blank removes the old order association.', 'dreamax-license-manager' ) . '</p></td></tr><tr><th><label for="target_product_public_id">' . esc_html__( 'Target product public ID', 'dreamax-license-manager' ) . '</label></th><td><input class="regular-text" pattern="prd_[A-Za-z0-9_-]{22}" id="target_product_public_id" name="target_product_public_id" value="' . esc_attr( (string) $license['product_public_id'] ) . '"></td></tr><tr><th><label for="reassign_reason">' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</label></th><td><input class="regular-text" minlength="3" maxlength="500" required id="reassign_reason" name="reason"></td></tr></table><p><label><input type="checkbox" name="reset_activations" value="1"> ' . esc_html__( 'Deactivate all existing installations', 'dreamax-license-manager' ) . '</label></p><p><label><input type="checkbox" name="notify_customer" value="1"> ' . esc_html__( 'Email the target customer without including the key', 'dreamax-license-manager' ) . '</label></p><p><label><input type="checkbox" name="confirm_operation" value="1" required> ' . esc_html__( 'I verified the old and new ownership and confirm reassignment.', 'dreamax-license-manager' ) . '</label></p>';
-		submit_button( __( 'Reassign license', 'dreamax-license-manager' ), 'primary', 'submit', false );
-		echo '</form>';
+		echo '<div class="dreamax-lm-operation-body"><div class="dreamax-lm-form-grid"><label class="dreamax-lm-field"><span>' . esc_html__( 'Target customer ID', 'dreamax-license-manager' ) . '</span><input type="number" min="1" required id="target_customer_id" name="target_customer_id"></label><label class="dreamax-lm-field"><span>' . esc_html__( 'Target order ID', 'dreamax-license-manager' ) . ' <span class="dreamax-lm-optional">' . esc_html__( 'Optional', 'dreamax-license-manager' ) . '</span></span><input type="number" min="1" id="target_order_id" name="target_order_id"></label></div><label class="dreamax-lm-field"><span>' . esc_html__( 'Target product public ID', 'dreamax-license-manager' ) . '</span><input pattern="prd_[A-Za-z0-9_-]{22}" id="target_product_public_id" name="target_product_public_id" value="' . esc_attr( (string) $license['product_public_id'] ) . '"></label><label class="dreamax-lm-field"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input minlength="3" maxlength="500" required id="reassign_reason" name="reason" placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label><div class="dreamax-lm-check-stack"><label><input type="checkbox" name="reset_activations" value="1"><span>' . esc_html__( 'Deactivate all existing installations', 'dreamax-license-manager' ) . '</span></label><label><input type="checkbox" name="notify_customer" value="1"><span>' . esc_html__( 'Email the target customer without including the key', 'dreamax-license-manager' ) . '</span></label></div><div class="dreamax-lm-operation-note dreamax-lm-operation-note--warning"><span class="dashicons dashicons-warning" aria-hidden="true"></span><span>' . esc_html__( 'The former owner immediately loses access through the old order-item link.', 'dreamax-license-manager' ) . '</span></div><label class="dreamax-lm-confirm"><input data-dlm-confirm type="checkbox" name="confirm_operation" value="1" required><span>' . esc_html__( 'I verified the old and new ownership and confirm reassignment.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" data-dlm-submit disabled>' . esc_html__( 'Reassign license', 'dreamax-license-manager' ) . '</button></div></form></section></div>';
 
-		echo '<h2>' . esc_html__( 'Installations', 'dreamax-license-manager' ) . '</h2><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Activation ID', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Label', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Status', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Activated', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Deactivated', 'dreamax-license-manager' ) . '</th></tr></thead><tbody>';
+		echo '<section class="dreamax-lm-panel dreamax-lm-detail-table-panel"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Installations', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Registered devices and their current activation state.', 'dreamax-license-manager' ) . '</p></div><span class="dreamax-lm-count">' . esc_html( number_format_i18n( is_array( $activations ) ? count( $activations ) : 0 ) ) . '</span></div><div class="dreamax-lm-table-scroll"><table class="widefat dreamax-lm-table"><thead><tr><th>' . esc_html__( 'Activation ID', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Label', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Status', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Activated', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Deactivated', 'dreamax-license-manager' ) . '</th></tr></thead><tbody>';
 		foreach ( is_array( $activations ) ? $activations : array() as $activation ) {
 			echo '<tr><td><code>' . esc_html( (string) $activation['public_id'] ) . '</code></td><td>' . esc_html( (string) ( $activation['instance_label'] ? $activation['instance_label'] : '—' ) ) . '</td><td>' . esc_html( (string) $activation['status'] ) . '</td><td>' . esc_html( (string) $activation['activated_at'] ) . '</td><td>' . esc_html( (string) ( $activation['deactivated_at'] ? $activation['deactivated_at'] : '—' ) ) . '</td></tr>';
 		}
 		if ( ! $activations ) {
-			echo '<tr><td colspan="5">' . esc_html__( 'No installations recorded.', 'dreamax-license-manager' ) . '</td></tr>';
+			echo '<tr><td class="dreamax-lm-empty dreamax-lm-empty--compact" colspan="5"><span class="dashicons dashicons-admin-network" aria-hidden="true"></span><strong>' . esc_html__( 'No installations recorded', 'dreamax-license-manager' ) . '</strong><p>' . esc_html__( 'Activated devices will appear here.', 'dreamax-license-manager' ) . '</p></td></tr>';
 		}
-		echo '</tbody></table><h2>' . esc_html__( 'Audit trail', 'dreamax-license-manager' ) . '</h2>';
+		echo '</tbody></table></div></section><section class="dreamax-lm-panel dreamax-lm-detail-table-panel dreamax-lm-audit-panel"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Audit trail', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Immutable operational history for this license.', 'dreamax-license-manager' ) . '</p></div><span class="dreamax-lm-count">' . esc_html( number_format_i18n( count( $events ) ) ) . '</span></div><div class="dreamax-lm-table-scroll">';
 		$this->render_events( $events );
-		echo '</div>';
+		echo '</div></section></div>';
 	}
 
 	/**
@@ -231,9 +350,30 @@ final class Admin {
 	 */
 	public function activity_page(): void {
 		$this->authorize( Capabilities::MANAGE );
-		echo '<div class="wrap"><h1>' . esc_html__( 'Recent license activity', 'dreamax-license-manager' ) . '</h1>';
-		$this->render_events( ( new EventRepository() )->recent( 200 ), true );
-		echo '</div>';
+		$events      = ( new EventRepository() )->recent( 200 );
+		$event_types = array();
+		$license_ids = array();
+		$actors      = array();
+		foreach ( $events as $event ) {
+			$event_types[] = (string) ( $event['event_type'] ?? '' );
+			$actor_type    = (string) ( $event['actor_type'] ?? '' );
+			if ( '' !== $actor_type ) {
+				$actors[] = $actor_type . ':' . (string) ( $event['actor_id'] ?? '' );
+			}
+			if ( ! empty( $event['license_public_id'] ) ) {
+				$license_ids[] = (string) $event['license_public_id'];
+			}
+		}
+
+		echo '<div class="wrap dreamax-lm-admin dreamax-lm-activity-page"><header class="dreamax-lm-page-header"><div><p class="dreamax-lm-eyebrow">' . esc_html__( 'Audit and monitoring', 'dreamax-license-manager' ) . '</p><h1>' . esc_html__( 'Recent activity', 'dreamax-license-manager' ) . '</h1><p class="dreamax-lm-page-intro">' . esc_html__( 'Review the latest license operations, actors, and sanitized context.', 'dreamax-license-manager' ) . '</p></div></header>';
+		echo '<section class="dreamax-lm-summary" aria-label="' . esc_attr__( 'Activity summary', 'dreamax-license-manager' ) . '">';
+		$this->summary_card( __( 'Recent events', 'dreamax-license-manager' ), count( $events ), 'list-view' );
+		$this->summary_card( __( 'Event types', 'dreamax-license-manager' ), count( array_unique( array_filter( $event_types ) ) ), 'category' );
+		$this->summary_card( __( 'Licenses referenced', 'dreamax-license-manager' ), count( array_unique( $license_ids ) ), 'admin-network' );
+		$this->summary_card( __( 'Actors', 'dreamax-license-manager' ), count( array_unique( $actors ) ), 'groups' );
+		echo '</section><section class="dreamax-lm-panel dreamax-lm-detail-table-panel dreamax-lm-audit-panel"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Event timeline', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Newest first · Up to 200 sanitized events', 'dreamax-license-manager' ) . '</p></div><span class="dreamax-lm-count">' . esc_html( number_format_i18n( count( $events ) ) ) . '</span></div><div class="dreamax-lm-table-scroll">';
+		$this->render_events( $events, true );
+		echo '</div></section></div>';
 	}
 
 	/**
@@ -241,15 +381,18 @@ final class Admin {
 	 */
 	public function add_page(): void {
 		$this->authorize( Capabilities::MANAGE );
-		echo '<div class="wrap"><h1>' . esc_html__( 'Add license', 'dreamax-license-manager' ) . '</h1><p>' . esc_html__( 'Create a secure generated key, or import one exact key. The product public ID must belong to the product that will validate this license.', 'dreamax-license-manager' ) . '</p>';
-		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_create_license">';
+		$list_url = admin_url( 'admin.php?page=dreamax-license-manager' );
+
+		echo '<div class="wrap dreamax-lm-admin dreamax-lm-add-page"><header class="dreamax-lm-page-header"><div><p class="dreamax-lm-eyebrow">' . esc_html__( 'License inventory', 'dreamax-license-manager' ) . '</p><h1>' . esc_html__( 'Add license', 'dreamax-license-manager' ) . '</h1><p class="dreamax-lm-page-intro">' . esc_html__( 'Create a secure license for a product, with clear activation and expiry rules.', 'dreamax-license-manager' ) . '</p></div><a class="button button-secondary dreamax-lm-back-action" href="' . esc_url( $list_url ) . '"><span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span>' . esc_html__( 'Back to licenses', 'dreamax-license-manager' ) . '</a></header>';
+		echo '<form class="dreamax-lm-add-form" data-dlm-add-license method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_create_license">';
 		wp_nonce_field( 'dreamax_lm_create_license' );
-		echo '<table class="form-table"><tr><th><label for="product_public_id">' . esc_html__( 'Product public ID', 'dreamax-license-manager' ) . '</label></th><td><input class="regular-text" required pattern="prd_[A-Za-z0-9_-]{22}" id="product_public_id" name="product_public_id"></td></tr>';
-		echo '<tr><th><label for="license_key">' . esc_html__( 'Imported key', 'dreamax-license-manager' ) . '</label></th><td><input class="regular-text" id="license_key" name="license_key"><p class="description">' . esc_html__( 'Leave blank to generate a key with the secure default. Imported keys are exact and case-sensitive.', 'dreamax-license-manager' ) . '</p></td></tr>';
-		echo '<tr><th><label for="activation_limit">' . esc_html__( 'Activation limit', 'dreamax-license-manager' ) . '</label></th><td><input type="number" min="0" id="activation_limit" name="activation_limit" value="1"><p class="description">' . esc_html__( 'Blank means unlimited. Zero disables activation.', 'dreamax-license-manager' ) . '</p></td></tr>';
-		echo '<tr><th><label for="expires_at">' . esc_html__( 'Expiry (UTC)', 'dreamax-license-manager' ) . '</label></th><td><input type="datetime-local" id="expires_at" name="expires_at"></td></tr></table>';
-		submit_button( __( 'Create license', 'dreamax-license-manager' ) );
-		echo '</form></div>';
+		echo '<div class="dreamax-lm-add-layout"><section class="dreamax-lm-panel dreamax-lm-create-panel"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'License details', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Fields marked required must be completed.', 'dreamax-license-manager' ) . '</p></div><span class="dreamax-lm-required-note">' . esc_html__( 'Required', 'dreamax-license-manager' ) . '</span></div><div class="dreamax-lm-form-body">';
+		echo '<div class="dreamax-lm-field dreamax-lm-field--large"><label for="product_public_id">' . esc_html__( 'Product public ID', 'dreamax-license-manager' ) . ' <span aria-hidden="true">*</span></label><input class="large-text" required pattern="prd_[A-Za-z0-9_-]{22}" autocomplete="off" spellcheck="false" id="product_public_id" name="product_public_id" placeholder="prd_…" aria-describedby="dreamax-lm-product-help"><p id="dreamax-lm-product-help" class="dreamax-lm-help">' . esc_html__( 'Use the public ID of the product that will validate this license.', 'dreamax-license-manager' ) . '</p></div>';
+		echo '<fieldset class="dreamax-lm-key-source"><legend>' . esc_html__( 'Key source', 'dreamax-license-manager' ) . '</legend><div class="dreamax-lm-choice-grid"><label class="dreamax-lm-choice"><input type="radio" name="key_source" value="generated" checked><span class="dashicons dashicons-shield-alt" aria-hidden="true"></span><span><strong>' . esc_html__( 'Generate securely', 'dreamax-license-manager' ) . '</strong><small>' . esc_html__( 'Recommended. Dreamax creates a strong unique key.', 'dreamax-license-manager' ) . '</small></span></label><label class="dreamax-lm-choice"><input type="radio" name="key_source" value="imported"><span class="dashicons dashicons-upload" aria-hidden="true"></span><span><strong>' . esc_html__( 'Import an existing key', 'dreamax-license-manager' ) . '</strong><small>' . esc_html__( 'Preserve one exact key from another system.', 'dreamax-license-manager' ) . '</small></span></label></div></fieldset>';
+		echo '<div class="dreamax-lm-field dreamax-lm-import-field" data-dlm-import-field hidden><label for="license_key">' . esc_html__( 'Existing license key', 'dreamax-license-manager' ) . ' <span aria-hidden="true">*</span></label><div class="dreamax-lm-secret-input"><input type="password" class="large-text" id="license_key" name="license_key" autocomplete="new-password" spellcheck="false" disabled><button class="button" type="button" data-dlm-toggle-key aria-controls="license_key" aria-pressed="false"><span class="dashicons dashicons-visibility" data-dlm-toggle-icon aria-hidden="true"></span><span data-dlm-toggle-label>' . esc_html__( 'Show', 'dreamax-license-manager' ) . '</span></button></div><p class="dreamax-lm-help">' . esc_html__( 'Imported keys are exact and case-sensitive. They are encrypted before storage.', 'dreamax-license-manager' ) . '</p></div>';
+		echo '<div class="dreamax-lm-form-grid"><div class="dreamax-lm-field"><label for="activation_limit">' . esc_html__( 'Activation limit', 'dreamax-license-manager' ) . '</label><input type="number" min="0" id="activation_limit" name="activation_limit" value="1" inputmode="numeric" aria-describedby="dreamax-lm-limit-help"><p id="dreamax-lm-limit-help" class="dreamax-lm-help">' . esc_html__( 'Blank allows unlimited activations; zero disables activation.', 'dreamax-license-manager' ) . '</p></div><div class="dreamax-lm-field"><label for="expires_at">' . esc_html__( 'Expiry', 'dreamax-license-manager' ) . ' <span class="dreamax-lm-optional">' . esc_html__( 'Optional', 'dreamax-license-manager' ) . '</span></label><input type="datetime-local" id="expires_at" name="expires_at" aria-describedby="dreamax-lm-expiry-help"><p id="dreamax-lm-expiry-help" class="dreamax-lm-help">' . esc_html__( 'Stored in UTC. Leave empty for no expiry.', 'dreamax-license-manager' ) . '</p></div></div></div>';
+		echo '<footer class="dreamax-lm-form-actions"><p><span class="dashicons dashicons-lock" aria-hidden="true"></span>' . esc_html__( 'The key is encrypted before it is stored.', 'dreamax-license-manager' ) . '</p><button class="button button-primary dreamax-lm-create-button" type="submit"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>' . esc_html__( 'Create license', 'dreamax-license-manager' ) . '</button></footer></section>';
+		echo '<aside class="dreamax-lm-panel dreamax-lm-guidance"><div class="dreamax-lm-guidance-icon"><span class="dashicons dashicons-shield" aria-hidden="true"></span></div><h2>' . esc_html__( 'Secure by default', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Generated keys use the plugin’s secure format and avoid manual handling.', 'dreamax-license-manager' ) . '</p><ul><li><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>' . esc_html__( 'Product identity is validated before creation.', 'dreamax-license-manager' ) . '</li><li><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>' . esc_html__( 'Keys are never stored as plain text.', 'dreamax-license-manager' ) . '</li><li><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>' . esc_html__( 'Creation is recorded in the audit trail.', 'dreamax-license-manager' ) . '</li></ul><div class="dreamax-lm-guidance-note"><strong>' . esc_html__( 'Before you continue', 'dreamax-license-manager' ) . '</strong><span>' . esc_html__( 'Confirm the product ID and activation policy. A manually created license is not linked to a customer or order.', 'dreamax-license-manager' ) . '</span></div></aside></div></form></div>';
 	}
 
 	/**
@@ -257,19 +400,17 @@ final class Admin {
 	 */
 	public function transfer_page(): void {
 		$this->authorize( Capabilities::MANAGE );
-		echo '<div class="wrap"><h1>' . esc_html__( 'Import and export', 'dreamax-license-manager' ) . '</h1><h2>' . esc_html__( 'Import CSV', 'dreamax-license-manager' ) . '</h2>';
-		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_import_csv">';
+		echo '<div class="wrap dreamax-lm-admin dreamax-lm-transfer-page"><header class="dreamax-lm-page-header"><div><p class="dreamax-lm-eyebrow">' . esc_html__( 'Data portability', 'dreamax-license-manager' ) . '</p><h1>' . esc_html__( 'Import and export', 'dreamax-license-manager' ) . '</h1><p class="dreamax-lm-page-intro">' . esc_html__( 'Move license inventory with preview-first validation and audited sensitive exports.', 'dreamax-license-manager' ) . '</p></div></header><div class="dreamax-lm-transfer-grid">';
+		echo '<section class="dreamax-lm-panel dreamax-lm-transfer-card"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Import CSV', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Validate the file before committing any license records.', 'dreamax-license-manager' ) . '</p></div><span class="dashicons dashicons-upload" aria-hidden="true"></span></div><form class="dreamax-lm-transfer-form" data-dlm-import-form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_import_csv">';
 		wp_nonce_field( 'dreamax_lm_import_csv' );
-		echo '<input type="file" name="csv" accept=".csv,text/csv" required> <label><input type="checkbox" name="dry_run" value="1" checked> ' . esc_html__( 'Preview only', 'dreamax-license-manager' ) . '</label>';
-		submit_button( __( 'Check import', 'dreamax-license-manager' ), 'primary', 'submit', false );
-		echo '</form><p>' . esc_html__( 'Required columns: license_key, product_public_id. Optional: activation_limit, expires_at, normalization_profile, separator.', 'dreamax-license-manager' ) . '</p>';
-		echo '<h2>' . esc_html__( 'Export CSV', 'dreamax-license-manager' ) . '</h2><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_export_csv">';
+		echo '<label class="dreamax-lm-file-picker"><span class="dashicons dashicons-media-spreadsheet" aria-hidden="true"></span><strong>' . esc_html__( 'Choose a CSV file', 'dreamax-license-manager' ) . '</strong><span data-dlm-file-name>' . esc_html__( 'No file selected', 'dreamax-license-manager' ) . '</span><input class="screen-reader-text" data-dlm-file-input type="file" name="csv" accept=".csv,text/csv" required></label><label class="dreamax-lm-preview-toggle"><input data-dlm-preview-only type="checkbox" name="dry_run" value="1" checked><span><strong>' . esc_html__( 'Preview only', 'dreamax-license-manager' ) . '</strong><small>' . esc_html__( 'Recommended. Validate rows and errors without writing to the database.', 'dreamax-license-manager' ) . '</small></span></label><label class="dreamax-lm-import-confirm" data-dlm-import-confirm hidden><input type="checkbox" disabled><span><strong>' . esc_html__( 'Confirm database import', 'dreamax-license-manager' ) . '</strong><small>' . esc_html__( 'I understand this will create license records from every valid CSV row.', 'dreamax-license-manager' ) . '</small></span></label><div class="dreamax-lm-csv-contract"><strong>' . esc_html__( 'CSV columns', 'dreamax-license-manager' ) . '</strong><dl><div><dt>' . esc_html__( 'Required', 'dreamax-license-manager' ) . '</dt><dd><code>license_key</code>, <code>product_public_id</code></dd></div><div><dt>' . esc_html__( 'Optional', 'dreamax-license-manager' ) . '</dt><dd><code>activation_limit</code>, <code>expires_at</code>, <code>normalization_profile</code>, <code>separator</code></dd></div></dl></div><button class="button button-primary" data-dlm-import-submit type="submit"><span class="dashicons dashicons-search" aria-hidden="true"></span><span data-dlm-import-label>' . esc_html__( 'Check import', 'dreamax-license-manager' ) . '</span></button></form></section>';
+		echo '<section class="dreamax-lm-panel dreamax-lm-transfer-card"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Export CSV', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Download a portable inventory for authorized operational use.', 'dreamax-license-manager' ) . '</p></div><span class="dashicons dashicons-download" aria-hidden="true"></span></div><form class="dreamax-lm-transfer-form" data-dlm-export-form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_export_csv">';
 		wp_nonce_field( 'dreamax_lm_export_csv' );
+		echo '<div class="dreamax-lm-export-guidance"><span class="dashicons dashicons-shield" aria-hidden="true"></span><div><strong>' . esc_html__( 'Default export is safer', 'dreamax-license-manager' ) . '</strong><p>' . esc_html__( 'Full keys remain excluded unless an authorized administrator explicitly requests them.', 'dreamax-license-manager' ) . '</p></div></div>';
 		if ( current_user_can( Capabilities::EXPORT ) ) {
-			echo '<label><input type="checkbox" name="full_keys" value="1"> ' . esc_html__( 'Include full keys (audited)', 'dreamax-license-manager' ) . '</label>';
+			echo '<label class="dreamax-lm-sensitive-option"><input data-dlm-full-keys type="checkbox" name="full_keys" value="1"><span><strong>' . esc_html__( 'Include full license keys', 'dreamax-license-manager' ) . '</strong><small>' . esc_html__( 'Sensitive and audited. Store the downloaded file securely and delete it when no longer needed.', 'dreamax-license-manager' ) . '</small></span></label><label class="dreamax-lm-export-confirm" data-dlm-export-confirm hidden><input type="checkbox" disabled><span>' . esc_html__( 'I understand this export contains sensitive full license keys.', 'dreamax-license-manager' ) . '</span></label>';
 		}
-		submit_button( __( 'Download export', 'dreamax-license-manager' ), 'secondary', 'submit', false );
-		echo '</form></div>';
+		echo '<button class="button button-primary" data-dlm-export-submit type="submit"><span class="dashicons dashicons-download" aria-hidden="true"></span><span data-dlm-export-label>' . esc_html__( 'Download safe export', 'dreamax-license-manager' ) . '</span></button></form></section></div></div>';
 	}
 
 	/**
@@ -282,47 +423,60 @@ final class Admin {
 		$actor_id         = get_current_user_id();
 		$create_operation = $operations->issue( CredentialAdminOperation::CREATE, '', $actor_id );
 		$rows             = $service->list_safe();
-		echo '<div class="wrap"><h1>' . esc_html__( 'API credentials', 'dreamax-license-manager' ) . '</h1><p>' . esc_html__( 'A new or rotated secret is shown once. Store it in a server-side secret manager; never embed it in distributed client software. Lost or revoked secrets cannot be recovered.', 'dreamax-license-manager' ) . '</p>';
+		$total            = count( $rows );
+		$active           = count( array_filter( $rows, static fn( array $row ): bool => 'active' === (string) $row['effective_status'] ) );
+		$attention        = $total - $active;
+		$scope_catalog    = array(
+			'licenses:read'    => array( __( 'Read licenses', 'dreamax-license-manager' ), __( 'View authorized license inventory and status.', 'dreamax-license-manager' ) ),
+			'licenses:write'   => array( __( 'Manage licenses', 'dreamax-license-manager' ), __( 'Create or change license records through privileged routes.', 'dreamax-license-manager' ) ),
+			'activations:read' => array( __( 'Read activations', 'dreamax-license-manager' ), __( 'Inspect registered installations and activation state.', 'dreamax-license-manager' ) ),
+			'generators:read'  => array( __( 'Read generators', 'dreamax-license-manager' ), __( 'Inspect configured license generation policies.', 'dreamax-license-manager' ) ),
+		);
+		echo '<div class="wrap dreamax-lm-admin dreamax-lm-credentials-page"><header class="dreamax-lm-page-header"><div><p class="dreamax-lm-eyebrow">' . esc_html__( 'Privileged access', 'dreamax-license-manager' ) . '</p><h1>' . esc_html__( 'API credentials', 'dreamax-license-manager' ) . '</h1><p class="dreamax-lm-page-intro">' . esc_html__( 'Issue narrowly scoped Bearer credentials and control their complete lifecycle.', 'dreamax-license-manager' ) . '</p></div></header>';
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-action status notice behind the credential capability.
 		if ( isset( $_GET['credential_revoked'] ) ) {
-			echo '<div class="notice notice-success"><p>' . esc_html__( 'The credential is revoked. Repeating revocation has no additional effect.', 'dreamax-license-manager' ) . '</p></div>';
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'The credential is revoked. Repeating revocation has no additional effect.', 'dreamax-license-manager' ) . '</p></div>';
 		}
-		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_create_credential">';
+		echo '<div class="dreamax-lm-summary">';
+		$this->summary_card( __( 'Total credentials', 'dreamax-license-manager' ), $total, 'admin-network' );
+		$this->summary_card( __( 'Active', 'dreamax-license-manager' ), $active, 'yes-alt' );
+		$this->summary_card( __( 'Needs attention', 'dreamax-license-manager' ), $attention, 'warning' );
+		echo '</div><div class="dreamax-lm-credential-layout"><section class="dreamax-lm-panel dreamax-lm-credential-create"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Create credential', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Use the minimum permissions and an expiration whenever possible.', 'dreamax-license-manager' ) . '</p></div><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span></div><form data-dlm-credential-create method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_create_credential">';
 		$this->credential_operation_fields( $create_operation );
 		wp_nonce_field( 'dreamax_lm_create_credential' );
-		echo '<p><label>' . esc_html__( 'Name', 'dreamax-license-manager' ) . ' <input name="name" maxlength="191" required></label></p><p><label>' . esc_html__( 'Expiration (UTC, optional)', 'dreamax-license-manager' ) . ' <input type="datetime-local" name="expires_at"></label></p>';
-		foreach ( array( 'licenses:read', 'licenses:write', 'activations:read', 'generators:read' ) as $scope ) {
-			echo '<label style="display:block"><input type="checkbox" name="scopes[]" value="' . esc_attr( $scope ) . '"> ' . esc_html( $scope ) . '</label>';
+		echo '<div class="dreamax-lm-credential-fields"><div class="dreamax-lm-field"><label for="credential_name">' . esc_html__( 'Credential name', 'dreamax-license-manager' ) . ' <span aria-hidden="true">*</span></label><input data-dlm-credential-name id="credential_name" name="name" maxlength="191" placeholder="' . esc_attr__( 'Example: Internal reporting service', 'dreamax-license-manager' ) . '" required><p class="dreamax-lm-help">' . esc_html__( 'Use a name that identifies one service and environment.', 'dreamax-license-manager' ) . '</p></div><div class="dreamax-lm-field"><label for="credential_expiry">' . esc_html__( 'Expiration', 'dreamax-license-manager' ) . ' <span class="dreamax-lm-optional">' . esc_html__( 'Optional · UTC', 'dreamax-license-manager' ) . '</span></label><input id="credential_expiry" type="datetime-local" name="expires_at"><p class="dreamax-lm-help">' . esc_html__( 'Short-lived credentials reduce exposure.', 'dreamax-license-manager' ) . '</p></div></div><fieldset class="dreamax-lm-scope-fieldset"><legend>' . esc_html__( 'Permissions', 'dreamax-license-manager' ) . ' <span aria-hidden="true">*</span></legend><p>' . esc_html__( 'Select at least one scope. Permissions are enforced independently.', 'dreamax-license-manager' ) . '</p><div class="dreamax-lm-scope-grid">';
+		foreach ( $scope_catalog as $scope => $details ) {
+			echo '<label class="dreamax-lm-scope-option"><input data-dlm-credential-scope type="checkbox" name="scopes[]" value="' . esc_attr( $scope ) . '"><span><strong>' . esc_html( $details[0] ) . '</strong><code>' . esc_html( $scope ) . '</code><small>' . esc_html( $details[1] ) . '</small></span></label>';
 		}
-		submit_button( __( 'Create credential', 'dreamax-license-manager' ) );
-		echo '</form><h2>' . esc_html__( 'Existing credentials', 'dreamax-license-manager' ) . '</h2><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Name / public ID', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Scopes', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Status', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Expiration / last used', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Actions', 'dreamax-license-manager' ) . '</th></tr></thead><tbody>';
+		echo '</div></fieldset><div class="dreamax-lm-credential-create-footer"><span class="dashicons dashicons-lock" aria-hidden="true"></span><p>' . esc_html__( 'The complete credential is shown once after creation.', 'dreamax-license-manager' ) . '</p><button class="button button-primary" data-dlm-credential-create-submit type="submit"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>' . esc_html__( 'Create credential', 'dreamax-license-manager' ) . '</button></div></form></section><aside class="dreamax-lm-panel dreamax-lm-credential-guidance"><span class="dashicons dashicons-shield-alt" aria-hidden="true"></span><h2>' . esc_html__( 'Protect every credential', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Secrets are never recoverable after the one-time display.', 'dreamax-license-manager' ) . '</p><ul><li>' . esc_html__( 'Store only in a server-side secret manager.', 'dreamax-license-manager' ) . '</li><li>' . esc_html__( 'Never ship a credential in browser or client software.', 'dreamax-license-manager' ) . '</li><li>' . esc_html__( 'Rotate immediately after suspected exposure.', 'dreamax-license-manager' ) . '</li></ul></aside></div>';
+		echo '<section class="dreamax-lm-panel dreamax-lm-credential-inventory"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Credential inventory', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Review only non-secret identity, permissions, usage, and lifecycle metadata.', 'dreamax-license-manager' ) . '</p></div><span class="dreamax-lm-count-badge">' . esc_html( number_format_i18n( $total ) ) . '</span></div><div class="dreamax-lm-table-scroll"><table><thead><tr><th>' . esc_html__( 'Credential', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Permissions', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Status', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Usage', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Controlled actions', 'dreamax-license-manager' ) . '</th></tr></thead><tbody>';
 		foreach ( $rows as $row ) {
 			$public_id = (string) $row['public_id'];
-			$scopes    = is_array( $row['scopes'] ) ? implode( ', ', array_map( 'strval', $row['scopes'] ) ) : '';
+			$scopes    = is_array( $row['scopes'] ) ? array_map( 'strval', $row['scopes'] ) : array();
 			$status    = (string) $row['effective_status'];
-			echo '<tr><td><strong>' . esc_html( (string) $row['name'] ) . '</strong><br><code>' . esc_html( $public_id ) . '</code><br>' . esc_html__( 'Secret version:', 'dreamax-license-manager' ) . ' ' . esc_html( (string) $row['secret_version'] ) . '</td><td>' . esc_html( $scopes ) . '</td><td>' . esc_html( $status ) . '</td><td>' . esc_html( $row['expires_at'] ? (string) $row['expires_at'] . ' UTC' : __( 'Never', 'dreamax-license-manager' ) ) . '<br>' . esc_html( $row['last_used_at'] ? (string) $row['last_used_at'] . ' UTC' : __( 'Never used', 'dreamax-license-manager' ) ) . '</td><td>';
+			echo '<tr><td><strong>' . esc_html( (string) $row['name'] ) . '</strong><code class="dreamax-lm-credential-id">' . esc_html( $public_id ) . '</code><small>' . esc_html__( 'Secret version', 'dreamax-license-manager' ) . ' ' . esc_html( (string) $row['secret_version'] ) . '</small></td><td><div class="dreamax-lm-scope-list">';
+			foreach ( $scopes as $scope ) {
+				echo '<code>' . esc_html( $scope ) . '</code>';
+			}
+			echo '</div></td><td><span class="dreamax-lm-credential-status dreamax-lm-credential-status--' . esc_attr( $status ) . '">' . esc_html( ucfirst( $status ) ) . '</span></td><td><strong>' . esc_html( $row['last_used_at'] ? __( 'Last used', 'dreamax-license-manager' ) : __( 'Never used', 'dreamax-license-manager' ) ) . '</strong><small>' . esc_html( $row['last_used_at'] ? (string) $row['last_used_at'] . ' UTC' : ( $row['expires_at'] ? __( 'Expires ', 'dreamax-license-manager' ) . (string) $row['expires_at'] . ' UTC' : __( 'No expiration', 'dreamax-license-manager' ) ) ) . '</small></td><td><div class="dreamax-lm-credential-actions">';
 			if ( 'active' === $status ) {
 				$rotate_operation = $operations->issue( CredentialAdminOperation::ROTATE, $this->credential_rotation_context( $public_id, (int) $row['secret_version'] ), $actor_id );
-				echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_rotate_credential"><input type="hidden" name="public_id" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="expected_version" value="' . esc_attr( (string) $row['secret_version'] ) . '">';
+				echo '<form data-dlm-credential-action method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_rotate_credential"><input type="hidden" name="public_id" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="expected_version" value="' . esc_attr( (string) $row['secret_version'] ) . '">';
 				$this->credential_operation_fields( $rotate_operation );
 				wp_nonce_field( 'dreamax_lm_rotate_credential_' . $public_id );
-				echo '<label><input type="checkbox" name="confirm_rotation" value="1" required> ' . esc_html__( 'Invalidate the old secret immediately', 'dreamax-license-manager' ) . '</label>';
-				submit_button( __( 'Rotate', 'dreamax-license-manager' ), 'secondary', 'submit', false );
-				echo '</form>';
+				echo '<label><input data-dlm-credential-confirm type="checkbox" name="confirm_rotation" value="1" required> ' . esc_html__( 'Invalidate old secret', 'dreamax-license-manager' ) . '</label><button class="button button-secondary" data-dlm-credential-action-submit type="submit">' . esc_html__( 'Rotate', 'dreamax-license-manager' ) . '</button></form>';
 			}
 			if ( 'revoked' !== $status ) {
-				echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="margin-top:0.5em"><input type="hidden" name="action" value="dreamax_lm_revoke_credential"><input type="hidden" name="public_id" value="' . esc_attr( $public_id ) . '">';
+				echo '<form class="dreamax-lm-credential-revoke" data-dlm-credential-action method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_revoke_credential"><input type="hidden" name="public_id" value="' . esc_attr( $public_id ) . '">';
 				wp_nonce_field( 'dreamax_lm_revoke_credential_' . $public_id );
-				echo '<label><input type="checkbox" name="confirm_revocation" value="1" required> ' . esc_html__( 'Permanently revoke', 'dreamax-license-manager' ) . '</label>';
-				submit_button( __( 'Revoke', 'dreamax-license-manager' ), 'delete', 'submit', false );
-				echo '</form>';
+				echo '<label><input data-dlm-credential-confirm type="checkbox" name="confirm_revocation" value="1" required> ' . esc_html__( 'Permanently revoke', 'dreamax-license-manager' ) . '</label><button class="button dreamax-lm-danger-button" data-dlm-credential-action-submit type="submit">' . esc_html__( 'Revoke', 'dreamax-license-manager' ) . '</button></form>';
 			}
-			echo '</td></tr>';
+			echo '</div></td></tr>';
 		}
 		if ( array() === $rows ) {
-			echo '<tr><td colspan="5">' . esc_html__( 'No API credentials exist.', 'dreamax-license-manager' ) . '</td></tr>';
+			echo '<tr><td class="dreamax-lm-empty-state" colspan="5"><span class="dashicons dashicons-admin-network" aria-hidden="true"></span><strong>' . esc_html__( 'No API credentials yet', 'dreamax-license-manager' ) . '</strong><p>' . esc_html__( 'Create a narrowly scoped credential when a trusted server integration needs access.', 'dreamax-license-manager' ) . '</p></td></tr>';
 		}
-		echo '</tbody></table></div>';
+		echo '</tbody></table></div></section></div>';
 	}
 
 	/**
@@ -331,18 +485,23 @@ final class Admin {
 	public function status_page(): void {
 		global $wpdb;
 		$this->authorize( Capabilities::DIAGNOSTICS );
-		$crypto = new Crypto();
+		$crypto       = new Crypto();
+		$crypto_ready = $crypto->ready();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
-		$engine = $wpdb->get_var( "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='{$wpdb->prefix}dreamax_lm_licenses'" );
-		echo '<div class="wrap"><h1>' . esc_html__( 'System status', 'dreamax-license-manager' ) . '</h1><table class="widefat striped"><tbody>';
-		echo '<tr><th>' . esc_html__( 'Encryption', 'dreamax-license-manager' ) . '</th><td>' . esc_html( $crypto->ready() ? __( 'Ready', 'dreamax-license-manager' ) : __( 'Recovery mode', 'dreamax-license-manager' ) ) . '</td></tr>';
-		echo '<tr><th>' . esc_html__( 'License table engine', 'dreamax-license-manager' ) . '</th><td>' . esc_html( (string) $engine ) . '</td></tr>';
-		echo '<tr><th>' . esc_html__( 'Cleanup job', 'dreamax-license-manager' ) . '</th><td>' . esc_html( wp_next_scheduled( 'dreamax_lm_cleanup' ) ? __( 'Scheduled', 'dreamax-license-manager' ) : __( 'Not scheduled', 'dreamax-license-manager' ) ) . '</td></tr></tbody></table>';
-		if ( current_user_can( Capabilities::SECURITY ) && ! $crypto->ready() ) {
-			echo '<h2>' . esc_html__( 'Configure encryption', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Generate a copy-safe wp-config.php constant once. The generated value is not stored by this plugin.', 'dreamax-license-manager' ) . '</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_generate_master_key">';
+		$engine            = (string) $wpdb->get_var( "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='{$wpdb->prefix}dreamax_lm_licenses'" );
+		$engine_ready      = 'INNODB' === strtoupper( $engine );
+		$cleanup_scheduled = false !== wp_next_scheduled( 'dreamax_lm_cleanup' );
+		$healthy           = $crypto_ready && $engine_ready && $cleanup_scheduled;
+		echo '<div class="wrap dreamax-lm-admin dreamax-lm-status-page"><header class="dreamax-lm-page-header"><div><p class="dreamax-lm-eyebrow">' . esc_html__( 'Operational readiness', 'dreamax-license-manager' ) . '</p><h1>' . esc_html__( 'System status', 'dreamax-license-manager' ) . '</h1><p class="dreamax-lm-page-intro">' . esc_html__( 'Monitor the security, storage, and maintenance services required for reliable licensing.', 'dreamax-license-manager' ) . '</p></div></header>';
+		echo '<section class="dreamax-lm-health-summary ' . esc_attr( $healthy ? 'is-ready' : 'is-warning' ) . '"><span class="dashicons ' . esc_attr( $healthy ? 'dashicons-yes-alt' : 'dashicons-warning' ) . '" aria-hidden="true"></span><div><h2>' . esc_html( $healthy ? __( 'All core systems operational', 'dreamax-license-manager' ) : __( 'One or more systems need attention', 'dreamax-license-manager' ) ) . '</h2><p>' . esc_html( $healthy ? __( 'Dreamax License Manager is ready to protect and maintain license data.', 'dreamax-license-manager' ) : __( 'Review the status cards below before processing license operations.', 'dreamax-license-manager' ) ) . '</p></div><span class="dreamax-lm-health-pill">' . esc_html( $healthy ? __( 'Healthy', 'dreamax-license-manager' ) : __( 'Attention', 'dreamax-license-manager' ) ) . '</span></section>';
+		echo '<div class="dreamax-lm-status-grid">';
+		echo '<section class="dreamax-lm-status-card ' . esc_attr( $crypto_ready ? 'is-ready' : 'is-warning' ) . '"><div class="dreamax-lm-status-icon"><span class="dashicons dashicons-shield" aria-hidden="true"></span></div><div class="dreamax-lm-status-card-heading"><h2>' . esc_html__( 'Encryption', 'dreamax-license-manager' ) . '</h2><span class="dreamax-lm-status-pill">' . esc_html( $crypto_ready ? __( 'Ready', 'dreamax-license-manager' ) : __( 'Recovery mode', 'dreamax-license-manager' ) ) . '</span></div><p>' . esc_html( $crypto_ready ? __( 'The configured key can encrypt and decrypt protected license data.', 'dreamax-license-manager' ) : __( 'Protected data remains unavailable until the exact encryption key is restored.', 'dreamax-license-manager' ) ) . '</p></section>';
+		echo '<section class="dreamax-lm-status-card ' . esc_attr( $engine_ready ? 'is-ready' : 'is-warning' ) . '"><div class="dreamax-lm-status-icon"><span class="dashicons dashicons-database" aria-hidden="true"></span></div><div class="dreamax-lm-status-card-heading"><h2>' . esc_html__( 'Database storage', 'dreamax-license-manager' ) . '</h2><span class="dreamax-lm-status-pill">' . esc_html( '' !== $engine ? $engine : __( 'Unavailable', 'dreamax-license-manager' ) ) . '</span></div><p>' . esc_html( $engine_ready ? __( 'The license table uses InnoDB for transactional consistency.', 'dreamax-license-manager' ) : __( 'The license table must use InnoDB for safe transactional operations.', 'dreamax-license-manager' ) ) . '</p></section>';
+		echo '<section class="dreamax-lm-status-card ' . esc_attr( $cleanup_scheduled ? 'is-ready' : 'is-warning' ) . '"><div class="dreamax-lm-status-icon"><span class="dashicons dashicons-clock" aria-hidden="true"></span></div><div class="dreamax-lm-status-card-heading"><h2>' . esc_html__( 'Background cleanup', 'dreamax-license-manager' ) . '</h2><span class="dreamax-lm-status-pill">' . esc_html( $cleanup_scheduled ? __( 'Scheduled', 'dreamax-license-manager' ) : __( 'Not scheduled', 'dreamax-license-manager' ) ) . '</span></div><p>' . esc_html( $cleanup_scheduled ? __( 'WordPress Cron is scheduled to remove eligible expired operational data.', 'dreamax-license-manager' ) : __( 'The maintenance event is missing and should be restored before release.', 'dreamax-license-manager' ) ) . '</p></section></div>';
+		if ( current_user_can( Capabilities::SECURITY ) && ! $crypto_ready ) {
+			echo '<section class="dreamax-lm-panel dreamax-lm-recovery-panel"><div><h2>' . esc_html__( 'Configure encryption', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Generate a copy-safe wp-config.php constant once. The generated value is not stored by this plugin.', 'dreamax-license-manager' ) . '</p></div><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_generate_master_key">';
 			wp_nonce_field( 'dreamax_lm_generate_master_key' );
-			submit_button( __( 'Generate setup snippet', 'dreamax-license-manager' ), 'secondary' );
-			echo '</form>';
+			echo '<button class="button button-secondary" type="submit"><span class="dashicons dashicons-admin-network" aria-hidden="true"></span>' . esc_html__( 'Generate setup snippet', 'dreamax-license-manager' ) . '</button></form></section>';
 		}
 		echo '</div>';
 	}
@@ -566,7 +725,11 @@ final class Admin {
 			return;
 		}
 		$result = $outcome['result'];
-		echo '<!doctype html><meta charset="utf-8"><title>' . esc_html__( 'API credential created', 'dreamax-license-manager' ) . '</title><h1>' . esc_html__( 'Copy this credential once', 'dreamax-license-manager' ) . '</h1><p>' . esc_html__( 'Store it in a server-side secret manager. It cannot be recovered later.', 'dreamax-license-manager' ) . '</p><pre>' . esc_html( $result['credential'] ) . '</pre>';
+		$this->render_credential_secret_response(
+			__( 'Copy this credential once', 'dreamax-license-manager' ),
+			__( 'Store it in a server-side secret manager. It cannot be recovered later.', 'dreamax-license-manager' ),
+			$result['credential']
+		);
 		exit;
 	}
 
@@ -607,8 +770,24 @@ final class Admin {
 			return;
 		}
 		$result = $outcome['result'];
-		echo '<!doctype html><meta charset="utf-8"><title>' . esc_html__( 'API credential rotated', 'dreamax-license-manager' ) . '</title><h1>' . esc_html__( 'Copy this replacement credential once', 'dreamax-license-manager' ) . '</h1><p>' . esc_html__( 'The prior secret is already invalid. Store this replacement in a server-side secret manager; it cannot be recovered later.', 'dreamax-license-manager' ) . '</p><pre>' . esc_html( $result['credential'] ) . '</pre>';
+		$this->render_credential_secret_response(
+			__( 'Copy this replacement credential once', 'dreamax-license-manager' ),
+			__( 'The prior secret is already invalid. Store this replacement in a server-side secret manager; it cannot be recovered later.', 'dreamax-license-manager' ),
+			$result['credential']
+		);
 		exit;
+	}
+
+	/**
+	 * Renders one cache-protected credential response without the WordPress shell.
+	 *
+	 * @param string $title One-time response title.
+	 * @param string $description One-time response guidance.
+	 * @param string $credential Plaintext credential shown only in this response.
+	 */
+	private function render_credential_secret_response( string $title, string $description, string $credential ): void {
+		// phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet,WordPress.WP.EnqueuedResources.NonEnqueuedScript -- This deliberately minimal no-store response has no WordPress administration shell; it loads only versioned plugin-owned assets.
+		echo '<!doctype html><html lang="' . esc_attr( get_bloginfo( 'language' ) ) . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>' . esc_html( $title ) . '</title><link rel="stylesheet" href="' . esc_url( DREAMAX_LM_URL . 'assets/css/admin.css?ver=' . rawurlencode( DREAMAX_LM_VERSION ) ) . '"></head><body class="dreamax-lm-secret-screen"><main class="dreamax-lm-admin dreamax-lm-secret-response"><p class="dreamax-lm-eyebrow">' . esc_html__( 'One-time secret', 'dreamax-license-manager' ) . '</p><h1>' . esc_html( $title ) . '</h1><p class="dreamax-lm-secret-intro">' . esc_html( $description ) . '</p><section class="dreamax-lm-secret-card"><div class="dreamax-lm-secret-warning"><strong>' . esc_html__( 'This is the only time the complete credential will be displayed.', 'dreamax-license-manager' ) . '</strong><span>' . esc_html__( 'Do not place it in screenshots, chat, email, browser code, or source control.', 'dreamax-license-manager' ) . '</span></div><div class="dreamax-lm-secret-value"><code id="dreamax-lm-one-time-credential" data-dlm-secret-value>' . esc_html( $credential ) . '</code><button class="button button-primary" data-dlm-copy-secret="#dreamax-lm-one-time-credential" type="button">' . esc_html__( 'Copy credential', 'dreamax-license-manager' ) . '</button></div></section><div class="dreamax-lm-secret-actions"><a class="button button-secondary" href="' . esc_url( admin_url( 'admin.php?page=dreamax-license-manager-credentials' ) ) . '">' . esc_html__( 'Return to API credentials', 'dreamax-license-manager' ) . '</a><p>' . esc_html__( 'Leaving this page permanently removes the one-time display.', 'dreamax-license-manager' ) . '</p></div></main><script src="' . esc_url( DREAMAX_LM_URL . 'assets/js/admin.js?ver=' . rawurlencode( DREAMAX_LM_VERSION ) ) . '"></script></body></html>';
 	}
 
 	/**
@@ -701,8 +880,13 @@ final class Admin {
 		echo '<th>' . esc_html__( 'Actor', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Details', 'dreamax-license-manager' ) . '</th></tr></thead><tbody>';
 		foreach ( $events as $event ) {
 			$metadata = json_decode( (string) ( $event['metadata'] ?? '{}' ), true );
-			$details  = is_array( $metadata ) && $metadata ? (string) wp_json_encode( $metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) : '—';
-			echo '<tr><td>' . esc_html( (string) $event['occurred_at'] ) . '</td><td><code>' . esc_html( (string) $event['event_type'] ) . '</code></td>';
+			if ( is_array( $metadata ) ) {
+				unset( $metadata['public_id'], $metadata['license_public_id'] );
+			}
+			$event_type = (string) $event['event_type'];
+			$event_name = ucwords( str_replace( array( '_', '-' ), ' ', $event_type ) );
+			$actor_name = ucwords( str_replace( array( '_', '-' ), ' ', (string) $event['actor_type'] ) );
+			echo '<tr><td>' . esc_html( (string) $event['occurred_at'] ) . '</td><td><strong class="dreamax-lm-event-name">' . esc_html( $event_name ) . '</strong><code class="dreamax-lm-event-code">' . esc_html( $event_type ) . '</code></td>';
 			if ( $show_license ) {
 				$license_id = isset( $event['license_public_id'] ) ? (string) $event['license_public_id'] : '';
 				if ( '' !== $license_id ) {
@@ -718,12 +902,44 @@ final class Admin {
 					echo '<td>—</td>';
 				}
 			}
-			echo '<td>' . esc_html( (string) $event['actor_type'] . ( empty( $event['actor_id'] ) ? '' : ' #' . (int) $event['actor_id'] ) ) . '</td><td><code>' . esc_html( $details ) . '</code></td></tr>';
+			echo '<td>' . esc_html( $actor_name . ( empty( $event['actor_id'] ) ? '' : ' #' . (int) $event['actor_id'] ) ) . '</td><td class="dreamax-lm-event-details">';
+			$this->render_event_details( is_array( $metadata ) ? $metadata : array() );
+			echo '</td></tr>';
 		}
 		if ( array() === $events ) {
-			echo '<tr><td colspan="' . esc_attr( $show_license ? '5' : '4' ) . '">' . esc_html__( 'No activity recorded.', 'dreamax-license-manager' ) . '</td></tr>';
+			echo '<tr><td class="dreamax-lm-empty dreamax-lm-empty--compact" colspan="' . esc_attr( $show_license ? '5' : '4' ) . '"><span class="dashicons dashicons-list-view" aria-hidden="true"></span><strong>' . esc_html__( 'No activity recorded', 'dreamax-license-manager' ) . '</strong></td></tr>';
 		}
 		echo '</tbody></table>';
+	}
+
+	/**
+	 * Renders already-sanitized audit metadata as readable key-value facts.
+	 *
+	 * @param array $metadata Sanitized event metadata.
+	 * @phpstan-param array<string,mixed> $metadata Sanitized event metadata.
+	 */
+	private function render_event_details( array $metadata ): void {
+		if ( array() === $metadata ) {
+			echo '<span class="dreamax-lm-muted">—</span>';
+			return;
+		}
+
+		echo '<dl class="dreamax-lm-metadata">';
+		foreach ( $metadata as $key => $value ) {
+			$label = ucwords( str_replace( array( '_', '-' ), ' ', (string) $key ) );
+			if ( is_bool( $value ) ) {
+				$display = $value ? __( 'Yes', 'dreamax-license-manager' ) : __( 'No', 'dreamax-license-manager' );
+			} elseif ( null === $value || '' === $value ) {
+				$display = '—';
+			} elseif ( is_scalar( $value ) ) {
+				$display = (string) $value;
+			} else {
+				$encoded = wp_json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+				$display = is_string( $encoded ) ? $encoded : '—';
+			}
+			echo '<div><dt>' . esc_html( $label ) . '</dt><dd><code>' . esc_html( $display ) . '</code></dd></div>';
+		}
+		echo '</dl>';
 	}
 
 	/**
@@ -752,15 +968,50 @@ final class Admin {
 	 * @phpstan-param array<string,mixed> $row Row value.
 	 */
 	private function status_label( array $row ): string {
-		if ( 'revoked' === $row['lifecycle_status'] ) {
-			return __( 'Permanently revoked', 'dreamax-license-manager' );
+		$labels = array(
+			'revoked'   => __( 'Revoked', 'dreamax-license-manager' ),
+			'suspended' => __( 'Suspended', 'dreamax-license-manager' ),
+			'expired'   => __( 'Expired', 'dreamax-license-manager' ),
+			'available' => __( 'Available', 'dreamax-license-manager' ),
+			'delivered' => __( 'Delivered', 'dreamax-license-manager' ),
+			'assigned'  => __( 'Assigned', 'dreamax-license-manager' ),
+		);
+
+		return $labels[ $this->status_key( $row ) ];
+	}
+
+	/**
+	 * Returns a presentation state without changing the persisted lifecycle.
+	 *
+	 * An assigned license is described as delivered only when it is linked to
+	 * a customer or order. This keeps manually created inventory truthful.
+	 *
+	 * @param array $row License row.
+	 * @phpstan-param array<string,mixed> $row License row.
+	 */
+	private function status_key( array $row ): string {
+		$lifecycle = (string) ( $row['lifecycle_status'] ?? '' );
+		if ( 'revoked' === $lifecycle || 'suspended' === $lifecycle ) {
+			return $lifecycle;
 		}
-		if ( 'suspended' === $row['lifecycle_status'] ) {
-			return __( 'Temporarily disabled', 'dreamax-license-manager' );
+		if ( ! empty( $row['expires_at'] ) && strtotime( (string) $row['expires_at'] . ' UTC' ) <= time() ) {
+			return 'expired';
 		}
-		if ( $row['expires_at'] && strtotime( (string) $row['expires_at'] . ' UTC' ) <= time() ) {
-			return __( 'Expired', 'dreamax-license-manager' );
+		if ( 'available' === $lifecycle ) {
+			return 'available';
 		}
-		return 'available' === $row['lifecycle_status'] ? __( 'Available for sale', 'dreamax-license-manager' ) : __( 'Delivered', 'dreamax-license-manager' );
+
+		return ! empty( $row['customer_id'] ) || ! empty( $row['order_id'] ) ? 'delivered' : 'assigned';
+	}
+
+	/**
+	 * Renders one inventory summary card.
+	 *
+	 * @param string $label Card label.
+	 * @param int    $value Card value.
+	 * @param string $icon WordPress Dashicon name.
+	 */
+	private function summary_card( string $label, int $value, string $icon ): void {
+		echo '<article class="dreamax-lm-summary-card dreamax-lm-summary-card--' . esc_attr( $icon ) . '"><span class="dashicons dashicons-' . esc_attr( $icon ) . '" aria-hidden="true"></span><div><strong>' . esc_html( number_format_i18n( $value ) ) . '</strong><span>' . esc_html( $label ) . '</span></div></article>';
 	}
 }

@@ -87,8 +87,8 @@ final class ActivationService {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 				$existing = $wpdb->get_row(
 					$wpdb->prepare(
-						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-						"SELECT * FROM {$table} WHERE license_id = %d AND instance_fingerprint = UNHEX(%s) LIMIT 1",
+						'SELECT * FROM %i WHERE license_id = %d AND instance_fingerprint = UNHEX(%s) LIMIT 1',
+						$table,
 						(int) $license['id'],
 						bin2hex( $instance_fingerprint )
 					),
@@ -108,8 +108,8 @@ final class ActivationService {
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 					$count = (int) $wpdb->get_var(
 						$wpdb->prepare(
-							// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-							"SELECT COUNT(*) FROM {$table} WHERE license_id = %d AND status = 'active'",
+							"SELECT COUNT(*) FROM %i WHERE license_id = %d AND status = 'active'",
+							$table,
 							(int) $license['id']
 						)
 					);
@@ -141,22 +141,24 @@ final class ActivationService {
 					$public_id     = (string) $existing['public_id'];
 				} else {
 					$public_id = PublicId::generate( 'act' );
-					$sql       = $wpdb->prepare(
-						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-						"INSERT INTO {$table} (public_id,license_id,instance_fingerprint,instance_label,status,first_activated_at,activated_at,deactivated_at,last_seen_at,updated_at,metadata)
-						VALUES (%s,%d,UNHEX(%s),%s,'active',%s,%s,NULL,%s,%s,%s)",
-						$public_id,
-						(int) $license['id'],
-						bin2hex( $instance_fingerprint ),
-						null === $label ? null : sanitize_text_field( $label ),
-						$now,
-						$now,
-						$now,
-						$now,
-						'{}'
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct fresh writes.
+					$inserted = $wpdb->query(
+						$wpdb->prepare(
+							"INSERT INTO %i (public_id,license_id,instance_fingerprint,instance_label,status,first_activated_at,activated_at,deactivated_at,last_seen_at,updated_at,metadata)
+							VALUES (%s,%d,UNHEX(%s),%s,'active',%s,%s,NULL,%s,%s,%s)",
+							$table,
+							$public_id,
+							(int) $license['id'],
+							bin2hex( $instance_fingerprint ),
+							null === $label ? null : sanitize_text_field( $label ),
+							$now,
+							$now,
+							$now,
+							$now,
+							'{}'
+						)
 					);
-					// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The statement is prepared above; plugin-owned transactional tables require fresh direct writes.
-					if ( false === $wpdb->query( $sql ) ) {
+					if ( false === $inserted ) {
 						throw new LicenseException( 'server_unavailable', 'Activation could not be stored.', 503 );
 					}
 					$activation_id = (int) $wpdb->insert_id;
@@ -209,8 +211,8 @@ final class ActivationService {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 				$activation = $wpdb->get_row(
 					$wpdb->prepare(
-						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-						"SELECT * FROM {$table} WHERE license_id = %d AND instance_fingerprint = UNHEX(%s) LIMIT 1",
+						'SELECT * FROM %i WHERE license_id = %d AND instance_fingerprint = UNHEX(%s) LIMIT 1',
+						$table,
 						(int) $found['id'],
 						bin2hex( $fingerprint )
 					),

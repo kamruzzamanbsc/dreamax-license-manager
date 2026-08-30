@@ -17,13 +17,14 @@ Current official release pages identified WordPress 7.1 and WooCommerce 11.0.1. 
 - Directory/slug: `dreamax-license-manager`.
 - Main file: `dreamax-license-manager.php`.
 - ZIP location: `dreamax-license-manager/dreamax-license-manager.php`.
-- Version/header/constant/readme Stable Tag: numeric `0.3.0`.
+- Version/header/constant/readme Stable Tag: numeric `0.3.1`.
 - Text domain: literal `dreamax-license-manager`.
 - WordPress.org dependency slug: `Requires Plugins: woocommerce`.
 - Author: Dreamax Soft; Author URI: `https://dreamaxsoft.com/`.
+- Publisher website is linked once in the public readme and recorded as the Composer project homepage.
 - No Plugin URI is published because no public plugin-specific page exists.
 - GPL-2.0-or-later code and compatible dependency inventory are documented.
 - No paid service requirement, telemetry, trialware, remote licensing dependency, or fake Pro interface is included.
 - The deterministic allowlist excludes repository/development/local/secret/build artifacts and lints every shipped PHP file.
 
-Run `composer release:validate` for the reproducible local header/readme structure check. The hosted WordPress.org readme validator has accepted the release readme; official Plugin Check remains a separate pre-submission runtime check. F22 is `PASS_WITH_EVIDENCE`, while the ZIP remains an unshipped release candidate until a separately authorized publication workflow.
+Run `composer release:validate` for the reproducible local header/readme structure check. The hosted WordPress.org readme validator accepted the 0.3.1 candidate with only optional notes for upgrade notices, screenshots, and donations, and the official Plugin Check passed with no findings. F22 is `PASS_WITH_EVIDENCE`, while the ZIP remains an unshipped release candidate until a separately authorized publication workflow.

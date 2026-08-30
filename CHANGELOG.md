@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1 — Administration and pre-submission hardening
+
+- Redesigned license inventory, detail, activity, import/export, status, API credential, and WooCommerce order-operation administration for clearer state, controlled actions, and responsive alignment.
+- Added preview-bound order recovery, action-availability guidance, safer guest ownership confirmation, and auditable credential lifecycle controls.
+- Hardened privileged REST parsing for absent bodies and authorization headers.
+- Replaced trusted dynamic SQL identifier interpolation with explicit prepared identifiers, clarified uninstall-only schema cleanup, and passed the official Plugin Check with no errors or warnings.
+
 ## 0.3.0 — WooCommerce order-policy milestone
 
 - Added guarded fresh single-site WordPress prefix bootstrap and Dreamax activation verification for exact InnoDB schema, role defaults, scheduled cleanup, replay convergence, and exact temporary-table cleanup.

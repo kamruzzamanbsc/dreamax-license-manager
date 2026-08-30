@@ -321,8 +321,8 @@ final class PrivilegedRoutes {
 	private function handle( WP_REST_Request $request, string $scope, bool $has_body, callable $callback ): \WP_REST_Response {
 		$request_id = PublicId::generate( 'req' );
 		try {
-			$this->transport->assert_privileged_request( $has_body, $request->get_body() );
-			$header     = $request->get_header( 'Authorization' );
+			$this->transport->assert_privileged_request( $has_body, (string) $request->get_body() );
+			$header     = (string) $request->get_header( 'Authorization' );
 			$credential = $this->credentials->authenticate( $header, $request_id );
 			if ( ! is_array( $credential ) ) {
 				$this->limits->consume( 'privileged-auth-failed|' . $this->source->network(), 10, 1.0 / 60.0 );
@@ -367,8 +367,8 @@ final class PrivilegedRoutes {
 		return ( new Transaction() )->run(
 			function () use ( $wpdb, $public_id, $body, $terminal ): array {
 				$table = $wpdb->prefix . 'dreamax_lm_licenses';
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The trusted prefixed table requires a fresh locking read.
-				$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE public_id=%s FOR UPDATE", $public_id ), ARRAY_A );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The trusted prefixed table requires a fresh locking read.
+				$row = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE public_id=%s FOR UPDATE', $table, $public_id ), ARRAY_A );
 				if ( ! is_array( $row ) ) {
 						throw new LicenseException( 'invalid_license', 'The license could not be found.', 404 );
 				}

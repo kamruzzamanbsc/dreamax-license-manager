@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dreamax License Manager
  * Description: Self-hosted software licensing, activation, delivery, and migration for WooCommerce.
- * Version: 0.3.0
+ * Version: 0.3.1
  * Requires at least: 6.9
  * Requires PHP: 8.0
  * Author: Dreamax Soft
@@ -10,7 +10,6 @@
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: dreamax-license-manager
- * Domain Path: /languages
  * Requires Plugins: woocommerce
  * WC requires at least: 10.8
  * WC tested up to: 11.0.1
@@ -20,7 +19,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DREAMAX_LM_VERSION', '0.3.0' );
+define( 'DREAMAX_LM_VERSION', '0.3.1' );
 define( 'DREAMAX_LM_FILE', __FILE__ );
 define( 'DREAMAX_LM_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DREAMAX_LM_URL', plugin_dir_url( __FILE__ ) );

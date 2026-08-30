@@ -106,8 +106,9 @@ final class EventRepository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Both table names are built from the trusted WordPress database prefix.
-				"SELECT e.public_id,e.license_id,e.event_type,e.schema_version,e.actor_type,e.actor_id,e.request_id,e.occurred_at,e.metadata,l.public_id AS license_public_id FROM {$events} e LEFT JOIN {$licenses} l ON l.id=e.license_id ORDER BY e.id DESC LIMIT %d",
+				'SELECT e.public_id,e.license_id,e.event_type,e.schema_version,e.actor_type,e.actor_id,e.request_id,e.occurred_at,e.metadata,l.public_id AS license_public_id FROM %i e LEFT JOIN %i l ON l.id=e.license_id ORDER BY e.id DESC LIMIT %d',
+				$events,
+				$licenses,
 				min( 200, max( 1, $limit ) )
 			),
 			ARRAY_A

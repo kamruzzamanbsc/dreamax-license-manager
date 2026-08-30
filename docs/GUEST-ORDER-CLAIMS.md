@@ -1,6 +1,6 @@
 # Guest order license claims
 
-Applies to unshipped release candidate 0.3.0. Live acceptance evidence is recorded under F25, F27, and F32.
+Applies to unshipped release candidate 0.3.1. Live acceptance evidence is recorded under F25, F27, and F32.
 
 ## Customer instructions
 
