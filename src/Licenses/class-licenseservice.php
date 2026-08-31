@@ -132,8 +132,8 @@ final class LicenseService {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 				$license = $wpdb->get_row(
 					$wpdb->prepare(
-						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-						"SELECT * FROM {$table} WHERE product_public_id = %s AND lifecycle_status = 'available' AND order_id IS NULL ORDER BY id LIMIT 1 FOR UPDATE",
+						"SELECT * FROM %i WHERE product_public_id = %s AND lifecycle_status = 'available' AND order_id IS NULL ORDER BY id LIMIT 1 FOR UPDATE",
+						$table,
 						$product_public_id
 					),
 					ARRAY_A

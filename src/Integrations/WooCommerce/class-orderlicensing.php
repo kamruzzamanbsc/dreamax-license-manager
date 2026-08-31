@@ -292,7 +292,7 @@ final class OrderLicensing {
 	 *
 	 * @param int $order_id Order id value.
 	 * @throws RuntimeException When the operation cannot be completed.
-	 * @return array{order_id:int,status:string,customer_id:int,license_count:int,missing:int,items:list<array<string,mixed>>,eligible:bool}
+	 * @return array{order_id:int,status:string,customer_id:int,license_count:int,assigned_count:int,has_billing_email:bool,missing:int,items:list<array<string,mixed>>,eligible:bool}
 	 */
 	public function preview( int $order_id ): array {
 		$order = wc_get_order( $order_id );
@@ -328,14 +328,18 @@ final class OrderLicensing {
 				'missing'       => $missing,
 			);
 		}
+		$order_licenses = $this->licenses->for_order( $order_id );
+		$assigned_count = count( array_filter( $order_licenses, static fn( array $row ): bool => 'assigned' === (string) ( $row['lifecycle_status'] ?? '' ) ) );
 		return array(
-			'order_id'      => $order_id,
-			'status'        => $order->get_status(),
-			'customer_id'   => (int) $order->get_customer_id(),
-			'license_count' => count( $this->licenses->for_order( $order_id ) ),
-			'missing'       => $missing_total,
-			'items'         => $items,
-			'eligible'      => $order->is_paid() && ! $order->has_status( array( 'cancelled', 'failed', 'refunded' ) ),
+			'order_id'          => $order_id,
+			'status'            => $order->get_status(),
+			'customer_id'       => (int) $order->get_customer_id(),
+			'license_count'     => count( $order_licenses ),
+			'assigned_count'    => $assigned_count,
+			'has_billing_email' => is_email( (string) $order->get_billing_email() ),
+			'missing'           => $missing_total,
+			'items'             => $items,
+			'eligible'          => $order->is_paid() && ! $order->has_status( array( 'cancelled', 'failed', 'refunded' ) ),
 		);
 	}
 

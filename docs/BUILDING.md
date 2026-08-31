@@ -10,7 +10,7 @@ php scripts/build-release.php --commit=<40-character-commit> --output=build
 
 The ignored `build/` directory receives:
 
-- `dreamax-license-manager-0.3.0.zip`, an unshipped release-candidate verification artifact;
+- `dreamax-license-manager-0.3.1.zip`, an unshipped release-candidate verification artifact;
 - `release-inventory.json`, the exact path, size, and content digest inventory;
 - `release-manifest.json`, the external hash-bearing provenance sidecar.
 

@@ -58,8 +58,7 @@ final class RateLimiter {
 				$now   = microtime( true );
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 				$row = $wpdb->get_row(
-					// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-					$wpdb->prepare( "SELECT * FROM {$table} WHERE bucket_hash = UNHEX(%s) FOR UPDATE", bin2hex( $hash ) ),
+					$wpdb->prepare( 'SELECT * FROM %i WHERE bucket_hash = UNHEX(%s) FOR UPDATE', $table, bin2hex( $hash ) ),
 					ARRAY_A
 				);
 
@@ -68,8 +67,8 @@ final class RateLimiter {
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 					$inserted = $wpdb->query(
 						$wpdb->prepare(
-							// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-							"INSERT INTO {$table} (bucket_hash,tokens,updated_microtime,expires_at) VALUES (UNHEX(%s),%f,%f,%s)",
+							'INSERT INTO %i (bucket_hash,tokens,updated_microtime,expires_at) VALUES (UNHEX(%s),%f,%f,%s)',
+							$table,
 							bin2hex( $hash ),
 							$tokens,
 							$now,
@@ -92,8 +91,8 @@ final class RateLimiter {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 				$updated = $wpdb->query(
 					$wpdb->prepare(
-						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-						"UPDATE {$table} SET tokens = %f, updated_microtime = %f, expires_at = %s WHERE bucket_hash = UNHEX(%s)",
+						'UPDATE %i SET tokens = %f, updated_microtime = %f, expires_at = %s WHERE bucket_hash = UNHEX(%s)',
+						$table,
 						$tokens - 1.0,
 						$now,
 						gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS ),

@@ -2,7 +2,7 @@
 
 Review date: 2026-08-28
 
-Applies to development version: 0.3.0
+Applies to development version: 0.3.1
 
 This document defines the implemented order behavior. Guarded runtime acceptance for the F13 refund, cancellation, quantity, backfill, resend, pool, lifecycle, replay, audit, and cleanup matrix is recorded in `release-evidence/0.3.0/f13-order-policy-matrix.md`.
 

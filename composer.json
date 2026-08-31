@@ -1,6 +1,7 @@
 {
   "name": "dreamax-soft/dreamax-license-manager",
   "description": "Self-hosted WooCommerce license management",
+  "homepage": "https://dreamaxsoft.com/",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
   "require": {

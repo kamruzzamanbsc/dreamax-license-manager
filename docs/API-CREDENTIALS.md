@@ -1,6 +1,6 @@
 # Privileged API credential operations
 
-Applies to unshipped release candidate 0.3.0. Live acceptance evidence is recorded under F31 and F32.
+Applies to unshipped release candidate 0.3.1. Live acceptance evidence is recorded under F31 and F32.
 
 ## Protocol
 

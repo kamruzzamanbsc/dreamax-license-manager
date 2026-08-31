@@ -128,7 +128,7 @@ try {
 		'dependency_license_inventory_reference' => 'docs/DEPENDENCIES.md',
 		'tested_versions' => array('wordpress' => array($first['wordpress_tested']), 'woocommerce' => array($first['woocommerce_tested']), 'php' => array(PHP_VERSION)),
 		'build_test_utc' => gmdate('Y-m-d\TH:i:s\Z'),
-		'release_gate_evidence_reference' => 'docs/release-evidence/0.3.0/',
+		'release_gate_evidence_reference' => 'docs/release-evidence/' . $first['version'] . '/',
 		'build_tool_versions' => array('php' => PHP_VERSION, 'composer' => $composerVersion, 'git' => $gitVersion, 'ziparchive' => (string) phpversion('zip')),
 		'inventory_filename' => basename($inventoryPath),
 		'inventory_sha256' => hash_file('sha256', $inventoryPath),

@@ -187,8 +187,8 @@ final class OrderPolicyService {
 			function () use ( $license, $policy, $context, $order_id, $refund_id, $operation_id ): array {
 				global $wpdb;
 				$table = $wpdb->prefix . 'dreamax_lm_licenses';
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The trusted prefixed table requires a fresh locking read.
-				$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id=%d FOR UPDATE", (int) $license['id'] ), ARRAY_A );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The trusted prefixed table requires a fresh locking read.
+				$row = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id=%d FOR UPDATE', $table, (int) $license['id'] ), ARRAY_A );
 				if ( ! is_array( $row ) || (int) $row['order_id'] !== $order_id ) {
 					throw new RuntimeException( 'The license ownership changed before the order policy could be applied.' );
 				}

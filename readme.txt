@@ -4,7 +4,7 @@ Tags: woocommerce, license manager, software licensing
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.3.0
+Stable tag: 0.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,9 +12,11 @@ Self-hosted software licensing, activation, delivery, and migration for WooComme
 
 == Description ==
 
-This package is an unshipped 0.3.0 release candidate. It includes encrypted license storage, generator and imported-pool foundations, WooCommerce allocation, secure guest-order account claims, scoped and rotatable privileged API credentials, a versioned REST API, customer license display, and data portability. It does not depend on a paid API or remote SaaS.
+This package is an unshipped 0.3.1 release candidate. It includes encrypted license storage, generator and imported-pool foundations, WooCommerce allocation, secure guest-order account claims, scoped and rotatable privileged API credentials, a versioned REST API, customer license display, and data portability. It does not depend on a paid API or remote SaaS.
 
 All 33 Free V1 acceptance gates have recorded evidence. Tagging, publication, and production deployment remain separate release decisions; validate backups, HTTPS, InnoDB, mail, cache/proxy behavior, and the external master key in the target environment before deployment.
+
+Dreamax License Manager is published by [Dreamax Soft](https://dreamaxsoft.com/).
 
 == Installation ==
 
@@ -39,6 +41,11 @@ No. Back up the dedicated external master key separately and verify a disposable
 No. Distributed client code is inspectable. The server protects legitimate access, activation state, support, and future service boundaries.
 
 == Changelog ==
+
+= 0.3.1 =
+
+* Redesigned the license, activity, portability, status, API credential, and WooCommerce order-operation screens with clearer preview, confirmation, availability, and audit context.
+* Hardened REST credential handling for absent request bodies and authorization headers, made order recovery and ownership workflows safer, and resolved all official Plugin Check findings with explicit prepared SQL identifiers and uninstall hygiene.
 
 = 0.3.0 =
 

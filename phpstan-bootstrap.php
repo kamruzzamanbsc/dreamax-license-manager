@@ -9,3 +9,7 @@ if ( ! defined( 'DREAMAX_LM_VERSION' ) ) {
 if ( ! defined( 'DREAMAX_LM_DIR' ) ) {
 	define( 'DREAMAX_LM_DIR', __DIR__ . DIRECTORY_SEPARATOR );
 }
+
+if ( ! defined( 'DREAMAX_LM_URL' ) ) {
+	define( 'DREAMAX_LM_URL', 'https://example.test/wp-content/plugins/dreamax-license-manager/' );
+}

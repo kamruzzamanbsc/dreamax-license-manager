@@ -56,8 +56,8 @@ final class WordPressCredentialAdminOperationRepository implements CredentialAdm
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The unique scope hash makes the first site-local reservation the only winner.
 		$inserted = $wpdb->query(
 			$wpdb->prepare(
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-				"INSERT IGNORE INTO {$table} (scope_hash,payload_digest,api_version,operation,state,created_at,expires_at) VALUES (UNHEX(%s),UNHEX(%s),%s,%s,'processing',%s,%s)",
+				"INSERT IGNORE INTO %i (scope_hash,payload_digest,api_version,operation,state,created_at,expires_at) VALUES (UNHEX(%s),UNHEX(%s),%s,%s,'processing',%s,%s)",
+				$table,
 				bin2hex( $scope ),
 				bin2hex( $digest ),
 				self::API_VERSION,
@@ -73,8 +73,8 @@ final class WordPressCredentialAdminOperationRepository implements CredentialAdm
 			return $scope;
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- A losing request must authoritatively inspect the canonical reservation.
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT payload_digest,api_version,operation,state FROM {$table} WHERE scope_hash=UNHEX(%s) LIMIT 1", bin2hex( $scope ) ), ARRAY_A );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- A losing request must authoritatively inspect the canonical reservation.
+		$row = $wpdb->get_row( $wpdb->prepare( 'SELECT payload_digest,api_version,operation,state FROM %i WHERE scope_hash=UNHEX(%s) LIMIT 1', $table, bin2hex( $scope ) ), ARRAY_A );
 		if ( ! is_array( $row ) ) {
 			throw new RuntimeException( 'The credential operation reservation is unavailable.' );
 		}

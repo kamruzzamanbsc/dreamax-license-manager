@@ -80,8 +80,8 @@ final class IdempotencyRepository {
 			function () use ( $scope, $digest, $operation ): ?array {
 				global $wpdb;
 				$table = $wpdb->prefix . 'dreamax_lm_idempotency';
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The trusted prefixed table requires a fresh locking read.
-				$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE scope_hash = UNHEX(%s) FOR UPDATE", bin2hex( $scope ) ), ARRAY_A );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The trusted prefixed table requires a fresh locking read.
+				$row = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE scope_hash = UNHEX(%s) FOR UPDATE', $table, bin2hex( $scope ) ), ARRAY_A );
 				if ( is_array( $row ) ) {
 					if ( ! hash_equals( bin2hex( $digest ), bin2hex( (string) $row['payload_digest'] ) ) ) {
 						throw new LicenseException( 'idempotency_conflict', 'This idempotency key was used with different request data.', 409 );
@@ -100,8 +100,8 @@ final class IdempotencyRepository {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 				$wpdb->query(
 					$wpdb->prepare(
-						// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-						"INSERT INTO {$table} (scope_hash,payload_digest,api_version,operation,state,created_at,expires_at) VALUES (UNHEX(%s),UNHEX(%s),'v1',%s,'processing',%s,%s)",
+						"INSERT INTO %i (scope_hash,payload_digest,api_version,operation,state,created_at,expires_at) VALUES (UNHEX(%s),UNHEX(%s),'v1',%s,'processing',%s,%s)",
+						$table,
 						bin2hex( $scope ),
 						bin2hex( $digest ),
 						$operation,

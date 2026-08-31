@@ -570,9 +570,13 @@ final class GuestClaimService {
 	 */
 	private function license_rows( int $order_id, bool $lock ): array {
 		global $wpdb;
-		$suffix = $lock ? ' FOR UPDATE' : '';
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The suffix is one fixed optional FOR UPDATE clause; claim ownership requires a direct fresh read.
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT id,customer_id FROM {$wpdb->prefix}dreamax_lm_licenses WHERE order_id=%d ORDER BY id{$suffix}", $order_id ), ARRAY_A );
+		if ( $lock ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Claim ownership locking reads must be fresh.
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT id,customer_id FROM {$wpdb->prefix}dreamax_lm_licenses WHERE order_id=%d ORDER BY id FOR UPDATE", $order_id ), ARRAY_A );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Claim ownership reads must be fresh.
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT id,customer_id FROM {$wpdb->prefix}dreamax_lm_licenses WHERE order_id=%d ORDER BY id", $order_id ), ARRAY_A );
+		}
 		return is_array( $rows ) ? $rows : array();
 	}
 
@@ -585,9 +589,13 @@ final class GuestClaimService {
 	 */
 	private function latest_claim( int $order_id, bool $lock ): ?array {
 		global $wpdb;
-		$suffix = $lock ? ' FOR UPDATE' : '';
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The suffix is one fixed optional FOR UPDATE clause; verification requires the latest fresh claim.
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_guest_claims WHERE order_id=%d ORDER BY id DESC LIMIT 1{$suffix}", $order_id ), ARRAY_A );
+		if ( $lock ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Verification requires the latest fresh locking read.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_guest_claims WHERE order_id=%d ORDER BY id DESC LIMIT 1 FOR UPDATE", $order_id ), ARRAY_A );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Verification requires the latest fresh read.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_guest_claims WHERE order_id=%d ORDER BY id DESC LIMIT 1", $order_id ), ARRAY_A );
+		}
 		return is_array( $row ) ? $row : null;
 	}
 
@@ -600,9 +608,13 @@ final class GuestClaimService {
 	 */
 	private function claim_by_public_id( string $public_id, bool $lock ): ?array {
 		global $wpdb;
-		$suffix = $lock ? ' FOR UPDATE' : '';
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The suffix is one fixed optional FOR UPDATE clause; finalization requires a fresh claim.
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_guest_claims WHERE public_id=%s LIMIT 1{$suffix}", $public_id ), ARRAY_A );
+		if ( $lock ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Finalization requires a fresh locking read.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_guest_claims WHERE public_id=%s LIMIT 1 FOR UPDATE", $public_id ), ARRAY_A );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Finalization requires a fresh read.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_guest_claims WHERE public_id=%s LIMIT 1", $public_id ), ARRAY_A );
+		}
 		return is_array( $row ) ? $row : null;
 	}
 
@@ -615,9 +627,13 @@ final class GuestClaimService {
 	 */
 	private function owner_row( int $order_id, bool $lock ): ?array {
 		global $wpdb;
-		$suffix = $lock ? ' FOR UPDATE' : '';
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The suffix is one fixed optional FOR UPDATE clause; ownership requires a fresh unique row.
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_order_owners WHERE order_id=%d{$suffix}", $order_id ), ARRAY_A );
+		if ( $lock ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Ownership requires a fresh locking read.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_order_owners WHERE order_id=%d FOR UPDATE", $order_id ), ARRAY_A );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Ownership requires a fresh read.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_order_owners WHERE order_id=%d", $order_id ), ARRAY_A );
+		}
 		return is_array( $row ) ? $row : null;
 	}
 

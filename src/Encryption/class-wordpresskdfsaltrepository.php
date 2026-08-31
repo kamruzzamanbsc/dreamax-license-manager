@@ -104,8 +104,8 @@ final class WordPressKdfSaltRepository implements KdfSaltRepository {
 			$table = $wpdb->prefix . 'dreamax_lm_' . $suffix;
 
 			$wpdb->last_error = '';
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Trusted plugin table names require fresh fail-closed existence checks.
-			$exists = $wpdb->get_var( "SELECT 1 FROM {$table} LIMIT 1" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Trusted plugin table names require fresh fail-closed existence checks.
+			$exists = $wpdb->get_var( $wpdb->prepare( 'SELECT 1 FROM %i LIMIT 1', $table ) );
 			if ( '' !== $this->last_database_error() ) {
 				throw $this->failure();
 			}

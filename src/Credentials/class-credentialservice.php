@@ -450,9 +450,13 @@ final class CredentialService {
 	 */
 	private function row_by_public_id( string $public_id, bool $lock ): ?array {
 		global $wpdb;
-		$suffix = $lock ? ' FOR UPDATE' : '';
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The suffix is a fixed optional lock clause and lifecycle reads must be fresh.
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_api_credentials WHERE public_id=%s LIMIT 1{$suffix}", $public_id ), ARRAY_A );
+		if ( $lock ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Credential lifecycle locking reads must be fresh.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_api_credentials WHERE public_id=%s LIMIT 1 FOR UPDATE", $public_id ), ARRAY_A );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Credential lifecycle reads must be fresh.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_api_credentials WHERE public_id=%s LIMIT 1", $public_id ), ARRAY_A );
+		}
 		return is_array( $row ) ? $row : null;
 	}
 

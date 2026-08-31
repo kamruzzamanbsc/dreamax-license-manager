@@ -27,13 +27,13 @@ final class OrderOperationRepository {
 		$digest  = hash( 'sha256', $operation . '|' . $order_id, true );
 		$now     = gmdate( 'Y-m-d H:i:s' );
 		$expires = gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS );
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The trusted prefixed table requires a fresh direct cleanup.
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE scope_hash=UNHEX(%s) AND expires_at<%s", bin2hex( $scope ), $now ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The trusted prefixed table requires a fresh direct cleanup.
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE scope_hash=UNHEX(%s) AND expires_at<%s', $table, bin2hex( $scope ), $now ) );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 		$inserted = $wpdb->query(
 			$wpdb->prepare(
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from the trusted WordPress database prefix.
-				"INSERT IGNORE INTO {$table} (scope_hash,payload_digest,api_version,operation,state,created_at,expires_at) VALUES (UNHEX(%s),UNHEX(%s),'internal',%s,'processing',%s,%s)",
+				"INSERT IGNORE INTO %i (scope_hash,payload_digest,api_version,operation,state,created_at,expires_at) VALUES (UNHEX(%s),UNHEX(%s),'internal',%s,'processing',%s,%s)",
+				$table,
 				bin2hex( $scope ),
 				bin2hex( $digest ),
 				$operation,
