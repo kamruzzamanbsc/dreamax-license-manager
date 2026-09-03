@@ -4,7 +4,7 @@ Tags: woocommerce, license manager, software licensing
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.3.1
+Stable tag: 0.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,9 +12,9 @@ Self-hosted software licensing, activation, delivery, and migration for WooComme
 
 == Description ==
 
-This package is an unshipped 0.3.1 release candidate. It includes encrypted license storage, generator and imported-pool foundations, WooCommerce allocation, secure guest-order account claims, scoped and rotatable privileged API credentials, a versioned REST API, customer license display, and data portability. It does not depend on a paid API or remote SaaS.
+Dreamax License Manager lets WooCommerce store owners generate, import, allocate, deliver, activate, and manage license keys for software products they sell. It includes encrypted license storage, WooCommerce order allocation, guest-order account claims, scoped and rotatable management API credentials, customer license display, and data portability.
 
-All 33 Free V1 acceptance gates have recorded evidence. Tagging, publication, and production deployment remain separate release decisions; validate backups, HTTPS, InnoDB, mail, cache/proxy behavior, and the external master key in the target environment before deployment.
+The plugin itself does not require a license key, payment, subscription, trial, quota, or external service. Every feature included in this plugin is available without an upgrade. License checks performed by the plugin apply only to license keys that the store owner issues for their own products.
 
 Dreamax License Manager is published by [Dreamax Soft](https://dreamaxsoft.com/).
 
@@ -28,9 +28,9 @@ Dreamax License Manager is published by [Dreamax Soft](https://dreamaxsoft.com/)
 
 == Frequently Asked Questions ==
 
-= Does Free core need a paid service? =
+= Does the plugin need a paid service or license key? =
 
-No. Core licensing is self-hosted.
+No. The plugin is fully self-hosted and all included functionality is available without payment, a subscription, or a license key for the plugin itself.
 
 = Can a database backup alone recover clear license keys? =
 
@@ -42,6 +42,10 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 
 == Changelog ==
 
+= 0.3.2 =
+
+* Addressed WordPress.org review feedback for enqueued assets, privileged REST permission callbacks, request validation, and clearer fully functional self-hosted licensing documentation.
+
 = 0.3.1 =
 
 * Redesigned the license, activity, portability, status, API credential, and WooCommerce order-operation screens with clearer preview, confirmation, availability, and audit context.
@@ -50,12 +54,12 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 = 0.3.0 =
 
 * Added secure one-time-code guest-order claims, atomic privileged credential rotation/revocation, a central validated versioned audit-event contract, snapshotted refund/cancellation policies, deterministic partial-refund mapping, guarded quantity edits, explicit post-delivery allocation, resend, and preview-confirmed historical-order backfill.
-* Added sequential migration verification, deterministic packaging/provenance, seeded performance fixtures, and guarded live evidence for all 33 Free V1 acceptance gates. This remains an unshipped release candidate.
+* Added sequential migration verification, deterministic packaging/provenance, seeded performance fixtures, and guarded live acceptance evidence.
 
 = 0.2.0 =
 
-* Added transactional, retry-safe lifecycle operations, bulk administration, reassignment, activation reset, guarded deletion, filters, details, and recent activity. Still not a production Free V1 release.
+* Added transactional, retry-safe lifecycle operations, bulk administration, reassignment, activation reset, guarded deletion, filters, details, and recent activity.
 
 = 0.1.0 =
 
-* Development foundation. Not a production Free V1 release.
+* Added the initial development foundation.

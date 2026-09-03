@@ -1,6 +1,6 @@
 # Privileged API credential operations
 
-Applies to unshipped release candidate 0.3.1. Live acceptance evidence is recorded under F31 and F32.
+Applies to unshipped release candidate 0.3.2. Live acceptance evidence is recorded under F31 and F32.
 
 ## Protocol
 
@@ -18,6 +18,8 @@ Authentication failures for unknown, malformed, expired, revoked, and incorrect 
 - `licenses:write`
 - `activations:read`
 - `generators:read`
+
+Each privileged REST route has a named permission callback. That callback enforces transport policy, authenticates the Bearer credential, and checks the route's exact scope before WordPress invokes the endpoint handler. Marked permission failures are normalized back into the frozen v1 response envelope. The handler then rechecks the stored credential state and scope while holding the database advisory lock, so rotation, revocation, and concurrent requests cannot bypass the authorization boundary.
 
 Successful calls consume a site-local per-credential rate bucket. `last_used_at` is updated at most once per five-minute interval; audit-use events remain independent of that write-coalescing policy.
 

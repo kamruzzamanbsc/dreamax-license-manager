@@ -20,13 +20,18 @@ use Dreamax\LicenseManager\Licenses\LicenseService;
 use Dreamax\LicenseManager\Licenses\StateMachine;
 use Dreamax\LicenseManager\Support\PublicId;
 use Throwable;
+use WP_Error;
+use WP_HTTP_Response;
 use WP_REST_Request;
+use WP_REST_Server;
 
 /**
  * Handles Privileged routes operations.
  */
 final class PrivilegedRoutes {
-	private const NAMESPACE = 'dreamax-license-manager/v1';
+	private const NAMESPACE          = 'dreamax-license-manager/v1';
+	private const PERMISSION_CONTEXT = '_dreamax_lm_privileged_permission';
+	private const PERMISSION_ERROR   = '_dreamax_lm_privileged_permission_error';
 
 	/**
 	 * Credentials value.
@@ -75,6 +80,7 @@ final class PrivilegedRoutes {
 	 */
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'routes' ) );
+		add_filter( 'rest_post_dispatch', array( $this, 'normalize_permission_error' ), 10, 3 );
 	}
 
 	/**
@@ -88,12 +94,12 @@ final class PrivilegedRoutes {
 				array(
 					'methods'             => \WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'licenses' ),
-					'permission_callback' => '__return_true',
+					'permission_callback' => array( $this, 'can_read_licenses' ),
 				),
 				array(
 					'methods'             => \WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'create' ),
-					'permission_callback' => '__return_true',
+					'permission_callback' => array( $this, 'can_write_licenses' ),
 				),
 			)
 		);
@@ -104,12 +110,12 @@ final class PrivilegedRoutes {
 				array(
 					'methods'             => \WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'license' ),
-					'permission_callback' => '__return_true',
+					'permission_callback' => array( $this, 'can_read_licenses' ),
 				),
 				array(
 					'methods'             => \WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update' ),
-					'permission_callback' => '__return_true',
+					'permission_callback' => array( $this, 'can_write_licenses' ),
 				),
 			)
 		);
@@ -119,7 +125,7 @@ final class PrivilegedRoutes {
 			array(
 				'methods'             => \WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'revoke' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( $this, 'can_write_licenses' ),
 			)
 		);
 		register_rest_route(
@@ -128,7 +134,7 @@ final class PrivilegedRoutes {
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'activations' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( $this, 'can_read_activations' ),
 			)
 		);
 		register_rest_route(
@@ -137,7 +143,128 @@ final class PrivilegedRoutes {
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'generators' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( $this, 'can_read_generators' ),
+			)
+		);
+	}
+
+	/**
+	 * Authorizes a privileged license read before its route callback runs.
+	 *
+	 * @param WP_REST_Request $request Request value.
+	 * @return bool|WP_Error
+	 */
+	public function can_read_licenses( WP_REST_Request $request ) {
+		return $this->permission( $request, 'licenses:read', false );
+	}
+
+	/**
+	 * Authorizes a privileged license mutation before its route callback runs.
+	 *
+	 * @param WP_REST_Request $request Request value.
+	 * @return bool|WP_Error
+	 */
+	public function can_write_licenses( WP_REST_Request $request ) {
+		return $this->permission( $request, 'licenses:write', true );
+	}
+
+	/**
+	 * Authorizes privileged activation reads before their route callback runs.
+	 *
+	 * @param WP_REST_Request $request Request value.
+	 * @return bool|WP_Error
+	 */
+	public function can_read_activations( WP_REST_Request $request ) {
+		return $this->permission( $request, 'activations:read', false );
+	}
+
+	/**
+	 * Authorizes privileged generator reads before their route callback runs.
+	 *
+	 * @param WP_REST_Request $request Request value.
+	 * @return bool|WP_Error
+	 */
+	public function can_read_generators( WP_REST_Request $request ) {
+		return $this->permission( $request, 'generators:read', false );
+	}
+
+	/**
+	 * Restores the frozen v1 envelope for errors rejected by permission callbacks.
+	 *
+	 * @param WP_HTTP_Response $response Response value.
+	 * @param WP_REST_Server   $server Server value.
+	 * @param WP_REST_Request  $request Request value.
+	 */
+	public function normalize_permission_error( WP_HTTP_Response $response, WP_REST_Server $server, WP_REST_Request $request ): WP_HTTP_Response {
+		unset( $server );
+		if ( 0 !== strpos( $request->get_route(), '/' . self::NAMESPACE . '/' ) ) {
+			return $response;
+		}
+		$data       = $response->get_data();
+		$error_data = is_array( $data ) && isset( $data['data'] ) && is_array( $data['data'] ) ? $data['data'] : array();
+		if ( true !== ( $error_data[ self::PERMISSION_ERROR ] ?? false ) ) {
+			return $response;
+		}
+		$request_id = isset( $error_data['request_id'] ) && is_string( $error_data['request_id'] ) ? $error_data['request_id'] : PublicId::generate( 'req' );
+		$code       = isset( $data['code'] ) && is_string( $data['code'] ) ? $data['code'] : 'authentication_required';
+		$message    = isset( $data['message'] ) && is_string( $data['message'] ) ? $data['message'] : 'Authentication is required.';
+		return $this->responses->make( false, $code, $message, $request_id, array(), $response->get_status() );
+	}
+
+	/**
+	 * Authenticates and scope-authorizes a privileged request before dispatch.
+	 *
+	 * @param WP_REST_Request $request Request value.
+	 * @param string          $scope Required scope.
+	 * @param bool            $has_body Whether this route requires JSON content type.
+	 * @return bool|WP_Error
+	 * @throws LicenseException Internally converted to a marked permission error.
+	 */
+	private function permission( WP_REST_Request $request, string $scope, bool $has_body ) {
+		$request_id = PublicId::generate( 'req' );
+		try {
+			$this->transport->assert_privileged_request( $request, $has_body );
+			$credential = $this->credentials->authenticate( (string) $request->get_header( 'Authorization' ), $request_id );
+			if ( ! is_array( $credential ) ) {
+				$this->limits->consume( 'privileged-auth-failed|' . $this->source->network(), 10, 1.0 / 60.0 );
+				throw new LicenseException( 'authentication_required', 'Authentication is required.', 401 );
+			}
+			$this->credentials->assert_scope( $credential, $scope, $request_id, true );
+			$request->set_param(
+				self::PERMISSION_CONTEXT,
+				array(
+					'credential' => $credential,
+					'request_id' => $request_id,
+					'scope'      => $scope,
+				)
+			);
+			return true;
+		} catch ( LicenseException $error ) {
+			return $this->permission_error( $error->machine_code(), $error->getMessage(), $error->http_status(), $request_id );
+		} catch ( Throwable $error ) {
+			unset( $error );
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Records only an opaque request ID; no request data or secrets are logged.
+			error_log( 'Dreamax privileged API permission check failed. Request ID: ' . $request_id );
+			return $this->permission_error( 'server_unavailable', 'The licensing service is temporarily unavailable.', 503, $request_id );
+		}
+	}
+
+	/**
+	 * Creates a marked REST error that is normalized to the public v1 envelope.
+	 *
+	 * @param string $code Machine code.
+	 * @param string $message Public message.
+	 * @param int    $status HTTP status.
+	 * @param string $request_id Opaque request ID.
+	 */
+	private function permission_error( string $code, string $message, int $status, string $request_id ): WP_Error {
+		return new WP_Error(
+			$code,
+			$message,
+			array(
+				'status'               => $status,
+				self::PERMISSION_ERROR => true,
+				'request_id'           => $request_id,
 			)
 		);
 	}
@@ -319,13 +446,13 @@ final class PrivilegedRoutes {
 	 * @throws LicenseException When the operation cannot be completed.
 	 */
 	private function handle( WP_REST_Request $request, string $scope, bool $has_body, callable $callback ): \WP_REST_Response {
-		$request_id = PublicId::generate( 'req' );
+		unset( $has_body );
+		$context    = $request->get_param( self::PERMISSION_CONTEXT );
+		$request_id = is_array( $context ) && isset( $context['request_id'] ) && is_string( $context['request_id'] ) ? $context['request_id'] : PublicId::generate( 'req' );
 		try {
-			$this->transport->assert_privileged_request( $has_body, (string) $request->get_body() );
-			$header     = (string) $request->get_header( 'Authorization' );
-			$credential = $this->credentials->authenticate( $header, $request_id );
-			if ( ! is_array( $credential ) ) {
-				$this->limits->consume( 'privileged-auth-failed|' . $this->source->network(), 10, 1.0 / 60.0 );
+			$credential       = is_array( $context ) && isset( $context['credential'] ) && is_array( $context['credential'] ) ? $context['credential'] : null;
+			$authorized_scope = is_array( $context ) && isset( $context['scope'] ) && is_string( $context['scope'] ) ? $context['scope'] : '';
+			if ( ! is_array( $credential ) || ! hash_equals( $scope, $authorized_scope ) ) {
 				throw new LicenseException( 'authentication_required', 'Authentication is required.', 401 );
 			}
 			$result = $this->credentials->authorized_use( $credential, $scope, $request_id, $callback );

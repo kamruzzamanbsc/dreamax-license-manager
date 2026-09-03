@@ -211,7 +211,7 @@ final class PublicRoutes {
 		$scope      = null;
 		try {
 			$this->assert_ready();
-			$this->transport->assert_public_request();
+			$this->transport->assert_public_request( $request );
 			$payload = $this->payload( $request, true );
 			$this->apply_protective_limits( $operation );
 
@@ -267,7 +267,7 @@ final class PublicRoutes {
 		$request_id = PublicId::generate( 'req' );
 		try {
 			$this->assert_ready();
-			$this->transport->assert_public_request();
+			$this->transport->assert_public_request( $request );
 			$payload = $this->payload( $request, false );
 			$this->apply_protective_limits( $operation );
 			$this->apply_operation_limit( $operation, $payload );

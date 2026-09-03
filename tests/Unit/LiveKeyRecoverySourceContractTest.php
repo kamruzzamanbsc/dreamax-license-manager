@@ -55,7 +55,7 @@ final class LiveKeyRecoverySourceContractTest extends TestCase {
 		self::assertStringContainsString( '! Health::storage_ready()', $this->public_routes );
 		self::assertStringContainsString( "throw new LicenseException( 'server_unavailable', 'The licensing service is temporarily unavailable.', 503 );", $this->public_routes );
 		self::assertLessThan(
-			strpos( $this->public_routes, '$this->transport->assert_public_request();' ),
+			strpos( $this->public_routes, '$this->transport->assert_public_request( $request );' ),
 			strpos( $this->public_routes, '$this->assert_ready();' )
 		);
 	}

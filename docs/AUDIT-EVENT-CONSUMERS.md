@@ -1,6 +1,6 @@
 # Audit-event consumer and migration guide
 
-Applies to the development 0.3.1 event contract. The complete field inventory is in `AUDIT-EVENTS.md`.
+Applies to the development 0.3.2 event contract. The complete field inventory is in `AUDIT-EVENTS.md`.
 
 ## Consumer dispatch
 

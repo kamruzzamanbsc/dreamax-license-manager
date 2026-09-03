@@ -11,6 +11,7 @@ namespace Dreamax\LicenseManager\Api;
 
 use Dreamax\LicenseManager\Credentials\CredentialToken;
 use Dreamax\LicenseManager\Licenses\LicenseException;
+use WP_REST_Request;
 
 /**
  * Handles Transport guard operations.
@@ -35,11 +36,13 @@ final class TransportGuard {
 
 	/**
 	 * Handles the assert public request operation.
+	 *
+	 * @param WP_REST_Request $request Request value.
 	 */
-	public function assert_public_request(): void {
+	public function assert_public_request( WP_REST_Request $request ): void {
 		$this->assert_https();
-		$this->assert_content_type();
-		$this->assert_size( 16 * 1024, 128 );
+		$this->assert_content_type( $request );
+		$this->assert_size( (string) $request->get_body(), 16 * 1024, (string) $request->get_header( 'Idempotency-Key' ), 128 );
 		$this->assert_no_query_secrets();
 	}
 
@@ -48,29 +51,29 @@ final class TransportGuard {
 	 */
 	public function assert_interactive_request(): void {
 		$this->assert_https();
-		$this->assert_size( 16 * 1024, 128 );
+		$this->assert_interactive_size( 16 * 1024 );
 		$this->assert_no_query_secrets();
 	}
 
 	/**
 	 * Handles the assert privileged request operation.
 	 *
-	 * @param bool   $has_body Has body value.
-	 * @param string $body Raw request body.
+	 * @param WP_REST_Request $request Request value.
+	 * @param bool            $has_body Has body value.
 	 * @throws LicenseException When the operation cannot be completed.
 	 */
-	public function assert_privileged_request( bool $has_body, string $body = '' ): void {
+	public function assert_privileged_request( WP_REST_Request $request, bool $has_body ): void {
+		$body          = (string) $request->get_body();
+		$authorization = (string) $request->get_header( 'Authorization' );
 		$this->assert_https();
 		if ( $has_body ) {
-			$this->assert_content_type();
+			$this->assert_content_type( $request );
 		}
 		if ( '' !== $body ) {
 			$this->assert_no_body_credentials( $body );
 		}
-		$this->assert_size( 64 * 1024, 128 );
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The credential header must remain byte-exact; it is unslashed, length/control validated, and parsed strictly downstream.
-		$authorization = isset( $_SERVER['HTTP_AUTHORIZATION'] ) ? (string) wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] ) : '';
-		if ( strlen( $authorization ) > 256 || false !== strpos( $authorization, "\n" ) || false !== strpos( $authorization, "\r" ) ) {
+		$this->assert_size( $body, 64 * 1024, (string) $request->get_header( 'Idempotency-Key' ), 128 );
+		if ( strlen( $authorization ) > CredentialToken::HEADER_LIMIT || false !== strpos( $authorization, "\n" ) || false !== strpos( $authorization, "\r" ) ) {
 			throw new LicenseException( 'authentication_required', 'Authentication is required.', 401 );
 		}
 		$this->assert_no_query_secrets();
@@ -103,10 +106,11 @@ final class TransportGuard {
 	/**
 	 * Handles the assert content type operation.
 	 *
+	 * @param WP_REST_Request $request Request value.
 	 * @throws LicenseException When the operation cannot be completed.
 	 */
-	private function assert_content_type(): void {
-		$content_type = isset( $_SERVER['CONTENT_TYPE'] ) ? strtolower( trim( explode( ';', sanitize_text_field( wp_unslash( (string) $_SERVER['CONTENT_TYPE'] ) ) )[0] ) ) : '';
+	private function assert_content_type( WP_REST_Request $request ): void {
+		$content_type = strtolower( trim( explode( ';', (string) $request->get_header( 'Content-Type' ) )[0] ) );
 		if ( 'application/json' !== $content_type ) {
 			throw new LicenseException( 'invalid_request', 'Use the application/json content type.', 415 );
 		}
@@ -115,19 +119,31 @@ final class TransportGuard {
 	/**
 	 * Handles the assert size operation.
 	 *
-	 * @param int $body_limit Body limit value.
-	 * @param int $idempotency_limit Idempotency limit value.
+	 * @param string $body Raw request body.
+	 * @param int    $body_limit Body limit value.
+	 * @param string $idempotency_key Idempotency key value.
+	 * @param int    $idempotency_limit Idempotency limit value.
 	 * @throws LicenseException When the operation cannot be completed.
 	 */
-	private function assert_size( int $body_limit, int $idempotency_limit ): void {
-		$length = isset( $_SERVER['CONTENT_LENGTH'] ) ? (int) $_SERVER['CONTENT_LENGTH'] : 0;
-		if ( $length > $body_limit ) {
+	private function assert_size( string $body, int $body_limit, string $idempotency_key, int $idempotency_limit ): void {
+		if ( strlen( $body ) > $body_limit ) {
 			throw new LicenseException( 'invalid_request', 'The request body is too large.', 413 );
 		}
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Idempotency keys are protocol identifiers whose exact bytes matter; they are unslashed and strictly length/ASCII validated by the repository.
-		$key = isset( $_SERVER['HTTP_IDEMPOTENCY_KEY'] ) ? (string) wp_unslash( $_SERVER['HTTP_IDEMPOTENCY_KEY'] ) : '';
-		if ( strlen( $key ) > $idempotency_limit ) {
+		if ( strlen( $idempotency_key ) > $idempotency_limit ) {
 			throw new LicenseException( 'invalid_request', 'The idempotency key is too long.', 400 );
+		}
+	}
+
+	/**
+	 * Enforces the browser-form body ceiling using a sanitized request length.
+	 *
+	 * @param int $body_limit Body limit value.
+	 * @throws LicenseException When the operation cannot be completed.
+	 */
+	private function assert_interactive_size( int $body_limit ): void {
+		$length = isset( $_SERVER['CONTENT_LENGTH'] ) ? absint( sanitize_text_field( wp_unslash( (string) $_SERVER['CONTENT_LENGTH'] ) ) ) : 0;
+		if ( $length > $body_limit ) {
+			throw new LicenseException( 'invalid_request', 'The request body is too large.', 413 );
 		}
 	}
 
@@ -138,14 +154,14 @@ final class TransportGuard {
 	 */
 	private function assert_no_query_secrets(): void {
 		$blocked = array( 'license_key', 'license', 'key', 'token', 'code', 'claim_code', 'claim_token', 'claim_proof', 'proof', 'authorization', 'idempotency_key' );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public API query inspection rejects secrets and performs no mutation.
-		foreach ( array_keys( $_GET ) as $name ) {
-			if ( in_array( strtolower( (string) $name ), $blocked, true ) ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only inspection rejects query-carried secrets before request processing.
+		$query_args = map_deep( wp_unslash( $_GET ), 'sanitize_text_field' );
+		foreach ( array_keys( $query_args ) as $name ) {
+			if ( in_array( sanitize_key( (string) $name ), $blocked, true ) ) {
 				throw new LicenseException( 'invalid_request', 'Secrets are not accepted in the URL.', 400 );
 			}
 		}
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Query values are inspected only to reject exposed credentials.
-		$query = wp_json_encode( $_GET );
+		$query = wp_json_encode( $query_args );
 		if ( is_string( $query ) && ( new CredentialToken() )->body_contains_credential( $query ) ) {
 			throw new LicenseException( 'invalid_request', 'Secrets are not accepted in the URL.', 400 );
 		}
