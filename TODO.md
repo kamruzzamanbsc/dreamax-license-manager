@@ -2,16 +2,14 @@
 
 ## Prioritized unfinished tasks
 
-1. **P0 — Finish the authorized local correction checkpoint:** Commit the validated `0.3.2` review fixes, build the deterministic ZIP from that exact commit, inspect its manifest/inventory, and push only `fix/wordpress-org-review-round-1`.
-2. **P0 — Run official submission checks:** Validate the resulting ZIP with the current official Plugin Check and hosted WordPress.org readme validator before any replacement submission.
-3. **P0 — Owner review and authorization:** Let the project owner inspect the diff, evidence, and artifact. Obtain separate explicit authorization before uploading a replacement ZIP or replying to the reviewer.
-4. **P1 — Verify in a disposable live environment:** Exercise the corrected REST authorization paths, account asset loading, product-save capabilities, proxy/HTTPS behavior, and supported WordPress/WooCommerce versions without using production data.
-5. **P1 — Prepare WordPress.org publication only after approval:** Obtain separate explicit authorization before checking out or modifying SVN, uploading code/assets, or publishing a stable tag.
-6. **P2 — Production readiness:** Separately validate backups, external master-key recovery, HTTPS, InnoDB, mail delivery, cache/proxy behavior, and a disposable restore before any deployment decision.
+1. **P0 - Owner review and authorization:** Inspect the `0.3.2` correction diff, official validation evidence, artifact hash, and remaining duplicate-header limitation. Obtain separate explicit authorization before a replacement WordPress.org upload or reviewer reply.
+2. **P1 - Repeat the raw duplicate-header case under Apache:** Use an unmistakably disposable WordPress/WooCommerce/MySQL environment whose web server preserves or combines duplicate Authorization fields. Do not treat the PHP built-in-server skip as a PASS.
+3. **P1 - Prepare WordPress.org publication only after approval:** Obtain separate explicit authorization before checking out or modifying SVN, uploading code/assets, or publishing a stable tag.
+4. **P2 - Production readiness:** Separately validate backups, external master-key recovery, HTTPS, InnoDB, mail delivery, cache/proxy behavior, and a disposable restore before any deployment decision.
 
 ## One clear next action
 
-Complete the authorized local commit, deterministic artifact verification, and correction-branch push. Stop before any WordPress.org upload, email reply, merge, tag, release, SVN action, or deployment.
+The project owner should review the pushed correction evidence and decide whether to authorize the Apache duplicate-header rerun, replacement WordPress.org upload, and reviewer email reply as separate actions.
 
 ## Review correction checklist
 
@@ -23,9 +21,11 @@ Complete the authorized local commit, deterministic artifact verification, and c
 - [x] Public documentation clearly rules out trialware/paywall behavior.
 - [x] Candidate metadata consistently identifies version `0.3.2`.
 - [x] Local PHPUnit, PHPCS, PHPStan, syntax, Composer, autoload, audit, and whitespace checks passed.
-- [ ] Deterministic `0.3.2` ZIP built and inspected from the recorded correction commit.
-- [ ] Current official Plugin Check and hosted readme validation completed for that ZIP.
-- [ ] Disposable live WordPress/WooCommerce verification completed.
+- [x] Deterministic `0.3.2` ZIP built twice and inspected from recorded commit `5ecc0b28650f05d1b98eb5e017e894948fc717d5`.
+- [x] Official Plugin Check 2.1.0 static and runtime-enabled checks completed with no errors.
+- [x] Hosted WordPress.org readme validation completed with zero errors and zero warnings.
+- [x] Disposable WordPress 7.1/WooCommerce 11.0.1/MariaDB activation, schema, and guarded REST diagnostic checks completed with exact cleanup.
+- [ ] Duplicate raw Authorization-header behavior rerun for `0.3.2` under Apache or an equivalent server.
 - [ ] Separate replacement-upload and reviewer-reply authorization received.
 - [ ] WordPress.org accepted the correction and directory approval was received.
 
