@@ -41,18 +41,17 @@ The primary disposable check used WordPress 7.1, WooCommerce 11.0.1, PHP 8.2.4, 
 
 ## Additional guarded REST evidence
 
-The unchanged guarded F31 verifier reached the combined header/transport stage after all allowed-scope and wrong-scope checks. It then stopped at its duplicate raw Authorization-header assertion because the PHP built-in server collapsed two raw fields before PHP/WordPress received them. This is a local web-server limitation, not a promoted PASS.
+The unchanged guarded F31 verifier completed against an isolated Apache 2.4.56, WordPress 7.1, WooCommerce 11.0.1, PHP 8.2.4, MariaDB 10.4.28, and InnoDB site:
 
-An ignored diagnostic copy marked only that one case as skipped and false, then completed the remaining matrix:
-
-- 11 credential contracts, 22 loopback HTTP requests, and six parallel workers verified;
+- 11 credential contracts, 23 loopback HTTP requests, and six parallel workers verified;
 - all four exact scopes allowed and all wrong scopes denied;
 - uniform missing, malformed, unknown, expired, and revoked authentication failures;
+- duplicate raw Authorization fields rejected without disclosing credential material;
 - query/body credential rejection and trusted-proxy boundaries;
 - expiration, per-credential rate limiting, last-used coalescing, audit rollback, and concurrency serialization;
 - 37 audit rows checked for private payloads;
 - exact web configuration and database aggregates restored, with zero owned fixture rows and no outbound email.
 
-The duplicate raw-header case remains to be rerun for `0.3.2` under a server such as Apache that preserves or combines duplicate Authorization fields. Prior Apache evidence exists for the frozen F31 contract, but it does not replace this version-specific rerun.
+The verifier reported `duplicate_raw_header_rejected`, `authorization_forwarding_tested`, `web_configuration_restored`, `cleanup_complete`, `database_aggregates_unchanged`, and `sensitive_output: false`. Both isolated server ports were closed after the run.
 
-The disposable WordPress, SQLite/MariaDB data, temporary configuration, test key, diagnostic scripts, and local servers were removed after verification. No production data, service, or credential was used. The release ZIP and its external manifest/inventory remain ignored build outputs.
+The disposable WordPress/MariaDB data, Apache configuration, test key, and local servers were removed after verification. No production data, service, or credential was used. The release ZIP and its external manifest/inventory remain ignored build outputs.
