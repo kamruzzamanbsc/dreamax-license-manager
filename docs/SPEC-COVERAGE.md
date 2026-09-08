@@ -2,7 +2,7 @@
 
 Controlling prompt SHA-256: `9015f7168559ec9ff4030328f0ea921151a03a2968232c12a8edfa6b2132b0e7`  
 Review date: 2026-08-24  
-Build status: unshipped WordPress.org review-correction candidate `0.3.2`; no publication or deployment claim.
+Build status: published baseline `0.3.2`; unreleased Customer Portal candidate `0.3.3` with no publication or deployment claim.
 
 | Specification area | Evidence | Status |
 | --- | --- | --- |

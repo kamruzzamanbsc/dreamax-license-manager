@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.3 - Customer Portal
 
 - Rebuilt the WooCommerce My Account licenses screen with endpoint-scoped styling, a stable desktop account grid, responsive license cards, and a clearer two-step guest-order claim flow.
 - Added a login-protected `[dreamax_license_dashboard]` standalone customer portal with overview metrics, responsive license cards, secure reveal/copy, guest-order claiming, account details, and accessible tab navigation independent of WooCommerce My Account layouts.

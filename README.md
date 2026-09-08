@@ -1,6 +1,6 @@
 # Dreamax License Manager
 
-Dreamax License Manager is a self-hosted WooCommerce licensing plugin published by [Dreamax Soft](https://dreamaxsoft.com/). Version `0.3.2` is published in the WordPress.org Plugin Directory and tagged in Git; later work remains unreleased until it completes a separate review and release cycle.
+Dreamax License Manager is a self-hosted WooCommerce licensing plugin published by [Dreamax Soft](https://dreamaxsoft.com/). Version `0.3.2` is published in the WordPress.org Plugin Directory and tagged in Git; the current tree is the unreleased `0.3.3` Customer Portal candidate.
 
 ## Current baseline
 
@@ -32,4 +32,4 @@ License keys use XChaCha20-Poly1305 authenticated encryption and a separate keye
 
 ## Project status
 
-The source implements the initial schema, key protection, generator/normalization rules, atomic activation core, public and scoped management REST foundations, WooCommerce allocation/delivery, a customer endpoint, CSV transfer, privacy hooks, and health diagnostics. Version `0.3.2` addresses WordPress.org review feedback by using enqueued assets, authenticating privileged routes in permission callbacks, validating request headers through the REST request object, and clarifying that the plugin itself has no license gate, trial, quota, paid service, or locked feature. All 33 Free V1 gates are `PASS_WITH_EVIDENCE`. See `docs/BUILDING.md`, `docs/RELEASE.md`, and the coverage ledger for future release-candidate procedures.
+The source implements the published `0.3.2` baseline plus the unreleased `0.3.3` standalone Customer Portal, responsive WooCommerce My Account license presentation, guarded dashboard-page setup, and hardened guest-claim responses. All 33 Free V1 gates retain their recorded `PASS_WITH_EVIDENCE` status; the new candidate still requires its proportionate automated and manual release checks. See `docs/BUILDING.md`, `docs/RELEASE.md`, and the coverage ledger.

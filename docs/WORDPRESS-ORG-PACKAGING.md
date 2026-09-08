@@ -17,7 +17,7 @@ Current official release pages identified WordPress 7.1 and WooCommerce 11.0.1. 
 - Directory/slug: `dreamax-license-manager`.
 - Main file: `dreamax-license-manager.php`.
 - ZIP location: `dreamax-license-manager/dreamax-license-manager.php`.
-- Version/header/constant/readme Stable Tag: numeric `0.3.2`.
+- Current candidate version/header/constant/readme Stable Tag: numeric `0.3.3`.
 - Text domain: literal `dreamax-license-manager`.
 - WordPress.org dependency slug: `Requires Plugins: woocommerce`.
 - Author: Dreamax Soft; Author URI: `https://dreamaxsoft.com/`.
@@ -27,4 +27,4 @@ Current official release pages identified WordPress 7.1 and WooCommerce 11.0.1. 
 - No paid service requirement, telemetry, trialware, remote licensing dependency, or fake Pro interface is included.
 - The deterministic allowlist excludes repository/development/local/secret/build artifacts and lints every shipped PHP file.
 
-Run `composer release:validate` for the reproducible local header/readme structure check. Before the first review round, the hosted WordPress.org readme validator accepted the 0.3.1 candidate with only optional notes for upgrade notices, screenshots, and donations, and the official Plugin Check passed with no findings. Version 0.3.2 addressed the directory review notice dated 2026-09-03: privileged endpoints use scope-bound permission callbacks, plugin-owned browser assets use enqueue APIs, REST protocol headers are read through `WP_REST_Request`, and the public readme states that the plugin itself has no license gate, payment, subscription, trial, quota, locked feature, or external-service dependency. WordPress.org published the plugin source in SVN revision `3687082`; directory assets and listing refinements followed in revisions `3687261`, `3687322`, and `3687346`.
+Run `composer release:validate` for the reproducible local header/readme structure check. Before the first review round, the hosted WordPress.org readme validator accepted the 0.3.1 candidate with only optional notes for upgrade notices, screenshots, and donations, and the official Plugin Check passed with no findings. Version 0.3.2 addressed the directory review notice dated 2026-09-03: privileged endpoints use scope-bound permission callbacks, plugin-owned browser assets use enqueue APIs, REST protocol headers are read through `WP_REST_Request`, and the public readme states that the plugin itself has no license gate, payment, subscription, trial, quota, locked feature, or external-service dependency. WordPress.org published the plugin source in SVN revision `3687082`; directory assets and listing refinements followed in revisions `3687261`, `3687322`, and `3687346`. The public stable release remains `0.3.2`; candidate `0.3.3` requires a new validated artifact and separate publication authorization.

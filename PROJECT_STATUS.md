@@ -2,7 +2,14 @@
 
 ## Current objective
 
-Reconcile the completed `0.3.2` WordPress.org release into Git `main`, then prepare the standalone Customer Portal as a separately reviewed future release. Preserve the published `v0.3.2` tag and WordPress.org `tags/0.3.2` source.
+Prepare the standalone Customer Portal as the separately versioned `0.3.3` release candidate. Preserve the published `v0.3.2` tag and WordPress.org `tags/0.3.2` source.
+
+## 0.3.3 candidate scope
+
+- Add a login-protected standalone license dashboard independent of WooCommerce My Account theme layouts.
+- Add a nonce- and capability-protected setup screen that creates or reuses the configured dashboard page.
+- Rebuild the WooCommerce My Account license presentation with responsive license cards and clearer guest-order claiming.
+- Keep reveal, ownership, private-cache, nonce, safe-redirect, and generic fail-closed response boundaries intact.
 
 ## Review-round-one corrections
 
@@ -14,7 +21,7 @@ Reconcile the completed `0.3.2` WordPress.org release into Git `main`, then prep
 - Clarified in public copy that the plugin itself has no payment, subscription, trial, quota, external service, or paid-feature unlock.
 - Advanced candidate metadata and documentation from `0.3.1` to `0.3.2` and added focused source-contract coverage.
 
-## Local validation
+## 0.3.2 release validation
 
 The correction work passed the following local checks before its final review:
 
@@ -31,6 +38,16 @@ The exact `0.3.2` ZIP also passed official Plugin Check 2.1.0 in static and runt
 
 A fresh disposable WordPress 7.1, WooCommerce 11.0.1, PHP 8.2.4, MariaDB 10.4.28, and InnoDB site activated the artifact, installed schema version 3, and created nine plugin tables. The unchanged guarded F31 verifier then completed under isolated Apache 2.4.56: 23 loopback requests, 11 credential contracts, six parallel workers, duplicate raw-header rejection, authorization/scope/proxy/rate/audit/concurrency behavior, private audit payloads, and exact cleanup all passed.
 
+## 0.3.3 candidate validation
+
+- PHPUnit: 282 tests and 1,826 assertions passed.
+- WordPress PHPCS passed with no output; PHPStan analyzed 57 files with no errors.
+- Production syntax passed for 103 PHP files, and release metadata is internally consistent at version `0.3.3`.
+- The dependency files are unchanged from the previously audited `0.3.2` baseline; a new Composer audit was not run because a Composer CLI is not available on this machine.
+- Focused source review found no blocking issue in customer scoping, key reveal, claim nonces, safe redirects, private-cache headers, page-creation capability checks, or output escaping.
+- Existing desktop, 500px, and 360px UI QA renders were inspected without overlap, clipping, or inaccessible persistent controls.
+- Official Plugin Check, a deterministic build from a recorded candidate commit, artifact inspection, and manual runtime release gates remain pending.
+
 ## Git and release state
 
 - Correction branch: `fix/wordpress-org-review-round-1`.
@@ -39,12 +56,15 @@ A fresh disposable WordPress 7.1, WooCommerce 11.0.1, PHP 8.2.4, MariaDB 10.4.28
 - Directory icons, banners, and six screenshots were published in revision `3687261`; the public listing copy was expanded in revision `3687322` and aligned with the deployed feature set in revision `3687346`.
 - Git tag `v0.3.2` resolves to correction/evidence commit `bf43977f63dfddbf6c418317884dd96cd1f0919b`.
 - The standalone Customer Portal is isolated on `feature/customer-license-portal` and is not included in WordPress.org version `0.3.2`.
-- Git `main` does not yet contain the `0.3.2` correction commits.
+- Pull request #43 merged the `0.3.2` correction branch into remote `main` at commit `722d405dade59e9d9187cc3b78ad6ad99468cab6`.
+- The Customer Portal branch integrated that remote `main` through local merge commit `d670c9d` before advancing candidate metadata to `0.3.3`.
+- No `v0.3.3` tag, GitHub release, WordPress.org SVN update, or production deployment has been created.
 
 ## Next decisions
 
-- Review and merge `fix/wordpress-org-review-round-1` into `main` without moving `v0.3.2`.
-- Prepare the Customer Portal under a new version only after the release branch is integrated and the documented validation gates are rerun.
+- Complete automated checks and focused security/release review for candidate `0.3.3`.
+- Commit and publish the candidate branch only after explicit authorization, then open a dedicated pull request to `main`.
+- Build, manually validate, tag, and publish `0.3.3` only through separately authorized release actions.
 
 ## Last updated
 

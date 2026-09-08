@@ -4,7 +4,7 @@ Tags: woocommerce, license manager, software licensing
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.3.2
+Stable tag: 0.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -39,6 +39,7 @@ Dreamax License Manager is published by [Dreamax Soft](https://dreamaxsoft.com/)
 = Customer access =
 
 * Show assigned licenses in the private WooCommerce My Account area.
+* Publish a login-protected standalone license dashboard without depending on a theme's WooCommerce account layout.
 * Keep license keys masked until an authorized customer chooses to reveal and copy one.
 * Let guest purchasers claim eligible orders through a time-limited one-time-code flow.
 * Prevent one customer from viewing another customer's license records.
@@ -99,7 +100,7 @@ Yes. You can import existing keys for later allocation or create an individual l
 
 = How do customers receive and view licenses? =
 
-Eligible paid orders receive assigned licenses through the WooCommerce workflow. Signed-in customers can use the private WooCommerce My Account license area, where keys remain masked until explicitly revealed. Eligible guest orders can be claimed through the one-time-code flow.
+Eligible paid orders receive assigned licenses through the WooCommerce workflow. Signed-in customers can use the private WooCommerce My Account license area or the separately published standalone dashboard, where keys remain masked until explicitly revealed. Eligible guest orders can be claimed through the one-time-code flow.
 
 = Can another application validate and activate licenses? =
 
@@ -121,8 +122,14 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 4. Review active installations and the immutable audit trail for an individual license.
 5. Configure WooCommerce product issuance, activation, validity, refund, and cancellation policies.
 6. Create narrowly scoped, expiring API credentials for trusted integrations.
+7. Give signed-in customers a focused standalone dashboard for viewing licenses and claiming eligible guest orders.
 
 == Changelog ==
+
+= 0.3.3 =
+
+* Added a login-protected standalone customer license dashboard, a guarded setup screen, responsive license views, and a clearer guest-order claim flow.
+* Rebuilt the WooCommerce My Account license presentation and kept key reveal, ownership, cache, nonce, and redirect boundaries intact.
 
 = 0.3.2 =
 

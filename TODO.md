@@ -2,15 +2,15 @@
 
 ## Prioritized unfinished tasks
 
-1. **P0 - Reconcile the published release into Git:** Review and merge `fix/wordpress-org-review-round-1` into `main` without moving the published `v0.3.2` tag.
-2. **P1 - Prepare the Customer Portal release:** Integrate the release branch into `feature/customer-license-portal`, assign a new version, update release documentation, and rerun the required checks.
-3. **P1 - Review the Customer Portal separately:** Open and review a dedicated pull request; do not include it retroactively in `0.3.2`.
-4. **P2 - Future WordPress.org publication:** Build and inspect a new deterministic artifact, then update SVN only after separate release authorization.
+1. **P0 - Validate the Customer Portal candidate:** Complete automated checks and a focused security, compatibility, packaging, and UI review for version `0.3.3`.
+2. **P1 - Review the Customer Portal separately:** Publish the candidate branch and open a dedicated pull request to `main`; do not include it retroactively in `0.3.2`.
+3. **P1 - Build the exact release candidate:** After review, create and inspect a deterministic artifact from an authorized recorded commit.
+4. **P2 - Future WordPress.org publication:** Update SVN only after separate tag and publication authorization.
 5. **P2 - Production readiness:** Separately validate backups, external master-key recovery, HTTPS, InnoDB, mail delivery, cache/proxy behavior, and a disposable restore before any production deployment decision.
 
 ## One clear next action
 
-Complete review of `fix/wordpress-org-review-round-1` and merge it into `main` after explicit authorization. Keep the Customer Portal isolated until its own versioned release review.
+Run the complete local automated checks and focused review for Customer Portal candidate `0.3.3`.
 
 ## Review correction checklist
 
@@ -31,6 +31,17 @@ Complete review of `fix/wordpress-org-review-round-1` and merge it into `main` a
 - [x] WordPress.org accepted the correction and directory approval was received.
 - [x] Version `0.3.2`, directory assets, listing copy, and six accurate screenshots were published through SVN.
 - [x] Git tag `v0.3.2` was published at the reviewed correction commit.
-- [ ] The correction branch has been reviewed and merged into Git `main`.
+- [x] The correction branch was reviewed and merged into Git `main` through pull request #43.
+
+## Customer Portal candidate checklist
+
+- [x] Remote `main` was integrated into `feature/customer-license-portal`.
+- [x] Candidate metadata consistently identifies version `0.3.3`.
+- [x] PHPUnit, PHPCS, PHPStan, release metadata, and production syntax checks pass.
+- [x] Focused source security and UI review has no blocking findings.
+- [ ] Official Plugin Check, deterministic packaging, artifact inspection, and required manual runtime gates pass.
+- [ ] Candidate branch is committed and published after explicit authorization.
+- [ ] A dedicated Customer Portal pull request is reviewed and merged after explicit authorization.
+- [ ] Deterministic artifact, manual runtime checks, tag, and WordPress.org publication receive separate authorization.
 
 Do not move `v0.3.2`, alter the published `tags/0.3.2` source, or include the Customer Portal in that historical release.
