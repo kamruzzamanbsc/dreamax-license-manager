@@ -55,8 +55,9 @@ final class Admin {
 			return;
 		}
 
-		wp_enqueue_style( 'dreamax-lm-admin', DREAMAX_LM_URL . 'assets/css/admin.css', array(), DREAMAX_LM_VERSION );
-		wp_enqueue_script( 'dreamax-lm-admin', DREAMAX_LM_URL . 'assets/js/admin.js', array(), DREAMAX_LM_VERSION, true );
+		$asset_version = DREAMAX_LM_VERSION . '.portal-setup-2';
+		wp_enqueue_style( 'dreamax-lm-admin', DREAMAX_LM_URL . 'assets/css/admin.css', array(), $asset_version );
+		wp_enqueue_script( 'dreamax-lm-admin', DREAMAX_LM_URL . 'assets/js/admin.js', array(), $asset_version, true );
 		wp_localize_script(
 			'dreamax-lm-admin',
 			'dreamaxLmAdmin',

@@ -2046,6 +2046,221 @@
 	outline: 0;
 }
 
+/* Customer portal page setup. */
+.dreamax-lm-portal-header {
+	align-items: center;
+	margin: 22px 0 20px;
+	padding: 30px 34px;
+	border-radius: 16px;
+	background: linear-gradient(125deg, #202d68 0%, #4f46e5 100%);
+	color: #fff;
+	box-shadow: 0 16px 38px rgba(32, 45, 104, 0.18);
+}
+
+.dreamax-lm-portal-header .dreamax-lm-eyebrow,
+.dreamax-lm-portal-header .dreamax-lm-page-intro {
+	color: #dbe3ff;
+}
+
+.dreamax-lm-portal-header h1 {
+	color: #ffffff;
+}
+
+.dreamax-lm-portal-header > .dashicons {
+	display: grid;
+	place-items: center;
+	width: 58px;
+	height: 58px;
+	border: 1px solid rgba(255, 255, 255, 0.25);
+	border-radius: 14px;
+	background: rgba(255, 255, 255, 0.1);
+	font-size: 28px;
+}
+
+.dreamax-lm-portal-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+	gap: 18px;
+	align-items: start;
+}
+
+.dreamax-lm-portal-create > .dreamax-lm-panel-heading > .dashicons {
+	color: var(--dlm-accent);
+	font-size: 24px;
+}
+
+.dreamax-lm-portal-form {
+	display: grid;
+	gap: 18px;
+	padding: 24px;
+}
+
+.dreamax-lm-portal-slug {
+	display: flex;
+	align-items: center;
+	overflow: hidden;
+	border: 1px solid #cbd2dc;
+	border-radius: 7px;
+	background: #f8fafc;
+}
+
+.dreamax-lm-portal-slug:focus-within {
+	border-color: var(--dlm-accent);
+	box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.18);
+}
+
+.dreamax-lm-portal-slug > span {
+	padding: 0 0 0 12px;
+	color: var(--dlm-muted);
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.dreamax-lm-portal-slug input {
+	min-width: 160px;
+	border: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.dreamax-lm-portal-guidance {
+	padding: 26px;
+}
+
+.dreamax-lm-portal-guidance > .dashicons {
+	display: grid;
+	place-items: center;
+	width: 46px;
+	height: 46px;
+	margin-bottom: 18px;
+	border-radius: 12px;
+	background: var(--dlm-primary-soft);
+	color: var(--dlm-accent);
+	font-size: 23px;
+}
+
+.dreamax-lm-portal-guidance h2 {
+	margin: 8px 0 10px;
+	font-size: 21px;
+}
+
+.dreamax-lm-portal-guidance ul {
+	display: grid;
+	gap: 12px;
+	margin: 20px 0;
+}
+
+.dreamax-lm-portal-guidance li {
+	display: flex;
+	gap: 9px;
+	align-items: flex-start;
+	color: #344054;
+}
+
+.dreamax-lm-portal-guidance li .dashicons {
+	width: 17px;
+	height: 17px;
+	color: #039855;
+	font-size: 17px;
+}
+
+.dreamax-lm-portal-note {
+	display: grid;
+	gap: 4px;
+	padding: 15px;
+	border-radius: 9px;
+	background: #f6f7fb;
+}
+
+.dreamax-lm-portal-note span {
+	color: var(--dlm-muted);
+	font-size: 13px;
+	line-height: 1.55;
+}
+
+.dreamax-lm-portal-ready {
+	padding: 26px;
+}
+
+.dreamax-lm-portal-state {
+	display: flex;
+	gap: 16px;
+	align-items: flex-start;
+}
+
+.dreamax-lm-portal-state > .dashicons {
+	display: grid;
+	flex: 0 0 46px;
+	place-items: center;
+	width: 46px;
+	height: 46px;
+	border-radius: 12px;
+	background: #ecfdf3;
+	color: #027a48;
+	font-size: 23px;
+}
+
+.dreamax-lm-portal-state h2 {
+	margin: 7px 0 6px;
+	font-size: 22px;
+}
+
+.dreamax-lm-portal-state p:last-child {
+	margin: 0;
+	color: var(--dlm-muted);
+}
+
+.dreamax-lm-portal-details {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	margin: 24px 0;
+	overflow: hidden;
+	border: 1px solid var(--dlm-border);
+	border-radius: 10px;
+}
+
+.dreamax-lm-portal-details > div {
+	min-width: 0;
+	padding: 16px;
+	border-right: 1px solid var(--dlm-border);
+}
+
+.dreamax-lm-portal-details > div:last-child {
+	border-right: 0;
+}
+
+.dreamax-lm-portal-details dt {
+	margin-bottom: 6px;
+	color: var(--dlm-muted);
+	font-size: 12px;
+	font-weight: 650;
+}
+
+.dreamax-lm-portal-details dd {
+	margin: 0;
+	font-weight: 650;
+	overflow-wrap: anywhere;
+}
+
+.dreamax-lm-portal-details code {
+	font-size: 12px;
+}
+
+.dreamax-lm-portal-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.dreamax-lm-portal-actions .dashicons {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 17px;
+	height: 17px;
+	font-size: 17px;
+}
+
 @media (max-width: 1180px) {
 	.dreamax-lm-filter-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 	.dreamax-lm-field--search { grid-column: span 2; }
@@ -2068,6 +2283,7 @@
 	.dreamax-lm-order-tools-layout,
 	.dreamax-lm-order-action-grid { grid-template-columns: 1fr; }
 	.dreamax-lm-claim-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.dreamax-lm-portal-layout { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 782px) {
@@ -2102,6 +2318,10 @@
 	.dreamax-lm-order-action-body > .button,
 	.dreamax-lm-claim-body > .button { width: 100%; }
 	.dreamax-lm-claim-fields { grid-template-columns: 1fr; }
+	.dreamax-lm-portal-header { margin-top: 12px; padding: 24px; }
+	.dreamax-lm-portal-details { grid-template-columns: 1fr; }
+	.dreamax-lm-portal-details > div { border-right: 0; border-bottom: 1px solid var(--dlm-border); }
+	.dreamax-lm-portal-details > div:last-child { border-bottom: 0; }
 }
 
 @media (max-width: 480px) {
@@ -2110,6 +2330,11 @@
 	.dreamax-lm-secret-response { padding: 36px 16px; }
 	.dreamax-lm-secret-actions { align-items: stretch; flex-direction: column; }
 	.dreamax-lm-secret-actions .button { width: 100%; text-align: center; }
+	.dreamax-lm-portal-header > .dashicons { display: none; }
+	.dreamax-lm-portal-slug { align-items: stretch; flex-direction: column; padding-top: 9px; }
+	.dreamax-lm-portal-slug input { width: 100%; }
+	.dreamax-lm-portal-actions { align-items: stretch; flex-direction: column; }
+	.dreamax-lm-portal-actions .button { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

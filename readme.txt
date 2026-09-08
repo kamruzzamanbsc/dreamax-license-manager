@@ -25,6 +25,7 @@ Dreamax License Manager is published by [Dreamax Soft](https://dreamaxsoft.com/)
 3. Open License Manager → System status.
 4. Generate the one-time `wp-config.php` master-key snippet and back it up separately.
 5. Confirm encryption readiness before creating a license.
+6. Open License Manager > Customer Portal and create the login-protected customer dashboard page.
 
 == Frequently Asked Questions ==
 

@@ -22,6 +22,10 @@ The recorded acceptance matrix used WordPress 7.1, WooCommerce 11.0.1, PHP 8.2.4
 
 Never test migrations, fixture generation, destructive actions, or recovery drills against production data. Review `docs/FREE-V1-MUST-PASS.md` before making any release claim.
 
+## Customer license portal
+
+Open **License Manager → Customer Portal** and choose **Create dashboard page**. The plugin publishes a login-protected, responsive license dashboard without requiring the WordPress block editor. Repeat submissions reuse the configured page instead of creating a duplicate. The same dashboard can be placed manually with `[dreamax_license_dashboard]` when needed.
+
 ## Security model
 
 License keys use XChaCha20-Poly1305 authenticated encryption and a separate keyed HMAC-SHA-256 lookup fingerprint. The root key must be a dedicated 32-byte unpadded base64url value in `DREAMAX_LICENSE_MANAGER_MASTER_KEY`; it is never stored in the database. See `docs/RECOVERY.md`.

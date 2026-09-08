@@ -57,9 +57,12 @@ final class WordPressOrgReviewSourceContractTest extends TestCase {
 		self::assertStringContainsString( "wp_print_styles( 'dreamax-lm-admin' )", $admin );
 		self::assertStringContainsString( "wp_print_scripts( 'dreamax-lm-admin' )", $admin );
 		self::assertStringNotContainsString( 'wp_print_inline_script_tag', $account );
+		self::assertStringContainsString( "wp_enqueue_style( 'dreamax-lm-account'", $account );
 		self::assertStringContainsString( "wp_enqueue_script( 'dreamax-lm-account'", $account );
 		self::assertStringContainsString( "wp_localize_script(", $account );
+		self::assertStringContainsString( "add_filter( 'body_class'", $account );
 		self::assertStringContainsString( 'navigator.clipboard.writeText', $script );
+		self::assertStringContainsString( "document.execCommand('copy')", $script );
 	}
 
 	public function test_woocommerce_saves_have_explicit_object_capability_checks(): void {

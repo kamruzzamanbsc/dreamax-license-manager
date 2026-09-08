@@ -1,0 +1,82 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Dreamax\LicenseManager\Tests\Unit;
+
+use PHPUnit\Framework\TestCase;
+
+final class LicenseDashboardSourceContractTest extends TestCase {
+	private string $dashboard;
+	private string $endpoint;
+	private string $plugin;
+	private string $script;
+	private string $styles;
+
+	protected function setUp(): void {
+		$root            = dirname( __DIR__, 2 );
+		$this->dashboard = (string) file_get_contents( $root . '/src/CustomerPortal/class-licensedashboard.php' );
+		$this->endpoint  = (string) file_get_contents( $root . '/src/CustomerPortal/class-accountendpoint.php' );
+		$this->plugin    = (string) file_get_contents( $root . '/src/class-plugin.php' );
+		$this->script    = (string) file_get_contents( $root . '/assets/js/account.js' );
+		$this->styles    = (string) file_get_contents( $root . '/assets/css/dashboard.css' );
+	}
+
+	public function test_standalone_dashboard_is_registered_and_scoped_to_its_shortcode_page(): void {
+		self::assertStringContainsString( "private const SHORTCODE = 'dreamax_license_dashboard'", $this->dashboard );
+		self::assertStringContainsString( 'add_shortcode( self::SHORTCODE', $this->dashboard );
+		self::assertStringContainsString( "wp_enqueue_style( 'dreamax-lm-dashboard'", $this->dashboard );
+		self::assertStringContainsString( "'dreamax-lm-dashboard-page'", $this->dashboard );
+		self::assertStringContainsString( '( new LicenseDashboard() )->register();', $this->plugin );
+		self::assertStringContainsString( 'add_filter( \'the_title\', array( $this, \'hide_theme_page_title\' ), 10, 2 )', $this->dashboard );
+	}
+
+	public function test_theme_page_title_is_removed_only_from_the_current_main_loop(): void {
+		self::assertStringContainsString( 'public function hide_theme_page_title( string $title, int $post_id ): string', $this->dashboard );
+		self::assertStringContainsString( 'is_admin() || ! in_the_loop() || ! is_main_query()', $this->dashboard );
+		self::assertStringContainsString( 'get_queried_object_id() !== $post_id', $this->dashboard );
+		self::assertStringContainsString( "return '';", $this->dashboard );
+	}
+
+	public function test_dashboard_requires_authentication_and_reads_only_the_current_customer_rows(): void {
+		self::assertStringContainsString( 'if ( ! is_user_logged_in() )', $this->dashboard );
+		self::assertStringContainsString( '$this->licenses->for_customer( get_current_user_id() )', $this->dashboard );
+		self::assertStringContainsString( 'wp_login_url(', $this->dashboard );
+		self::assertStringContainsString( 'Cache-Control: no-store, no-cache, must-revalidate, private, max-age=0', $this->dashboard );
+	}
+
+	public function test_customer_workflows_remain_nonce_protected_and_return_safely(): void {
+		self::assertStringContainsString( "wp_nonce_field( 'dreamax_lm_guest_claim_issue' )", $this->dashboard );
+		self::assertStringContainsString( "wp_nonce_field( 'dreamax_lm_guest_claim_verify' )", $this->dashboard );
+		self::assertStringContainsString( 'dreamax_lm_return_url', $this->dashboard );
+		self::assertStringContainsString( 'wp_validate_redirect( $return_url, $fallback )', $this->endpoint );
+		self::assertStringContainsString( 'wp_safe_redirect( $destination )', $this->endpoint );
+		self::assertStringNotContainsString( 'wc_add_notice(', $this->endpoint );
+		self::assertStringContainsString( "add_query_arg( 'dreamax_lm_claim_result', \$result, \$destination )", $this->endpoint );
+		self::assertStringContainsString( '( new TransportGuard() )->assert_interactive_request();', $this->endpoint );
+		self::assertStringContainsString( 'dreamax-lm-dashboard-notice', $this->dashboard );
+	}
+
+	public function test_dashboard_includes_premium_navigation_responsive_states_and_progressive_enhancement(): void {
+		self::assertStringContainsString( 'data-dreamax-dashboard-target="overview"', $this->dashboard );
+		self::assertStringContainsString( 'data-dreamax-dashboard-panel="licenses"', $this->dashboard );
+		self::assertStringContainsString( 'dreamax-lm-dashboard-stats', $this->dashboard );
+		self::assertStringContainsString( 'dreamax-lm-dashboard-license-list', $this->dashboard );
+		self::assertStringContainsString( 'dreamax-lm-dashboard-claim-grid', $this->dashboard );
+		self::assertStringContainsString( 'initializeDashboards', $this->script );
+		self::assertStringContainsString( 'copyText', $this->script );
+		self::assertStringNotContainsString( 'activePanel.scrollIntoView', $this->script );
+		self::assertStringContainsString( 'function preserveMobileViewport(callback)', $this->script );
+		self::assertStringContainsString( 'dashboard.style.minHeight = Math.ceil(dashboard.getBoundingClientRect().height)', $this->script );
+		self::assertStringContainsString( "window.scrollTo({left: scrollLeft, top: scrollTop, behavior: 'auto'})", $this->script );
+		self::assertStringContainsString( 'scroll-margin-top: 170px', $this->styles );
+		self::assertStringContainsString( '@media screen and (max-width: 960px)', $this->styles );
+		self::assertStringContainsString( '@media screen and (max-width: 540px)', $this->styles );
+		self::assertStringContainsString( 'min-height: clamp(540px, calc(100vh - 175px), 680px)', $this->styles );
+		self::assertStringContainsString( 'grid-template-columns: repeat(2, minmax(0, 1fr))', $this->styles );
+		self::assertStringContainsString( 'min-height: 48px', $this->styles );
+		self::assertStringContainsString( 'width: calc(100vw - 12px)', $this->styles );
+		self::assertStringContainsString( 'padding: 18px 14px', $this->styles );
+		self::assertStringContainsString( '@media screen and (max-width: 340px)', $this->styles );
+	}
+}

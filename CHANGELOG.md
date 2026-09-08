@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Rebuilt the WooCommerce My Account licenses screen with endpoint-scoped styling, a stable desktop account grid, responsive license cards, and a clearer two-step guest-order claim flow.
+- Added a login-protected `[dreamax_license_dashboard]` standalone customer portal with overview metrics, responsive license cards, secure reveal/copy, guest-order claiming, account details, and accessible tab navigation independent of WooCommerce My Account layouts.
+- Added a nonce- and capability-protected Customer Portal setup screen that publishes the standalone dashboard page without relying on the WordPress block editor and prevents duplicate page creation.
+- Made guest-claim form responses independent of the WooCommerce frontend session during `admin-post.php` requests, and contained transport failures inside the generic fail-closed customer response instead of allowing a WordPress critical-error page.
+
 ## 0.3.2 — WordPress.org review corrections
 
 - Replaced direct and inline asset output with WordPress-enqueued static assets.

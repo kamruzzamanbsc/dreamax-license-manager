@@ -10,10 +10,12 @@ declare(strict_types=1);
 namespace Dreamax\LicenseManager;
 
 use Dreamax\LicenseManager\Admin\Admin;
+use Dreamax\LicenseManager\Admin\CustomerPortalPage;
 use Dreamax\LicenseManager\Api\PublicRoutes;
 use Dreamax\LicenseManager\Api\PrivilegedRoutes;
 use Dreamax\LicenseManager\CustomerPortal\AccountEndpoint;
 use Dreamax\LicenseManager\CustomerPortal\GuestClaimService;
+use Dreamax\LicenseManager\CustomerPortal\LicenseDashboard;
 use Dreamax\LicenseManager\Database\Installer;
 use Dreamax\LicenseManager\ImportExport\CsvController;
 use Dreamax\LicenseManager\Integrations\WooCommerce\OrderLicensing;
@@ -44,8 +46,10 @@ final class Plugin {
 		( new OrderLicensing() )->register();
 		( new OrderWorkflowAdmin() )->register();
 		( new AccountEndpoint() )->register();
+		( new LicenseDashboard() )->register();
 		( new GuestClaimService() )->register();
 		( new Admin() )->register();
+		( new CustomerPortalPage() )->register();
 		( new CsvController() )->register();
 		( new Privacy() )->register();
 		( new Health() )->register();

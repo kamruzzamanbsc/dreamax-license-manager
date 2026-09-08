@@ -189,7 +189,7 @@ final class GuestClaimService {
 		/* translators: %d: WooCommerce order ID. */
 		$subject = sprintf( __( 'Your one-time claim code for order #%d', 'dreamax-license-manager' ), $order_id );
 		/* translators: 1: WooCommerce order ID. 2: One-time claim code. 3: Claim lifetime in minutes. */
-		$message = sprintf( __( "A signed-in customer requested to claim the licenses for order #%1\$d.\n\nEnter this one-time code in My Account > Licenses:\n\n%2\$s\n\nThe code expires in %3\$d minutes and can be used once. If you did not request this, ignore this email.", 'dreamax-license-manager' ), $order_id, $token, (int) ceil( $lifetime / MINUTE_IN_SECONDS ) );
+		$message = sprintf( __( "A signed-in customer requested to claim the licenses for order #%1\$d.\n\nEnter this one-time code in your customer license dashboard:\n\n%2\$s\n\nThe code expires in %3\$d minutes and can be used once. If you did not request this, ignore this email.", 'dreamax-license-manager' ), $order_id, $token, (int) ceil( $lifetime / MINUTE_IN_SECONDS ) );
 		$sent    = wp_mail( $authoritative_email, $subject, $message );
 		sodium_memzero( $token );
 		unset( $message );
