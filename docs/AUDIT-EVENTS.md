@@ -1,6 +1,6 @@
 # Versioned audit-event catalog
 
-This is the published consumer catalog for development version 0.3.1. The authoritative executable definition is `AuditEventCatalog`; every production emitter names a catalog constant and schema version explicitly, and `EventRepository` validates the complete envelope before persistence.
+This is the published consumer catalog for development version 0.3.2. The authoritative executable definition is `AuditEventCatalog`; every production emitter names a catalog constant and schema version explicitly, and `EventRepository` validates the complete envelope before persistence.
 
 ## Stable envelope
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 — WordPress.org review corrections
+
+- Replaced direct and inline asset output with WordPress-enqueued static assets.
+- Moved scoped Bearer authentication for privileged REST routes into named permission callbacks while preserving the frozen v1 response envelope and locked execution recheck.
+- Removed direct REST Authorization and Idempotency header reads from server globals in favor of strict request-object validation.
+- Added explicit WooCommerce product-edit capability checks and clarified that the plugin itself has no paywall, trial, quota, license gate, or external-service dependency.
+
 ## 0.3.1 — Administration and pre-submission hardening
 
 - Redesigned license inventory, detail, activity, import/export, status, API credential, and WooCommerce order-operation administration for clearer state, controlled actions, and responsive alignment.

@@ -210,21 +210,7 @@ final class CredentialService {
 
 				$this->limits->consume( 'privileged-credential|' . get_current_blog_id() . '|' . $public_id, CredentialPolicy::RATE_CAPACITY, CredentialPolicy::RATE_REFILL );
 				$safe = $this->safe_row( $row );
-				if ( ! $this->has_scope( $safe, $required_scope ) ) {
-					$this->events->append(
-						AuditEventCatalog::CREDENTIAL_INSUFFICIENT_SCOPE,
-						null,
-						'api_credential',
-						(int) $row['id'],
-						$request_id,
-						array(
-							'credential_public_id' => $public_id,
-							'required_scope'       => $required_scope,
-						),
-						AuditEventCatalog::SCHEMA_V1
-					);
-					throw new LicenseException( 'insufficient_scope', 'The credential does not have the required scope.', 403 );
-				}
+				$this->assert_scope( $safe, $required_scope, $request_id );
 
 				$this->touch_last_used( $row );
 				$this->events->append(
@@ -429,6 +415,39 @@ final class CredentialService {
 			$scopes = json_decode( $scopes, true );
 		}
 		return is_array( $scopes ) && in_array( $scope, $scopes, true );
+	}
+
+	/**
+	 * Enforces an exact scope and records one bounded authorization failure.
+	 *
+	 * @param array  $credential Safe credential record.
+	 * @phpstan-param array<string,mixed> $credential
+	 * @param string $required_scope Exact required scope.
+	 * @param string $request_id Opaque request correlation ID.
+	 * @param bool   $limit_failure Whether to consume the credential bucket before a permission-stage rejection.
+	 * @throws LicenseException When the credential lacks the required scope.
+	 */
+	public function assert_scope( array $credential, string $required_scope, string $request_id, bool $limit_failure = false ): void {
+		if ( $this->has_scope( $credential, $required_scope ) ) {
+			return;
+		}
+		$public_id = (string) ( $credential['public_id'] ?? '' );
+		if ( $limit_failure ) {
+			$this->limits->consume( 'privileged-credential|' . get_current_blog_id() . '|' . $public_id, CredentialPolicy::RATE_CAPACITY, CredentialPolicy::RATE_REFILL );
+		}
+		$this->events->append(
+			AuditEventCatalog::CREDENTIAL_INSUFFICIENT_SCOPE,
+			null,
+			'api_credential',
+			isset( $credential['id'] ) ? (int) $credential['id'] : null,
+			$request_id,
+			array(
+				'credential_public_id' => $public_id,
+				'required_scope'       => $required_scope,
+			),
+			AuditEventCatalog::SCHEMA_V1
+		);
+		throw new LicenseException( 'insufficient_scope', 'The credential does not have the required scope.', 403 );
 	}
 
 	/**

@@ -2,7 +2,7 @@
 
 ## What this project does
 
-Dreamax License Manager is a self-hosted WordPress plugin for WooCommerce software licensing. It provides encrypted license storage, license generation and imported pools, WooCommerce allocation and delivery, activation APIs, customer license access, guest-order claims, scoped privileged credentials, audit events, and data portability. The current recorded candidate version is `0.3.1`.
+Dreamax License Manager is a self-hosted WordPress plugin for WooCommerce software licensing. It provides encrypted license storage, license generation and imported pools, WooCommerce allocation and delivery, activation APIs, customer license access, guest-order claims, scoped privileged credentials, audit events, and data portability. The current recorded candidate version is `0.3.2`.
 
 ## Project structure
 

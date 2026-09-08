@@ -79,6 +79,17 @@ final class AccountEndpoint {
 			echo '<p>' . esc_html__( 'You do not have any licenses yet.', 'dreamax-license-manager' ) . '</p>';
 		}
 		$nonce = wp_create_nonce( 'dreamax_lm_reveal' );
+		wp_enqueue_script( 'dreamax-lm-account', DREAMAX_LM_URL . 'assets/js/account.js', array(), DREAMAX_LM_VERSION, true );
+		wp_localize_script(
+			'dreamax-lm-account',
+			'dreamaxLmAccount',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => $nonce,
+				'unable'  => __( 'Unable to reveal', 'dreamax-license-manager' ),
+				'copied'  => __( 'Copied', 'dreamax-license-manager' ),
+			)
+		);
 		echo '<table class="shop_table shop_table_responsive"><thead><tr><th>' . esc_html__( 'License', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Status', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Expiry', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Actions', 'dreamax-license-manager' ) . '</th></tr></thead><tbody>';
 		foreach ( $rows as $row ) {
 			$key    = $this->licenses->decrypt_key( $row );
@@ -89,10 +100,6 @@ final class AccountEndpoint {
 			echo '<td><button type="button" class="button dreamax-lm-reveal" data-license="' . esc_attr( (string) $row['public_id'] ) . '">' . esc_html__( 'Reveal and copy', 'dreamax-license-manager' ) . '</button></td></tr>';
 		}
 		echo '</tbody></table>';
-		$ajax   = admin_url( 'admin-ajax.php' );
-		$script = "document.querySelectorAll('.dreamax-lm-reveal').forEach(function(b){b.addEventListener('click',async function(){b.disabled=true;try{const p=new URLSearchParams({action:'dreamax_lm_reveal',nonce:'" . esc_js( $nonce ) . "',license:b.dataset.license});const r=await fetch('" . esc_url( $ajax ) . "',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:p});const j=await r.json();if(!j.success){throw new Error(j.data&&j.data.message?j.data.message:'Unable to reveal');}const el=document.getElementById('dreamax-key-'+b.dataset.license);el.textContent=j.data.key;await navigator.clipboard.writeText(j.data.key);b.textContent='" . esc_js( __( 'Copied', 'dreamax-license-manager' ) ) . "';}catch(e){window.alert(e.message);}finally{b.disabled=false;}});});";
-		wp_print_inline_script_tag( $script );
-
 		echo '<section class="dreamax-lm-guest-claim"><h2>' . esc_html__( 'Claim a guest order', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Request a one-time code for a guest order. The code is sent only to the order billing email and expires after 30 minutes by default.', 'dreamax-license-manager' ) . '</p>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_guest_claim_issue">';
 		wp_nonce_field( 'dreamax_lm_guest_claim_issue' );

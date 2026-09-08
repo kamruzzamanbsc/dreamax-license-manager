@@ -194,6 +194,9 @@ final class ProductSettings {
 	 * @param int $post_id Post id value.
 	 */
 	public function save_product( int $post_id ): void {
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
 		$product = wc_get_product( $post_id );
 		if ( ! $product ) {
 			return;
@@ -209,6 +212,9 @@ final class ProductSettings {
 	 * @param int $index Index value.
 	 */
 	public function save_variation( int $variation_id, int $index ): void {
+		if ( ! current_user_can( 'edit_post', $variation_id ) ) {
+			return;
+		}
 		$product = wc_get_product( $variation_id );
 		if ( ! $product ) {
 			return;

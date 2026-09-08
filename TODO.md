@@ -2,32 +2,35 @@
 
 ## Prioritized unfinished tasks
 
-1. **P0 — Await WordPress.org review:** Monitor the registered project mailbox, including spam filtering, for the human-review email. Do not resubmit merely because review is pending.
-2. **P0 — Process review safely:** When the email arrives, verify the sender and exact assigned slug, preserve the message, and assess every reviewer request before changing files or replying.
-3. **P1 — Address review findings if required:** Create a bounded plan, update only necessary source/tests/docs with approval, rerun the proportionate full validation set, build deterministically from a recorded commit, and upload a replacement submission only when justified and authorized.
-4. **P1 — Prepare WordPress.org publication after approval:** Obtain separate explicit authorization before checking out or modifying SVN, uploading plugin code/assets, or publishing a stable tag.
-5. **P2 — Production readiness:** Separately validate backups, external master-key recovery, HTTPS, InnoDB, mail delivery, cache/proxy behavior, supported WordPress/WooCommerce/PHP versions, and a disposable restore before any production deployment decision.
+1. **P0 - Reconcile the published release into Git:** Review and merge `fix/wordpress-org-review-round-1` into `main` without moving the published `v0.3.2` tag.
+2. **P1 - Prepare the Customer Portal release:** Integrate the release branch into `feature/customer-license-portal`, assign a new version, update release documentation, and rerun the required checks.
+3. **P1 - Review the Customer Portal separately:** Open and review a dedicated pull request; do not include it retroactively in `0.3.2`.
+4. **P2 - Future WordPress.org publication:** Build and inspect a new deterministic artifact, then update SVN only after separate release authorization.
+5. **P2 - Production readiness:** Separately validate backups, external master-key recovery, HTTPS, InnoDB, mail delivery, cache/proxy behavior, and a disposable restore before any production deployment decision.
 
 ## One clear next action
 
-Wait for the WordPress.org human-review email; make no source, artifact, branch, tag, release, or SVN change while the submission remains awaiting review.
+Complete review of `fix/wordpress-org-review-round-1` and merge it into `main` after explicit authorization. Keep the Customer Portal isolated until its own versioned release review.
 
-## Deployment and release checklist
+## Review correction checklist
 
-- [x] Candidate metadata consistently identifies version `0.3.1`.
-- [x] Official Plugin Check recorded no errors or warnings.
-- [x] WordPress.org readme validator recorded no errors.
-- [x] PHPUnit, PHPCS, PHPStan, metadata, and recorded release-gate checks passed.
-- [x] Deterministic ZIP built from recorded commit; hash and inventory matched.
-- [x] Submitted ZIP filename/version/slug matched the intended candidate.
-- [x] WordPress.org accepted the submission and initially assigned `dreamax-license-manager`.
-- [ ] Human review completed and approval received.
-- [ ] Final assigned slug confirmed unchanged after human review.
-- [ ] Separate authorization received for WordPress.org SVN work.
-- [ ] Approved source mapped to SVN `trunk` and the intended version tag without dev files, secrets, or local artifacts.
-- [ ] WordPress.org assets and readme validated in the SVN layout, if publication assets are approved.
-- [ ] SVN diff reviewed before commit; no SVN commit performed without explicit approval.
-- [ ] Published directory page, ZIP, stable tag, and version metadata verified after an authorized SVN publication.
-- [ ] Production deployment separately authorized and target-environment backup/recovery checks completed.
+- [x] WordPress.org review findings recorded and assessed.
+- [x] Privileged REST routes use named authentication/scope permission callbacks.
+- [x] Request headers use the REST request object; remaining transport input is sanitized.
+- [x] Administration/account assets use WordPress enqueue/localization APIs.
+- [x] Product saves include explicit capability checks.
+- [x] Public documentation clearly rules out trialware/paywall behavior.
+- [x] Candidate metadata consistently identifies version `0.3.2`.
+- [x] Local PHPUnit, PHPCS, PHPStan, syntax, Composer, autoload, audit, and whitespace checks passed.
+- [x] Deterministic `0.3.2` ZIP built twice and inspected from recorded commit `5ecc0b28650f05d1b98eb5e017e894948fc717d5`.
+- [x] Official Plugin Check 2.1.0 static and runtime-enabled checks completed with no errors.
+- [x] Hosted WordPress.org readme validation completed with zero errors and zero warnings.
+- [x] Disposable WordPress 7.1/WooCommerce 11.0.1/MariaDB activation and schema checks completed with exact cleanup.
+- [x] Unchanged guarded F31 verifier completed under isolated Apache 2.4.56, including duplicate raw Authorization-header rejection and exact cleanup.
+- [x] Replacement-upload and reviewer-reply authorization received from the project owner.
+- [x] WordPress.org accepted the correction and directory approval was received.
+- [x] Version `0.3.2`, directory assets, listing copy, and six accurate screenshots were published through SVN.
+- [x] Git tag `v0.3.2` was published at the reviewed correction commit.
+- [ ] The correction branch has been reviewed and merged into Git `main`.
 
-Do not alter `main`, `v0.3.1`, the source branch, an existing GitHub release, or the submitted artifact merely to advance this checklist.
+Do not move `v0.3.2`, alter the published `tags/0.3.2` source, or include the Customer Portal in that historical release.

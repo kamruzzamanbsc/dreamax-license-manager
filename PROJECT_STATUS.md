@@ -2,71 +2,50 @@
 
 ## Current objective
 
-Wait for the WordPress.org human review of Dreamax License Manager `0.3.1` while preserving the submitted source and release state. The project owner supplied the successful-submission confirmation; WordPress.org initially assigned the expected slug `dreamax-license-manager`.
+Reconcile the completed `0.3.2` WordPress.org release into Git `main`, then prepare the standalone Customer Portal as a separately reviewed future release. Preserve the published `v0.3.2` tag and WordPress.org `tags/0.3.2` source.
 
-## Completed work
+## Review-round-one corrections
 
-- Prepared the `0.3.1` administration and pre-submission hardening candidate.
-- Recorded release commit `c26d6525f9144be4d70c35faea9b478a8ed036c5` on `fix/0.3.1-admin-license-ux`.
-- Local `main` points to merge commit `2426b6434c2c43009b6dd23f96687ad2e6e0110e`.
-- Local annotated tag `v0.3.1` resolves to release commit `c26d6525f9144be4d70c35faea9b478a8ed036c5`.
-- Produced deterministic artifact `dreamax-license-manager-0.3.1.zip` from the recorded release commit.
-- Completed the documented pre-submission checks and submitted the ZIP to the WordPress.org Plugin Directory.
-- Owner-provided confirmation reports a successful submission and initial slug `dreamax-license-manager`.
+- Replaced permissive callbacks on all privileged REST routes with named callbacks that authenticate the Bearer credential and enforce the route's exact scope before dispatch.
+- Preserved intentionally public license lifecycle routes; they authenticate using their public v1 license-key protocol rather than a WordPress user session.
+- Replaced direct authorization/idempotency superglobal reads with `WP_REST_Request` header access and sanitized the remaining transport metadata.
+- Replaced direct administration/account script and stylesheet output with WordPress enqueue/localization APIs.
+- Added explicit product-save capability checks while retaining WooCommerce's upstream nonce verification.
+- Clarified in public copy that the plugin itself has no payment, subscription, trial, quota, external service, or paid-feature unlock.
+- Advanced candidate metadata and documentation from `0.3.1` to `0.3.2` and added focused source-contract coverage.
 
-## Current in-progress work
+## Local validation
 
-No source implementation is in progress. The only active work is the external WordPress.org human review. No SVN publication has been authorized or performed.
+The correction work passed the following local checks before its final review:
 
-## Exact last completed step
+- PHPUnit: 274 tests and 1,766 assertions.
+- WordPress PHPCS: no errors or warnings.
+- PHPStan: 55 files, no errors.
+- Composer package validation and release metadata validation.
+- Production PHP syntax: 57 files.
+- Production autoload/path verification: 55 unique production symbols.
+- Composer locked-dependency audit: no advisories or abandoned packages.
+- Git whitespace validation.
 
-The WordPress.org Plugin Directory accepted the `0.3.1` ZIP submission on 2026-08-31 and sent the successful-submission confirmation. The submission is awaiting human review; the proposed permalink remains inactive until approval.
+The exact `0.3.2` ZIP also passed official Plugin Check 2.1.0 in static and runtime-enabled modes with no errors. The hosted WordPress.org readme validator returned zero errors and zero warnings, with optional notes only for absent Upgrade Notice, Screenshots, and donate-link content.
 
-## Exact next step
+A fresh disposable WordPress 7.1, WooCommerce 11.0.1, PHP 8.2.4, MariaDB 10.4.28, and InnoDB site activated the artifact, installed schema version 3, and created nine plugin tables. The unchanged guarded F31 verifier then completed under isolated Apache 2.4.56: 23 loopback requests, 11 credential contracts, six parallel workers, duplicate raw-header rejection, authorization/scope/proxy/rate/audit/concurrency behavior, private audit payloads, and exact cleanup all passed.
 
-Wait for the WordPress.org review email. When it arrives, inspect and record the reviewer result or requested changes before modifying source, rebuilding, replying, or taking any SVN action.
+## Git and release state
 
-## Blockers
+- Correction branch: `fix/wordpress-org-review-round-1`.
+- The deterministic ZIP was built twice from correction commit `5ecc0b28650f05d1b98eb5e017e894948fc717d5`; both hashes and inventories matched. The ignored artifact contains 64 files and has SHA-256 `d58f3e7ed3d3b7219037f11d5219812a91ab686ac6c1b41def4972e4336379fb`.
+- WordPress.org approved the plugin and the exact `0.3.2` plugin source was published to `trunk` and `tags/0.3.2` in SVN revision `3687082`.
+- Directory icons, banners, and six screenshots were published in revision `3687261`; the public listing copy was expanded in revision `3687322` and aligned with the deployed feature set in revision `3687346`.
+- Git tag `v0.3.2` resolves to correction/evidence commit `bf43977f63dfddbf6c418317884dd96cd1f0919b`.
+- The standalone Customer Portal is isolated on `feature/customer-license-portal` and is not included in WordPress.org version `0.3.2`.
+- Git `main` does not yet contain the `0.3.2` correction commits.
 
-- WordPress.org human review is pending and has no locally verifiable completion date.
-- WordPress.org SVN upload is blocked until directory approval and separate explicit authorization.
-- Production deployment remains a separate, unapproved decision.
+## Next decisions
 
-## Files changed recently
-
-The most recent source commit is `c26d652`. It updated release metadata and documentation, added the administration CSS/JavaScript, hardened administration and REST/order/credential/query behavior, expanded unit/source-contract coverage, and adjusted uninstall handling. Principal areas include:
-
-- `dreamax-license-manager.php`, `readme.txt`, `README.md`, `CHANGELOG.md`, and release/security documentation.
-- `assets/css/admin.css` and `assets/js/admin.js`.
-- `src/Admin/`, `src/Api/`, `src/Credentials/`, `src/Events/`, `src/Integrations/WooCommerce/`, and related license/encryption/customer services.
-- `tests/Unit/`, release scripts, static-analysis bootstrap, and `uninstall.php`.
-
-This memory update adds only `AGENTS.md`, `PROJECT_STATUS.md`, and `TODO.md`.
-
-## Validation and test results
-
-Recorded `0.3.1` evidence reports:
-
-- Official Plugin Check: no errors and no warnings.
-- Official hosted WordPress.org readme validation: no errors; optional notes only for absent Upgrade Notice, Screenshots, and donate-link sections.
-- PHPUnit: passed.
-- WordPress PHPCS: passed.
-- PHPStan: passed.
-- Release metadata validation and diff checks: passed.
-- All 33 Free V1 gates: `PASS_WITH_EVIDENCE` in the checked-in evidence ledger.
-- Deterministic build: two builds identical, matching ZIP hash and inventory.
-- Artifact: 63 files, SHA-256 `b7ff1793b01a7a1f42371d2853166a95be8b044cbf0f63fecf8bac5bc44be060`.
-
-These results are recorded evidence; they were inspected but not rerun during this documentation-only update.
-
-## Current Git/SVN status
-
-- Repository root: `E:\development\dreamax-license-manager`.
-- Current branch: `docs/project-memory`, created from local `main` at `2426b6434c2c43009b6dd23f96687ad2e6e0110e` for this documentation-only update.
-- Before this memory update, the worktree was clean.
-- After the approved documentation commit, these three memory files are tracked and the worktree is expected to be clean. The branch has not been pushed.
-- No `.svn` working-copy metadata is present.
+- Review and merge `fix/wordpress-org-review-round-1` into `main` without moving `v0.3.2`.
+- Prepare the Customer Portal under a new version only after the release branch is integrated and the documented validation gates are rerun.
 
 ## Last updated
 
-2026-08-31 (Asia/Dhaka)
+2026-09-09 (Asia/Dhaka)
