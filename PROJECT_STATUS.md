@@ -43,10 +43,11 @@ A fresh disposable WordPress 7.1, WooCommerce 11.0.1, PHP 8.2.4, MariaDB 10.4.28
 - PHPUnit: 282 tests and 1,826 assertions passed.
 - WordPress PHPCS passed with no output; PHPStan analyzed 57 files with no errors.
 - Production syntax passed for 103 PHP files, and release metadata is internally consistent at version `0.3.3`.
-- The dependency files are unchanged from the previously audited `0.3.2` baseline; a new Composer audit was not run because a Composer CLI is not available on this machine.
+- Composer strict package validation and the locked dependency audit passed; no security vulnerability advisories were reported.
 - Focused source review found no blocking issue in customer scoping, key reveal, claim nonces, safe redirects, private-cache headers, page-creation capability checks, or output escaping.
 - Existing desktop, 500px, and 360px UI QA renders were inspected without overlap, clipping, or inaccessible persistent controls.
-- Official Plugin Check, a deterministic build from a recorded candidate commit, artifact inspection, and manual runtime release gates remain pending.
+- The corrected recorded commit `0518d336ae97f149db31cdd1e2a85e3743e27a6b` produced two identical 68-file artifacts. The final ZIP SHA-256 is `92c0bf37369f21b57f05b36d98254b6bba651fc614ef0335620a8a5cb58fcc98`; manifest provenance and per-file inventory inspection passed.
+- Official Plugin Check and manual runtime release gates remain pending.
 
 ## Git and release state
 

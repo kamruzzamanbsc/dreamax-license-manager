@@ -32,15 +32,20 @@ This evidence records preparation of the standalone Customer Portal candidate af
 - Customer Portal page creation requires the license-management capability and an action-specific nonce.
 - Desktop, 500px, and 360px UI QA renders were inspected without overlap, clipping, or inaccessible persistent controls.
 
-## Preliminary deterministic build
+## Deterministic build
 
-The initial recorded commit produced two identical builds with 68 production files and SHA-256 `0df2bfc3dd9812b2e7e1b5ac6150d0f4482f5040030639e4366ce14cbddfb39e`. Manifest provenance, ZIP root, inventory, prohibited-path exclusions, and private-value scans passed.
+- Final artifact source commit: `0518d336ae97f149db31cdd1e2a85e3743e27a6b`.
+- Artifact: `dreamax-license-manager-0.3.3.zip` with 68 production files.
+- Distribution SHA-256: `92c0bf37369f21b57f05b36d98254b6bba651fc614ef0335620a8a5cb58fcc98`.
+- Inventory SHA-256: `847c5a315711f7ac675fbfffadac5cdbac21e9eee5b8fc43985c978cee861587`.
+- Two isolated builds produced identical ZIP hashes and inventories.
+- Manifest provenance, every file size/hash, the single plugin root, version metadata, prohibited-path exclusions, and private-value scans passed.
+- Composer strict package validation passed and the locked dependency audit reported no security vulnerability advisories.
 
-That artifact is superseded because inspection found stale version-specific wording in the included `docs/BUILDING.md`. A final deterministic build must be generated from the later documentation-correction commit and receive the same inspection before any release decision.
+The earlier build from commit `9dd4962` with SHA-256 `0df2bfc3dd9812b2e7e1b5ac6150d0f4482f5040030639e4366ce14cbddfb39e` is superseded because inspection found stale version-specific wording in the included `docs/BUILDING.md`.
 
 ## Pending gates
 
 - Official Plugin Check for the exact final artifact.
-- Final deterministic build and artifact inspection from the corrected recorded commit.
 - Required manual WordPress, WooCommerce, customer-session, mail, cache, and compatibility checks.
 - Separate authorization for merge, tag, GitHub Release, SVN publication, and production deployment.

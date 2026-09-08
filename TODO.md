@@ -39,9 +39,10 @@ Run the complete local automated checks and focused review for Customer Portal c
 - [x] Candidate metadata consistently identifies version `0.3.3`.
 - [x] PHPUnit, PHPCS, PHPStan, release metadata, and production syntax checks pass.
 - [x] Focused source security and UI review has no blocking findings.
-- [ ] Official Plugin Check, deterministic packaging, artifact inspection, and required manual runtime gates pass.
-- [ ] Candidate branch is committed and published after explicit authorization.
+- [x] Deterministic packaging and artifact inspection pass for source commit `0518d336ae97f149db31cdd1e2a85e3743e27a6b`.
+- [ ] Official Plugin Check and required manual runtime gates pass.
+- [x] Candidate branch is committed and published after explicit authorization.
 - [ ] A dedicated Customer Portal pull request is reviewed and merged after explicit authorization.
-- [ ] Deterministic artifact, manual runtime checks, tag, and WordPress.org publication receive separate authorization.
+- [ ] Manual runtime checks, tag, and WordPress.org publication receive separate authorization and complete.
 
 Do not move `v0.3.2`, alter the published `tags/0.3.2` source, or include the Customer Portal in that historical release.
