@@ -4,7 +4,7 @@ Date assessed: 2026-09-03 (Asia/Dhaka)
 
 ## Scope
 
-This evidence records the bounded local correction prepared after the first human review of the submitted `0.3.1` plugin. It does not record a WordPress.org upload, reviewer reply, merge, tag, release, SVN publication, or deployment.
+This evidence records the bounded local correction prepared after the first human review of the submitted `0.3.1` plugin. The publication outcome is recorded below; Git merge and any later feature release remain separate operations.
 
 ## Finding disposition
 
@@ -31,7 +31,7 @@ This evidence records the bounded local correction prepared after the first huma
 ## Artifact and official validation
 
 - Source commit: `5ecc0b28650f05d1b98eb5e017e894948fc717d5`.
-- Artifact: unshipped `dreamax-license-manager-0.3.2.zip`; 64 files; SHA-256 `d58f3e7ed3d3b7219037f11d5219812a91ab686ac6c1b41def4972e4336379fb`.
+- Pre-publication verification artifact: `dreamax-license-manager-0.3.2.zip`; 64 files; SHA-256 `d58f3e7ed3d3b7219037f11d5219812a91ab686ac6c1b41def4972e4336379fb`.
 - Reproducibility: two isolated builds had identical ZIP hashes and inventories.
 - Official Plugin Check 2.1.0 static run: exit 0, no errors found.
 - Official Plugin Check 2.1.0 runtime-enabled run: exit 0, no errors found.
@@ -55,3 +55,12 @@ The unchanged guarded F31 verifier completed against an isolated Apache 2.4.56, 
 The verifier reported `duplicate_raw_header_rejected`, `authorization_forwarding_tested`, `web_configuration_restored`, `cleanup_complete`, `database_aggregates_unchanged`, and `sensitive_output: false`. Both isolated server ports were closed after the run.
 
 The disposable WordPress/MariaDB data, Apache configuration, test key, and local servers were removed after verification. No production data, service, or credential was used. The release ZIP and its external manifest/inventory remain ignored build outputs.
+
+## Publication outcome
+
+- WordPress.org approved the plugin slug `dreamax-license-manager`.
+- The `0.3.2` plugin source was published to SVN `trunk` and `tags/0.3.2` in revision `3687082`.
+- Directory icons, banners, and screenshots were added in revision `3687261`.
+- The listing readme was expanded in revision `3687322` and corrected in revision `3687346` so it describes only the deployed `0.3.2` feature set.
+- The public directory reports version `0.3.2`, WordPress 6.9 or later, tested through WordPress 7.1, and PHP 8.0 or later.
+- Git tag `v0.3.2` points to commit `bf43977f63dfddbf6c418317884dd96cd1f0919b`.

@@ -2,14 +2,15 @@
 
 ## Prioritized unfinished tasks
 
-1. **P0 - Submit the correction through the authorized review workflow:** Use the authenticated WordPress.org submission page to upload the exact verified `0.3.2` ZIP, then reply to the existing reviewer thread with a concise finding-to-fix summary and validation results.
-2. **P1 - Await and process the reviewer response:** Preserve the response, confirm the assigned slug, and assess any further request before changing source or publication state.
-3. **P1 - Prepare WordPress.org publication only after directory approval:** Do not modify SVN, upload code/assets, or publish a stable tag until approval is received and the exact publication action is authorized.
-4. **P2 - Production readiness:** Separately validate backups, external master-key recovery, HTTPS, InnoDB, mail delivery, cache/proxy behavior, and a disposable restore before any deployment decision.
+1. **P0 - Reconcile the published release into Git:** Review and merge `fix/wordpress-org-review-round-1` into `main` without moving the published `v0.3.2` tag.
+2. **P1 - Prepare the Customer Portal release:** Integrate the release branch into `feature/customer-license-portal`, assign a new version, update release documentation, and rerun the required checks.
+3. **P1 - Review the Customer Portal separately:** Open and review a dedicated pull request; do not include it retroactively in `0.3.2`.
+4. **P2 - Future WordPress.org publication:** Build and inspect a new deterministic artifact, then update SVN only after separate release authorization.
+5. **P2 - Production readiness:** Separately validate backups, external master-key recovery, HTTPS, InnoDB, mail delivery, cache/proxy behavior, and a disposable restore before any production deployment decision.
 
 ## One clear next action
 
-Upload the exact verified `0.3.2` ZIP through the authenticated WordPress.org review workflow and reply to the existing reviewer thread. Do not merge, tag, publish SVN, create a GitHub release, or deploy merely to complete the review response.
+Complete review of `fix/wordpress-org-review-round-1` and merge it into `main` after explicit authorization. Keep the Customer Portal isolated until its own versioned release review.
 
 ## Review correction checklist
 
@@ -27,6 +28,9 @@ Upload the exact verified `0.3.2` ZIP through the authenticated WordPress.org re
 - [x] Disposable WordPress 7.1/WooCommerce 11.0.1/MariaDB activation and schema checks completed with exact cleanup.
 - [x] Unchanged guarded F31 verifier completed under isolated Apache 2.4.56, including duplicate raw Authorization-header rejection and exact cleanup.
 - [x] Replacement-upload and reviewer-reply authorization received from the project owner.
-- [ ] WordPress.org accepted the correction and directory approval was received.
+- [x] WordPress.org accepted the correction and directory approval was received.
+- [x] Version `0.3.2`, directory assets, listing copy, and six accurate screenshots were published through SVN.
+- [x] Git tag `v0.3.2` was published at the reviewed correction commit.
+- [ ] The correction branch has been reviewed and merged into Git `main`.
 
-Do not alter `main`, `v0.3.1`, the submitted `0.3.1` artifact, or any hosted release merely to advance this checklist.
+Do not move `v0.3.2`, alter the published `tags/0.3.2` source, or include the Customer Portal in that historical release.
