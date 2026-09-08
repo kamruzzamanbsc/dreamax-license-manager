@@ -2,7 +2,7 @@
 
 ## Current objective
 
-Prepare the bounded `0.3.2` correction candidate requested by the first WordPress.org human review. Preserve the submitted `0.3.1` source, `main`, and `v0.3.1`; do not upload, reply, merge, tag, publish, or release without separate authorization.
+Reconcile the completed `0.3.2` WordPress.org release into Git `main`, then prepare the standalone Customer Portal as a separately reviewed future release. Preserve the published `v0.3.2` tag and WordPress.org `tags/0.3.2` source.
 
 ## Review-round-one corrections
 
@@ -35,14 +35,17 @@ A fresh disposable WordPress 7.1, WooCommerce 11.0.1, PHP 8.2.4, MariaDB 10.4.28
 
 - Correction branch: `fix/wordpress-org-review-round-1`.
 - The deterministic ZIP was built twice from correction commit `5ecc0b28650f05d1b98eb5e017e894948fc717d5`; both hashes and inventories matched. The ignored artifact contains 64 files and has SHA-256 `d58f3e7ed3d3b7219037f11d5219812a91ab686ac6c1b41def4972e4336379fb`.
-- The prior `0.3.1` submission, release commit, `main`, and `v0.3.1` remain unchanged.
-- No WordPress.org upload, email reply, merge, tag, GitHub release, SVN action, or production deployment has been performed by this correction work.
+- WordPress.org approved the plugin and the exact `0.3.2` plugin source was published to `trunk` and `tags/0.3.2` in SVN revision `3687082`.
+- Directory icons, banners, and six screenshots were published in revision `3687261`; the public listing copy was expanded in revision `3687322` and aligned with the deployed feature set in revision `3687346`.
+- Git tag `v0.3.2` resolves to correction/evidence commit `bf43977f63dfddbf6c418317884dd96cd1f0919b`.
+- The standalone Customer Portal is isolated on `feature/customer-license-portal` and is not included in WordPress.org version `0.3.2`.
+- Git `main` does not yet contain the `0.3.2` correction commits.
 
-## Blockers and next decision
+## Next decisions
 
-- Replacement WordPress.org upload and reviewer email reply require access to the authenticated submission and project-mailbox workflows.
-- WordPress.org SVN publication remains blocked until directory approval and separate explicit authorization.
+- Review and merge `fix/wordpress-org-review-round-1` into `main` without moving `v0.3.2`.
+- Prepare the Customer Portal under a new version only after the release branch is integrated and the documented validation gates are rerun.
 
 ## Last updated
 
-2026-09-03 (Asia/Dhaka)
+2026-09-09 (Asia/Dhaka)
