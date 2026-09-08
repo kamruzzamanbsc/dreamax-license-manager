@@ -10,7 +10,7 @@ php scripts/build-release.php --commit=<40-character-commit> --output=build
 
 The ignored `build/` directory receives:
 
-- `dreamax-license-manager-0.3.2.zip`, an unshipped release-candidate verification artifact;
+- `dreamax-license-manager-<version>.zip`, an unshipped release-candidate verification artifact whose version comes from the validated plugin metadata;
 - `release-inventory.json`, the exact path, size, and content digest inventory;
 - `release-manifest.json`, the external hash-bearing provenance sidecar.
 
@@ -18,4 +18,4 @@ The manifest intentionally remains outside the ZIP. No build output is committed
 
 The ZIP contains one `dreamax-license-manager/` root, the main plugin file at `dreamax-license-manager/dreamax-license-manager.php`, production PHP, the WordPress readme, the plugin license, dependency notices, and this build/source guide. Tests, fixtures, development tools, Composer metadata, `vendor`, repository metadata, caches, logs, local configuration, and credentials are excluded. There are currently no third-party production Composer packages, so the temporary production Composer install produces no runtime library that needs bundling.
 
-This process creates an unshipped release candidate; it does not tag, publish, submit, or deploy the artifact. All 33 gates in `docs/FREE-V1-MUST-PASS.md` have recorded evidence, and the external manifest carries the accepted runtime versions. Release authorization and target-environment operational checks remain separate.
+This process creates an unshipped release candidate; it does not tag, publish, submit, or deploy the artifact. The published baseline has recorded evidence for all 33 gates in `docs/FREE-V1-MUST-PASS.md`; every later candidate still requires proportionate regression and manual runtime verification. The external manifest carries the accepted runtime versions, while release authorization and target-environment operational checks remain separate.
