@@ -22,8 +22,13 @@
 - PHPStan: all 57 analyzed files passed with no errors.
 - PHPCS: passed with no findings.
 - Release metadata validation: passed at version `0.3.4`.
-- Deterministic packaging, final artifact hash, inventory, and source commit are recorded in the external `build/release-manifest.json` generated from the final clean commit.
+- Official Plugin Check 2.1.0 update-mode scans passed with no errors against the exact package in both active and inactive states.
+- Deterministic packaging produced 68 files from source commit `8f27e5ca400fa97c1cfebd21d4eb7a463e597801`; both clean builds were identical.
+- Final artifact: `dreamax-license-manager-0.3.4.zip` with SHA-256 `12daf26318ee0e71d3b58fe1d9a19f1595061fa95dca9b35dd37fcdec8466974`.
 
 ## Publication state
 
-This evidence does not authorize or claim a WordPress.org SVN deployment. Git publication, release artifact generation, and WordPress.org deployment remain separately recorded operations.
+- The release source and evidence were pushed to `origin/feature/customer-license-portal`.
+- WordPress.org SVN `trunk` and `tags/0.3.4` each matched all 68 artifact files byte-for-byte; directory `assets` remained unchanged.
+- The authorized SVN commit completed as revision `3688887`.
+- The public WordPress.org listing and versioned download both resolved to version `0.3.4` after publication.
