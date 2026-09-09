@@ -15,7 +15,7 @@ This evidence records preparation of the standalone Customer Portal candidate af
 
 ## Automated validation
 
-- PHPUnit: 282 tests and 1,826 assertions passed.
+- PHPUnit: 282 tests and 1,828 assertions passed after the guest-claim replay-state correction.
 - PHPStan: 57 files, no errors.
 - WordPress PHPCS: passed with no errors or warnings.
 - Production syntax: 103 PHP files passed.
@@ -44,6 +44,8 @@ This evidence records preparation of the standalone Customer Portal candidate af
 
 The earlier build from commit `9dd4962` with SHA-256 `0df2bfc3dd9812b2e7e1b5ac6150d0f4482f5040030639e4366ce14cbddfb39e` is superseded because inspection found stale version-specific wording in the included `docs/BUILDING.md`.
 
+The artifact from commit `0518d33` is also superseded by the subsequently verified guest-claim replay-state correction. A new deterministic artifact must be created from the authorized commit containing that correction before release.
+
 ## Official Plugin Check and local smoke
 
 - The official Plugin Check `2.1.0` package was verified against the WordPress.org SHA-256 manifest for all 3,032 packaged files before use.
@@ -53,7 +55,16 @@ The earlier build from commit `9dd4962` with SHA-256 `0df2bfc3dd9812b2e7e1b5ac61
 - The copied local stack did not have a test master key, and Sodium remained disabled in Apache's PHP configuration. The public ping therefore remained intentionally unavailable (`503` in the Sodium-enabled probe, while Apache paused plugin registration), so this is not evidence that the remaining end-to-end runtime gates passed.
 - No PHP debug-log growth was observed during the HTTP smoke requests. Test-only plugin files, verified tooling, and the temporary PHP server were removed afterward without invoking the plugin uninstaller or deleting existing test data.
 
+## Configured runtime regression
+
+- A private disposable WordPress `7.1`, WooCommerce `11.1.0`, PHP `8.2.12`, Sodium, and MariaDB runtime completed equivalent paid-order outcomes across HPOS/Checkout Block and classic storage/classic checkout modes.
+- Customer isolation passed for the account list, reveal authorization, registered-order access, and attacker rollback boundaries.
+- The standalone portal passed signed-out gating, masked owner rendering, cross-customer isolation, owner reveal, attacker reveal denial, private cache headers, and scoped CSS/JavaScript loading over loopback HTTP.
+- Intercepted guest-claim mail contained one code and no URL or license key. The owner claim succeeded, the attacker and replay attempts failed, the proof hash was cleared, and no external mail was sent.
+- The replay check exposed and verified a correction that keeps an already consumed claim terminal instead of reclassifying it after the successful ownership change.
+- The local source database, configuration, active-plugin set, empty plugin-table baseline, and private-clone boundaries were restored after the run.
+
 ## Pending gates
 
-- Required manual WordPress, WooCommerce, customer-session, master-key, mail, cache, and compatibility checks in a fully configured disposable environment.
+- Create and inspect a new deterministic artifact from the authorized correction commit, then rerun the official Plugin Check against that exact package.
 - Separate authorization for merge, tag, GitHub Release, SVN publication, and production deployment.

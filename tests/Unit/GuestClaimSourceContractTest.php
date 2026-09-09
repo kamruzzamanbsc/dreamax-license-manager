@@ -37,6 +37,8 @@ final class GuestClaimSourceContractTest extends TestCase {
 		self::assertStringContainsString( 'PRIMARY KEY  (order_id)', $this->schema );
 		self::assertStringContainsString( 'FOR UPDATE', $this->service );
 		self::assertStringContainsString( "WHERE id=%d AND status='issued'", $this->service );
+		self::assertStringContainsString( "in_array( (string) \$claim['status'], array( 'pending', 'issued' ), true )", $this->service );
+		self::assertStringContainsString( "\$claim_is_outstanding && ( 'expired' === \$failure || \$ownership_changed )", $this->service );
 	}
 
 	public function test_hpos_compatible_order_access_uses_woocommerce_crud(): void {

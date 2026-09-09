@@ -275,8 +275,9 @@ final class GuestClaimService {
 				$current_hash   = $this->ownership_hash( $order );
 				$failure        = $this->policy->verification_failure( $claim, $user_id, $hash, $current_hash, time(), $existing_owner );
 				if ( null !== $failure ) {
-					$ownership_changed = is_string( $claim['ownership_hash'] ) && $this->policy->ownership_changed( $claim['ownership_hash'], $current_hash );
-					if ( 'expired' === $failure || $ownership_changed ) {
+					$claim_is_outstanding = in_array( (string) $claim['status'], array( 'pending', 'issued' ), true );
+					$ownership_changed    = is_string( $claim['ownership_hash'] ) && $this->policy->ownership_changed( $claim['ownership_hash'], $current_hash );
+					if ( $claim_is_outstanding && ( 'expired' === $failure || $ownership_changed ) ) {
 						$this->invalidate_claim( (int) $claim['id'], 'expired' === $failure ? 'expired' : 'invalidated' );
 					}
 					$this->events->append(
