@@ -2,15 +2,14 @@
 
 ## Prioritized unfinished tasks
 
-1. **P0 - Validate the Customer Portal candidate:** Complete automated checks and a focused security, compatibility, packaging, and UI review for version `0.3.3`.
-2. **P1 - Review the Customer Portal separately:** Publish the candidate branch and open a dedicated pull request to `main`; do not include it retroactively in `0.3.2`.
-3. **P1 - Build the exact release candidate:** After review, create and inspect a deterministic artifact from an authorized recorded commit.
-4. **P2 - Future WordPress.org publication:** Update SVN only after separate tag and publication authorization.
-5. **P2 - Production readiness:** Separately validate backups, external master-key recovery, HTTPS, InnoDB, mail delivery, cache/proxy behavior, and a disposable restore before any production deployment decision.
+1. **P0 - Complete Customer Portal runtime validation:** Configure a disposable stack with Sodium and a non-production master key, then complete the manual WordPress, WooCommerce, customer-session, mail, cache, and compatibility checks for version `0.3.3`.
+2. **P1 - Review the Customer Portal pull request:** Review pull request #44 and merge it to `main` only after separate authorization.
+3. **P1 - Decide the release:** After the remaining gates pass, separately authorize the `v0.3.3` tag, GitHub Release, and WordPress.org SVN publication.
+4. **P2 - Production readiness:** Separately validate backups, external master-key recovery, HTTPS, InnoDB, mail delivery, cache/proxy behavior, and a disposable restore before any production deployment decision.
 
 ## One clear next action
 
-Run the complete local automated checks and focused review for Customer Portal candidate `0.3.3`.
+Configure the disposable test stack with Sodium and a non-production master key, then run the remaining manual runtime gates for Customer Portal candidate `0.3.3`.
 
 ## Review correction checklist
 
@@ -40,7 +39,8 @@ Run the complete local automated checks and focused review for Customer Portal c
 - [x] PHPUnit, PHPCS, PHPStan, release metadata, and production syntax checks pass.
 - [x] Focused source security and UI review has no blocking findings.
 - [x] Deterministic packaging and artifact inspection pass for source commit `0518d336ae97f149db31cdd1e2a85e3743e27a6b`.
-- [ ] Official Plugin Check and required manual runtime gates pass.
+- [x] Official Plugin Check 2.1.0 passes against the exact final artifact in inactive and active states with no errors.
+- [ ] Required manual runtime gates pass in a fully configured disposable environment.
 - [x] Candidate branch is committed and published after explicit authorization.
 - [ ] A dedicated Customer Portal pull request is reviewed and merged after explicit authorization.
 - [ ] Manual runtime checks, tag, and WordPress.org publication receive separate authorization and complete.

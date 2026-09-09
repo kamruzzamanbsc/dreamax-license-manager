@@ -44,8 +44,16 @@ This evidence records preparation of the standalone Customer Portal candidate af
 
 The earlier build from commit `9dd4962` with SHA-256 `0df2bfc3dd9812b2e7e1b5ac6150d0f4482f5040030639e4366ce14cbddfb39e` is superseded because inspection found stale version-specific wording in the included `docs/BUILDING.md`.
 
+## Official Plugin Check and local smoke
+
+- The official Plugin Check `2.1.0` package was verified against the WordPress.org SHA-256 manifest for all 3,032 packaged files before use.
+- The final artifact SHA-256 was rechecked as `92c0bf37369f21b57f05b36d98254b6bba651fc614ef0335620a8a5cb58fcc98` immediately before installation.
+- Plugin Check ran in `update` mode against the installed final artifact on disposable WordPress `7.1` and WooCommerce `11.1.0`. Both inactive-state and active-state runs completed with no errors.
+- Active-state bootstrap loaded `DREAMAX_LM_VERSION` as `0.3.3`; storage tables were ready, cleanup was scheduled, and the plugin REST route registered in a Sodium-enabled runtime.
+- The copied local stack did not have a test master key, and Sodium remained disabled in Apache's PHP configuration. The public ping therefore remained intentionally unavailable (`503` in the Sodium-enabled probe, while Apache paused plugin registration), so this is not evidence that the remaining end-to-end runtime gates passed.
+- No PHP debug-log growth was observed during the HTTP smoke requests. Test-only plugin files, verified tooling, and the temporary PHP server were removed afterward without invoking the plugin uninstaller or deleting existing test data.
+
 ## Pending gates
 
-- Official Plugin Check for the exact final artifact.
-- Required manual WordPress, WooCommerce, customer-session, mail, cache, and compatibility checks.
+- Required manual WordPress, WooCommerce, customer-session, master-key, mail, cache, and compatibility checks in a fully configured disposable environment.
 - Separate authorization for merge, tag, GitHub Release, SVN publication, and production deployment.

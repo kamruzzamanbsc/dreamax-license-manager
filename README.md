@@ -32,4 +32,4 @@ License keys use XChaCha20-Poly1305 authenticated encryption and a separate keye
 
 ## Project status
 
-The source implements the published `0.3.2` baseline plus the unreleased `0.3.3` standalone Customer Portal, responsive WooCommerce My Account license presentation, guarded dashboard-page setup, and hardened guest-claim responses. All 33 Free V1 gates retain their recorded `PASS_WITH_EVIDENCE` status; the new candidate still requires its proportionate automated and manual release checks. See `docs/BUILDING.md`, `docs/RELEASE.md`, and the coverage ledger.
+The source implements the published `0.3.2` baseline plus the unreleased `0.3.3` standalone Customer Portal, responsive WooCommerce My Account license presentation, guarded dashboard-page setup, and hardened guest-claim responses. All 33 Free V1 gates retain their recorded `PASS_WITH_EVIDENCE` status; the candidate's automated, packaging, focused review, and official Plugin Check gates pass, while its fully configured manual runtime and publication gates remain pending. See `docs/BUILDING.md`, `docs/RELEASE.md`, and the coverage ledger.
