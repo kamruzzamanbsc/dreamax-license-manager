@@ -31,6 +31,16 @@ final class LicenseDashboardSourceContractTest extends TestCase {
 		self::assertStringContainsString( 'add_filter( \'the_title\', array( $this, \'hide_theme_page_title\' ), 10, 2 )', $this->dashboard );
 	}
 
+	public function test_woocommerce_license_navigation_prefers_the_configured_standalone_dashboard(): void {
+		self::assertStringContainsString( "add_filter( 'woocommerce_get_endpoint_url', array( \$this, 'standalone_portal_endpoint_url' ), 10, 4 )", $this->endpoint );
+		self::assertStringContainsString( "add_action( 'template_redirect', array( \$this, 'redirect_to_standalone_portal' ) )", $this->endpoint );
+		self::assertStringContainsString( "private const PORTAL_PAGE_OPTION = 'dreamax_lm_customer_portal_page_id'", $this->endpoint );
+		self::assertStringContainsString( "private const PORTAL_SHORTCODE   = 'dreamax_license_dashboard'", $this->endpoint );
+		self::assertStringContainsString( "'publish' !== \$page->post_status", $this->endpoint );
+		self::assertStringContainsString( 'has_shortcode( $page->post_content, self::PORTAL_SHORTCODE )', $this->endpoint );
+		self::assertStringContainsString( 'wp_safe_redirect( $portal_url )', $this->endpoint );
+	}
+
 	public function test_theme_page_title_is_removed_only_from_the_current_main_loop(): void {
 		self::assertStringContainsString( 'public function hide_theme_page_title( string $title, int $post_id ): string', $this->dashboard );
 		self::assertStringContainsString( 'is_admin() || ! in_the_loop() || ! is_main_query()', $this->dashboard );

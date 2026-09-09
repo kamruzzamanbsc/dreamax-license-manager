@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4 - Standalone Portal Navigation
+
+- Made the configured standalone License Dashboard the primary customer destination from WooCommerce My Account while retaining the legacy licenses endpoint as a fallback when no published portal page is available.
+
 ## 0.3.3 - Customer Portal
 
 - Rebuilt the WooCommerce My Account licenses screen with endpoint-scoped styling, a stable desktop account grid, responsive license cards, and a clearer two-step guest-order claim flow.

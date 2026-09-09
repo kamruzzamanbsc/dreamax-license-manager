@@ -19,6 +19,9 @@ use Throwable;
  * Handles Account endpoint operations.
  */
 final class AccountEndpoint {
+	private const PORTAL_PAGE_OPTION = 'dreamax_lm_customer_portal_page_id';
+	private const PORTAL_SHORTCODE   = 'dreamax_license_dashboard';
+
 	/**
 	 * Licenses value.
 	 *
@@ -38,8 +41,10 @@ final class AccountEndpoint {
 	 */
 	public function register(): void {
 		add_action( 'init', array( $this, 'endpoint' ) );
+		add_action( 'template_redirect', array( $this, 'redirect_to_standalone_portal' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_filter( 'woocommerce_account_menu_items', array( $this, 'menu' ) );
+		add_filter( 'woocommerce_get_endpoint_url', array( $this, 'standalone_portal_endpoint_url' ), 10, 4 );
 		add_filter( 'body_class', array( $this, 'body_classes' ) );
 		add_action( 'woocommerce_account_licenses_endpoint', array( $this, 'render' ) );
 		add_action( 'wp_ajax_dreamax_lm_reveal', array( $this, 'reveal' ) );
@@ -69,6 +74,42 @@ final class AccountEndpoint {
 			$items['customer-logout'] = $logout;
 		}
 		return $items;
+	}
+
+	/**
+	 * Points the WooCommerce licenses menu item at the standalone dashboard.
+	 *
+	 * @param mixed $url       Generated endpoint URL.
+	 * @param mixed $endpoint  Endpoint name.
+	 * @param mixed $value     Endpoint value.
+	 * @param mixed $permalink Account permalink.
+	 */
+	public function standalone_portal_endpoint_url( $url, $endpoint, $value, $permalink ): string {
+		unset( $value, $permalink );
+		$fallback = is_string( $url ) ? $url : '';
+		if ( 'licenses' !== $endpoint ) {
+			return $fallback;
+		}
+
+		$portal_url = $this->standalone_portal_url();
+		return '' !== $portal_url ? $portal_url : $fallback;
+	}
+
+	/**
+	 * Redirects bookmarked WooCommerce license endpoints to the standalone portal.
+	 */
+	public function redirect_to_standalone_portal(): void {
+		if ( ! $this->is_licenses_endpoint() ) {
+			return;
+		}
+
+		$portal_url = $this->standalone_portal_url();
+		if ( '' === $portal_url ) {
+			return;
+		}
+
+		wp_safe_redirect( $portal_url );
+		exit;
 	}
 
 	/**
@@ -160,6 +201,20 @@ final class AccountEndpoint {
 	 */
 	private function is_licenses_endpoint(): bool {
 		return function_exists( 'is_account_page' ) && function_exists( 'is_wc_endpoint_url' ) && is_account_page() && is_wc_endpoint_url( 'licenses' );
+	}
+
+	/**
+	 * Returns the configured standalone portal URL when its page is usable.
+	 */
+	private function standalone_portal_url(): string {
+		$page_id = absint( get_option( self::PORTAL_PAGE_OPTION, 0 ) );
+		$page    = $page_id > 0 ? get_post( $page_id ) : null;
+		if ( ! $page instanceof \WP_Post || 'publish' !== $page->post_status || ! has_shortcode( $page->post_content, self::PORTAL_SHORTCODE ) ) {
+			return '';
+		}
+
+		$url = get_permalink( $page );
+		return is_string( $url ) ? $url : '';
 	}
 
 	/**

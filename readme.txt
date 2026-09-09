@@ -4,7 +4,7 @@ Tags: woocommerce, license manager, software licensing
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.3.3
+Stable tag: 0.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,8 +38,8 @@ Dreamax License Manager is published by [Dreamax Soft](https://dreamaxsoft.com/)
 
 = Customer access =
 
-* Show assigned licenses in the private WooCommerce My Account area.
 * Publish a login-protected standalone license dashboard without depending on a theme's WooCommerce account layout.
+* Direct the WooCommerce My Account Licenses link to the configured standalone dashboard, with the account endpoint retained as a fallback.
 * Keep license keys masked until an authorized customer chooses to reveal and copy one.
 * Let guest purchasers claim eligible orders through a time-limited one-time-code flow.
 * Prevent one customer from viewing another customer's license records.
@@ -100,7 +100,7 @@ Yes. You can import existing keys for later allocation or create an individual l
 
 = How do customers receive and view licenses? =
 
-Eligible paid orders receive assigned licenses through the WooCommerce workflow. Signed-in customers can use the private WooCommerce My Account license area or the separately published standalone dashboard, where keys remain masked until explicitly revealed. Eligible guest orders can be claimed through the one-time-code flow.
+Eligible paid orders receive assigned licenses through the WooCommerce workflow. Signed-in customers use the configured standalone dashboard, where keys remain masked until explicitly revealed. The WooCommerce My Account Licenses link opens that dashboard, while the original account endpoint remains available as a fallback until the dashboard page is configured. Eligible guest orders can be claimed through the one-time-code flow.
 
 = Can another application validate and activate licenses? =
 
@@ -125,6 +125,10 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 7. Give signed-in customers a focused standalone dashboard for viewing licenses and claiming eligible guest orders.
 
 == Changelog ==
+
+= 0.3.4 =
+
+* Made the configured standalone License Dashboard the primary destination from WooCommerce My Account while retaining the original licenses endpoint as a safe fallback.
 
 = 0.3.3 =
 

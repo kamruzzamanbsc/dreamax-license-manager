@@ -1,6 +1,6 @@
 # Dreamax License Manager
 
-Dreamax License Manager is a self-hosted WooCommerce licensing plugin published by [Dreamax Soft](https://dreamaxsoft.com/). Version `0.3.2` is published in the WordPress.org Plugin Directory and tagged in Git; the current tree is the unreleased `0.3.3` Customer Portal candidate.
+Dreamax License Manager is a self-hosted WooCommerce licensing plugin published by [Dreamax Soft](https://dreamaxsoft.com/). Version `0.3.3` is published in the WordPress.org Plugin Directory; the current tree is the unreleased `0.3.4` Standalone Portal Navigation candidate.
 
 ## Current baseline
 
@@ -24,7 +24,7 @@ Never test migrations, fixture generation, destructive actions, or recovery dril
 
 ## Customer license portal
 
-Open **License Manager → Customer Portal** and choose **Create dashboard page**. The plugin publishes a login-protected, responsive license dashboard without requiring the WordPress block editor. Repeat submissions reuse the configured page instead of creating a duplicate. The same dashboard can be placed manually with `[dreamax_license_dashboard]` when needed.
+Open **License Manager -> Customer Portal** and choose **Create dashboard page**. The plugin publishes a login-protected, responsive license dashboard without requiring the WordPress block editor. Repeat submissions reuse the configured page instead of creating a duplicate. The WooCommerce My Account Licenses link then opens this standalone dashboard. The same dashboard can be placed manually with `[dreamax_license_dashboard]` when needed.
 
 ## Security model
 
@@ -32,4 +32,4 @@ License keys use XChaCha20-Poly1305 authenticated encryption and a separate keye
 
 ## Project status
 
-The source implements the published `0.3.2` baseline plus the unreleased `0.3.3` standalone Customer Portal, responsive WooCommerce My Account license presentation, guarded dashboard-page setup, and hardened guest-claim responses. All 33 Free V1 gates retain their recorded `PASS_WITH_EVIDENCE` status; the candidate's automated, packaging, focused review, and official Plugin Check gates pass, while its fully configured manual runtime and publication gates remain pending. See `docs/BUILDING.md`, `docs/RELEASE.md`, and the coverage ledger.
+The source implements the published `0.3.3` Customer Portal baseline plus the unreleased `0.3.4` routing change that makes the configured standalone dashboard the primary customer license destination. All 33 Free V1 gates retain their recorded `PASS_WITH_EVIDENCE` status; proportionate automated, packaging, runtime, and publication verification for this candidate remains release-gated. See `docs/BUILDING.md`, `docs/RELEASE.md`, and the coverage ledger.
