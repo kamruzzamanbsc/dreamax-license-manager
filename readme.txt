@@ -130,6 +130,7 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 
 * Added a login-protected standalone customer license dashboard, a guarded setup screen, responsive license views, and a clearer guest-order claim flow.
 * Rebuilt the WooCommerce My Account license presentation and kept key reveal, ownership, cache, nonce, and redirect boundaries intact.
+* Added an actionable fresh-install encryption notice that links administrators to the one-time master-key setup screen.
 
 = 0.3.2 =
 
