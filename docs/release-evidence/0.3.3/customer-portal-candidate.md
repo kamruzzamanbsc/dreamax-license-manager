@@ -1,10 +1,10 @@
-# Customer Portal 0.3.3 candidate
+# Customer Portal 0.3.3 release
 
 Date assessed: 2026-09-09 (Asia/Dhaka)
 
 ## Scope
 
-This evidence records preparation of the standalone Customer Portal candidate after the published `0.3.2` baseline was merged into Git `main`. It does not authorize or record a final tag, GitHub Release, WordPress.org SVN update, or production deployment.
+This evidence records preparation and authorized WordPress.org SVN publication of the standalone Customer Portal release after the published `0.3.2` baseline was merged into Git `main`. GitHub merge, tag, and Release remain separate actions.
 
 ## Candidate source
 
@@ -15,7 +15,7 @@ This evidence records preparation of the standalone Customer Portal candidate af
 
 ## Automated validation
 
-- PHPUnit: 282 tests and 1,828 assertions passed after the guest-claim replay-state correction.
+- PHPUnit: 283 tests and 1,832 assertions passed after the guest-claim replay-state and fresh-install setup-notice corrections.
 - PHPStan: 57 files, no errors.
 - WordPress PHPCS: passed with no errors or warnings.
 - Production syntax: 103 PHP files passed.
@@ -34,10 +34,10 @@ This evidence records preparation of the standalone Customer Portal candidate af
 
 ## Deterministic build
 
-- Final artifact source commit: `9ace1075062eecd840a5aa6a9341250a9f798638`.
+- Final artifact source commit: `77d92d5a0394c09d786672bdb049dca729446165`.
 - Artifact: `dreamax-license-manager-0.3.3.zip` with 68 production files.
-- Distribution SHA-256: `28e50b8ae80f2415dbfd5d4c479b688b29136a0349c469a7a3acaf71cdfbb730`.
-- Inventory SHA-256: `d3e58ee3932e6d1b8ed05d4c44b8f11225c9f25f73f1cc69c691b12c6079c9ea`.
+- Distribution SHA-256: `ad25dcd2009ecd8886e27a7e8d4c8dd2eff317d26c2803fc5048adb25185fd8a`.
+- Inventory SHA-256: `e787725dd076f1f1e2b2d14a162df9c6c473107be47a0402f1f31200763baccf`.
 - Two isolated builds produced identical ZIP hashes and inventories.
 - Manifest provenance, every file size/hash, the single plugin root, version metadata, prohibited-path exclusions, and private-value scans passed.
 - Composer strict package validation passed and the locked dependency audit reported no security vulnerability advisories.
@@ -46,14 +46,16 @@ The earlier build from commit `9dd4962` with SHA-256 `0df2bfc3dd9812b2e7e1b5ac61
 
 The artifact from commit `0518d33` with SHA-256 `92c0bf37369f21b57f05b36d98254b6bba651fc614ef0335620a8a5cb58fcc98` is also superseded by the subsequently verified guest-claim replay-state correction.
 
+The artifact from commit `9ace107` with SHA-256 `28e50b8ae80f2415dbfd5d4c479b688b29136a0349c469a7a3acaf71cdfbb730` is superseded by the fresh-install encryption setup guidance and WordPress.org changelog update.
+
 ## Official Plugin Check and local smoke
 
 - The official Plugin Check `2.1.0` package was verified against the WordPress.org SHA-256 manifest for all 3,032 packaged files before use.
-- The final artifact SHA-256 was rechecked as `28e50b8ae80f2415dbfd5d4c479b688b29136a0349c469a7a3acaf71cdfbb730` immediately before installation.
+- The final artifact SHA-256 was rechecked as `ad25dcd2009ecd8886e27a7e8d4c8dd2eff317d26c2803fc5048adb25185fd8a` immediately before installation.
 - Plugin Check ran in `update` mode against the installed final artifact on disposable WordPress `7.1` and WooCommerce `11.1.0`. Both inactive-state and active-state runs completed with no errors after all 3,032 Plugin Check package files matched the official WordPress.org checksums.
 - Active-state bootstrap loaded `DREAMAX_LM_VERSION` as `0.3.3`; storage tables were ready, cleanup was scheduled, and the plugin REST route registered in a Sodium-enabled runtime.
-- The copied local stack did not have a test master key, and Sodium remained disabled in Apache's PHP configuration. The public ping therefore remained intentionally unavailable (`503` in the Sodium-enabled probe, while Apache paused plugin registration), so this is not evidence that the remaining end-to-end runtime gates passed.
-- No PHP debug-log growth was observed during the HTTP smoke requests. Test-only plugin files, verified tooling, and the temporary PHP server were removed afterward without invoking the plugin uninstaller or deleting existing test data.
+- The exact artifact was installed on the local test site with a dedicated non-production external key and reported encryption readiness without exposing the key.
+- Test-only plugin files, verified tooling, and the temporary Plugin Check site/database were removed afterward without invoking the plugin uninstaller or deleting existing test data.
 
 ## Configured runtime regression
 
@@ -64,6 +66,9 @@ The artifact from commit `0518d33` with SHA-256 `92c0bf37369f21b57f05b36d98254b6
 - The replay check exposed and verified a correction that keeps an already consumed claim terminal instead of reclassifying it after the successful ownership change.
 - The local source database, configuration, active-plugin set, empty plugin-table baseline, and private-clone boundaries were restored after the run.
 
-## Pending gates
+## WordPress.org publication
 
-- Separate authorization for merge, tag, GitHub Release, SVN publication, and production deployment.
+- The clean WordPress.org working copy was updated to repository revision `3688699` before staging.
+- `trunk` and `tags/0.3.3` each matched all 68 final artifact files byte-for-byte; the existing directory `assets` remained unchanged.
+- The authorized release was committed as SVN revision `3688722`, and the remote trunk Stable Tag and release tag both resolve to `0.3.3`.
+- Public directory propagation is asynchronous; GitHub PR merge, Git tag, and GitHub Release remain separate pending actions.
