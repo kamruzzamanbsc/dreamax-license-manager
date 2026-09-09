@@ -70,6 +70,16 @@ final class DegradedModeHealthSourceContractTest extends TestCase {
 	}
 
 	/**
+	 * Verifies fresh installs receive an actionable setup notice.
+	 */
+	public function test_fresh_install_notice_links_to_encryption_setup(): void {
+		self::assertStringContainsString( "get_option( 'dreamax_lm_master_key_id', false )", $this->health );
+		self::assertStringContainsString( 'Dreamax License Manager setup required:', $this->health );
+		self::assertStringContainsString( 'dreamax-license-manager-status', $this->health );
+		self::assertStringContainsString( 'Open System Status', $this->health );
+	}
+
+	/**
 	 * Verifies the matrix describes the architecture that ships.
 	 */
 	public function test_published_matrix_matches_the_wordpress_cron_and_streaming_architecture(): void {

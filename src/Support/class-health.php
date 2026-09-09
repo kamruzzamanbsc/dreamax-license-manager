@@ -30,6 +30,17 @@ final class Health {
 		if ( ! current_user_can( Capabilities::SECURITY ) || ( new Crypto() )->ready() ) {
 			return;
 		}
+
+		if ( false === get_option( 'dreamax_lm_master_key_id', false ) ) {
+			echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'Dreamax License Manager setup required:', 'dreamax-license-manager' ) . '</strong> ';
+			echo esc_html__( 'Configure the encryption master key before issuing licenses.', 'dreamax-license-manager' );
+			if ( current_user_can( Capabilities::DIAGNOSTICS ) ) {
+				echo ' <a href="' . esc_url( admin_url( 'admin.php?page=dreamax-license-manager-status' ) ) . '">' . esc_html__( 'Open System Status', 'dreamax-license-manager' ) . '</a>';
+			}
+			echo '</p></div>';
+			return;
+		}
+
 		echo '<div class="notice notice-error"><p><strong>' . esc_html__( 'Dreamax License Manager recovery mode:', 'dreamax-license-manager' ) . '</strong> ';
 		echo esc_html__( 'The master key is missing, invalid, or does not match this site. Key generation, assignment, reveal, export, and public validation are paused. Restore the correct wp-config.php key; stored encrypted data has not been changed.', 'dreamax-license-manager' );
 		echo '</p></div>';

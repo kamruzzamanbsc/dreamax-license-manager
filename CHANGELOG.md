@@ -7,6 +7,7 @@
 - Added a nonce- and capability-protected Customer Portal setup screen that publishes the standalone dashboard page without relying on the WordPress block editor and prevents duplicate page creation.
 - Made guest-claim form responses independent of the WooCommerce frontend session during `admin-post.php` requests, and contained transport failures inside the generic fail-closed customer response instead of allowing a WordPress critical-error page.
 - Preserved consumed guest-claim records during rejected replay attempts instead of reclassifying the terminal audit state when order ownership had changed after the successful claim.
+- Replaced the fresh-install recovery warning with an actionable encryption setup notice linking administrators to the one-time master-key generator.
 
 ## 0.3.2 — WordPress.org review corrections
 
