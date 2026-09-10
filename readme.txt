@@ -4,7 +4,7 @@ Tags: woocommerce, license manager, software licensing
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.3.4
+Stable tag: 0.3.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -125,6 +125,11 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 7. Give signed-in customers a focused standalone dashboard for viewing licenses and claiming eligible guest orders.
 
 == Changelog ==
+
+= 0.3.5 =
+
+* Keeps the customer license portal available when secure key decryption is temporarily unavailable, lists non-sensitive license details, and pauses reveal/copy actions without exposing internal errors.
+* Improves the standalone portal's signed-out heading and keeps degraded-mode notices compact across responsive layouts.
 
 = 0.3.4 =
 

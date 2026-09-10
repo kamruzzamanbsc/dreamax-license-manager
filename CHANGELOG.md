@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.5 - Customer Portal Recovery
+
+- Kept the customer license portal available when secure key decryption is temporarily unavailable, retained non-sensitive license details, and disabled reveal/copy actions without exposing internal exceptions or server paths.
+- Added clear degraded-mode status and improved signed-out heading semantics and responsive notice layout.
+
 ## 0.3.4 - Standalone Portal Navigation
 
 - Made the configured standalone License Dashboard the primary customer destination from WooCommerce My Account while retaining the legacy licenses endpoint as a fallback when no published portal page is available.

@@ -239,6 +239,7 @@
 	display: grid;
 	min-width: 0;
 	gap: 16px;
+	align-content: start;
 }
 
 .dreamax-lm-dashboard-notice {
@@ -285,6 +286,20 @@
 
 .dreamax-lm-dashboard-notice--error > span {
 	background: #dc2626;
+}
+
+.dreamax-lm-dashboard-notice--warning {
+	border-color: #fde68a;
+	background: #fffbeb;
+	color: #854d0e;
+}
+
+.dreamax-lm-dashboard-notice--warning > span {
+	background: #d97706;
+}
+
+.dreamax-lm-dashboard-notice--warning strong {
+	font-weight: 800;
 }
 
 .dreamax-lm-dashboard-panel {
@@ -364,6 +379,12 @@
 	font-weight: 750;
 	line-height: 1;
 	white-space: nowrap;
+}
+
+.dreamax-lm-dashboard-hero__state.needs-attention {
+	border-color: #fde68a;
+	background: #fffbeb;
+	color: #92400e;
 }
 
 .dreamax-lm-dashboard-stats {
@@ -684,6 +705,22 @@
 	color: var(--dreamax-dashboard-blue-dark) !important;
 }
 
+.dreamax-lm-dashboard .dreamax-lm-reveal:disabled {
+	border-color: #dbe3ef !important;
+	background: #f8fafc !important;
+	color: #7b8798 !important;
+	cursor: not-allowed;
+	opacity: 1;
+}
+
+.dreamax-lm-dashboard .dreamax-lm-key.is-unavailable {
+	color: #92400e;
+	font-family: inherit;
+	font-weight: 700;
+	letter-spacing: 0;
+	white-space: normal;
+}
+
 .dreamax-lm-dashboard-button--primary {
 	border-color: var(--dreamax-dashboard-blue) !important;
 	background: var(--dreamax-dashboard-blue) !important;
@@ -869,6 +906,7 @@
 	text-align: center;
 }
 
+.dreamax-lm-login-card h1,
 .dreamax-lm-login-card h2 {
 	margin: 0 0 9px !important;
 	padding: 0 !important;

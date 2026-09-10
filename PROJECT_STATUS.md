@@ -2,7 +2,16 @@
 
 ## Current objective
 
-Prepare the standalone Customer Portal as the separately versioned `0.3.3` release candidate. Preserve the published `v0.3.2` tag and WordPress.org `tags/0.3.2` source.
+Prepare the customer-safe portal recovery patch as version `0.3.5`. Preserve all published WordPress.org tags and encrypted license records while preventing missing or changed master-key material from exposing a fatal error to customers.
+
+## 0.3.5 candidate scope and validation
+
+- Catch key-decryption failures at the customer portal boundary while retaining non-sensitive license metadata.
+- Disable reveal/copy for affected keys and show a clear recovery-state message without exposing exception details, paths, or key material.
+- Keep the signed-out page accessible with a single portal-owned H1 and keep recovery notices compact in the responsive grid.
+- PHPUnit: 285 tests and 1,847 assertions passed.
+- WordPress PHPCS passed with no output; PHPStan passed with no errors.
+- Release metadata validation passed at version `0.3.5`, and authenticated local rendering confirmed the safe notice, disabled action, retained license record, and absence of fatal/path disclosure.
 
 ## 0.3.3 candidate scope
 

@@ -52,7 +52,18 @@ final class LicenseDashboardSourceContractTest extends TestCase {
 		self::assertStringContainsString( 'if ( ! is_user_logged_in() )', $this->dashboard );
 		self::assertStringContainsString( '$this->licenses->for_customer( get_current_user_id() )', $this->dashboard );
 		self::assertStringContainsString( 'wp_login_url(', $this->dashboard );
+		self::assertStringContainsString( '<h1 id="dreamax-lm-login-title">', $this->dashboard );
 		self::assertStringContainsString( 'Cache-Control: no-store, no-cache, must-revalidate, private, max-age=0', $this->dashboard );
+	}
+
+	public function test_unavailable_key_material_degrades_without_disclosing_a_fatal_error(): void {
+		self::assertStringContainsString( 'private function prepare_key_access( array $rows ): array', $this->dashboard );
+		self::assertStringContainsString( 'catch ( Throwable )', $this->dashboard );
+		self::assertStringContainsString( 'Secure key access is temporarily unavailable.', $this->dashboard );
+		self::assertStringContainsString( 'disabled aria-disabled="true"', $this->dashboard );
+		self::assertStringContainsString( 'dreamax-lm-dashboard-notice--warning', $this->styles );
+		self::assertStringContainsString( '.dreamax-lm-dashboard .dreamax-lm-reveal:disabled', $this->styles );
+		self::assertStringContainsString( 'align-content: start', $this->styles );
 	}
 
 	public function test_customer_workflows_remain_nonce_protected_and_return_safely(): void {

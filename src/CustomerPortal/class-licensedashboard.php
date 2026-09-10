@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Dreamax\LicenseManager\CustomerPortal;
 
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
+use Throwable;
 
 /**
  * Renders a theme-independent customer license portal through a shortcode.
@@ -121,7 +122,7 @@ final class LicenseDashboard {
 			$return_url = get_permalink();
 			$login_url  = wp_login_url( is_string( $return_url ) ? $return_url : home_url( '/' ) );
 
-			return '<section class="dreamax-lm-login-card"><p class="dreamax-lm-dashboard__eyebrow">' . esc_html__( 'Protected software access', 'dreamax-license-manager' ) . '</p><h2>' . esc_html__( 'Sign in to view your licenses', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Your license keys and purchase details are available only after you sign in to the account that owns them.', 'dreamax-license-manager' ) . '</p><a class="dreamax-lm-dashboard-button dreamax-lm-dashboard-button--primary" href="' . esc_url( $login_url ) . '">' . esc_html__( 'Sign in securely', 'dreamax-license-manager' ) . '</a></section>';
+			return '<section class="dreamax-lm-login-card" aria-labelledby="dreamax-lm-login-title"><p class="dreamax-lm-dashboard__eyebrow">' . esc_html__( 'Protected software access', 'dreamax-license-manager' ) . '</p><h1 id="dreamax-lm-login-title">' . esc_html__( 'Sign in to view your licenses', 'dreamax-license-manager' ) . '</h1><p>' . esc_html__( 'Your license keys and purchase details are available only after you sign in to the account that owns them.', 'dreamax-license-manager' ) . '</p><a class="dreamax-lm-dashboard-button dreamax-lm-dashboard-button--primary" href="' . esc_url( $login_url ) . '">' . esc_html__( 'Sign in securely', 'dreamax-license-manager' ) . '</a></section>';
 		}
 
 		$rows         = $this->licenses->for_customer( get_current_user_id() );
@@ -130,8 +131,12 @@ final class LicenseDashboard {
 		$email        = $current_user->exists() ? $current_user->user_email : '';
 		$return_url   = get_permalink();
 		$return_url   = is_string( $return_url ) ? $return_url : home_url( '/' );
-		$metrics      = $this->metrics( $rows );
+		$key_access   = $this->prepare_key_access( $rows );
+		$metrics      = $this->metrics( $rows, $key_access['unavailable'] );
 		$logout_url   = wp_logout_url( $return_url );
+		$key_limited  = array() !== $key_access['unavailable'];
+		$state_class  = $key_limited ? ' needs-attention' : '';
+		$state_label  = $key_limited ? __( 'Key access limited', 'dreamax-license-manager' ) : __( 'Secure account', 'dreamax-license-manager' );
 
 		ob_start();
 		?>
@@ -155,13 +160,14 @@ final class LicenseDashboard {
 
 			<div class="dreamax-lm-dashboard-workspace">
 				<?php $this->render_claim_notice(); ?>
+				<?php $this->render_key_access_notice( $key_access['unavailable'] ); ?>
 				<section class="dreamax-lm-dashboard-panel" id="license-overview" data-dreamax-dashboard-panel="overview">
 					<header class="dreamax-lm-dashboard-hero">
 						<div><p class="dreamax-lm-dashboard__eyebrow"><?php esc_html_e( 'Software access center', 'dreamax-license-manager' ); ?></p>
 						<?php /* translators: %s: signed-in customer's display name. */ ?>
 						<h1 id="dreamax-lm-dashboard-title"><?php echo esc_html( sprintf( __( 'Welcome, %s', 'dreamax-license-manager' ), $display_name ) ); ?></h1>
 						<p><?php esc_html_e( 'Manage your software licenses, check renewal dates, and securely copy a key when you need it.', 'dreamax-license-manager' ); ?></p></div>
-						<span class="dreamax-lm-dashboard-hero__state"><?php esc_html_e( 'Secure account', 'dreamax-license-manager' ); ?></span>
+						<span class="dreamax-lm-dashboard-hero__state<?php echo esc_attr( $state_class ); ?>"><?php echo esc_html( $state_label ); ?></span>
 					</header>
 
 					<div class="dreamax-lm-dashboard-stats" aria-label="<?php echo esc_attr__( 'License summary', 'dreamax-license-manager' ); ?>">
@@ -179,7 +185,7 @@ final class LicenseDashboard {
 
 				<section class="dreamax-lm-dashboard-panel dreamax-lm-dashboard-card" id="license-library" data-dreamax-dashboard-panel="licenses" aria-labelledby="dreamax-lm-library-title">
 					<div class="dreamax-lm-dashboard-card__heading"><div><p class="dreamax-lm-dashboard__eyebrow"><?php esc_html_e( 'License library', 'dreamax-license-manager' ); ?></p><h2 id="dreamax-lm-library-title"><?php esc_html_e( 'My licenses', 'dreamax-license-manager' ); ?></h2><p><?php esc_html_e( 'Keys remain masked until you choose to reveal and copy one.', 'dreamax-license-manager' ); ?></p></div><span class="dreamax-lm-dashboard-count"><?php echo esc_html( (string) $metrics['total'] ); ?></span></div>
-					<?php $this->render_licenses( $rows ); ?>
+					<?php $this->render_licenses( $rows, $key_access['keys'] ); ?>
 				</section>
 
 				<section class="dreamax-lm-dashboard-panel dreamax-lm-dashboard-card" id="claim-order" data-dreamax-dashboard-panel="claim" aria-labelledby="dreamax-lm-dashboard-claim-title">
@@ -224,9 +230,11 @@ final class LicenseDashboard {
 	 * Renders detailed license cards.
 	 *
 	 * @param array $rows License rows.
+	 * @param array $keys Decrypted keys indexed by public license ID.
 	 * @phpstan-param list<array<string,mixed>> $rows License rows.
+	 * @phpstan-param array<string,string> $keys Decrypted keys indexed by public license ID.
 	 */
-	private function render_licenses( array $rows ): void {
+	private function render_licenses( array $rows, array $keys ): void {
 		if ( array() === $rows ) {
 			echo '<div class="dreamax-lm-dashboard-empty"><strong>' . esc_html__( 'No licenses connected yet', 'dreamax-license-manager' ) . '</strong><p>' . esc_html__( 'After an eligible purchase or guest-order claim, your license will appear here.', 'dreamax-license-manager' ) . '</p><a href="#claim-order" data-dreamax-dashboard-target="claim">' . esc_html__( 'Claim a guest order', 'dreamax-license-manager' ) . '</a></div>';
 			return;
@@ -234,10 +242,10 @@ final class LicenseDashboard {
 
 		echo '<div class="dreamax-lm-dashboard-license-list">';
 		foreach ( $rows as $row ) {
-			$key           = $this->licenses->decrypt_key( $row );
-			$masked        = $this->mask_key( $key );
 			$status        = (string) ( $row['lifecycle_status'] ?? '' );
 			$public_id     = (string) ( $row['public_id'] ?? '' );
+			$key_available = '' !== $public_id && isset( $keys[ $public_id ] );
+			$masked        = $key_available ? $this->mask_key( $keys[ $public_id ] ) : __( 'Temporarily unavailable', 'dreamax-license-manager' );
 			$activation    = null === ( $row['activation_limit'] ?? null ) ? __( 'Unlimited', 'dreamax-license-manager' ) : (string) max( 0, (int) $row['activation_limit'] );
 			$issued        = ! empty( $row['created_at'] ) ? $this->format_date( (string) $row['created_at'] ) : __( 'Not available', 'dreamax-license-manager' );
 			$order_summary = ! empty( $row['order_id'] ) ? sprintf( '#%d', (int) $row['order_id'] ) : __( 'Direct license', 'dreamax-license-manager' );
@@ -245,11 +253,66 @@ final class LicenseDashboard {
 			<article class="dreamax-lm-dashboard-license">
 				<header><div><p><?php esc_html_e( 'Licensed product', 'dreamax-license-manager' ); ?></p><h3><?php echo esc_html( $this->product_name( $row ) ); ?></h3></div><span class="dreamax-lm-dashboard-status dreamax-lm-dashboard-status--<?php echo esc_attr( sanitize_html_class( strtolower( $status ) ) ); ?>"><?php echo esc_html( $this->status_label( $status ) ); ?></span></header>
 				<dl><div><dt><?php esc_html_e( 'Order', 'dreamax-license-manager' ); ?></dt><dd><?php echo esc_html( $order_summary ); ?></dd></div><div><dt><?php esc_html_e( 'Activation limit', 'dreamax-license-manager' ); ?></dt><dd><?php echo esc_html( $activation ); ?></dd></div><div><dt><?php esc_html_e( 'Issued', 'dreamax-license-manager' ); ?></dt><dd><?php echo esc_html( $issued ); ?></dd></div><div><dt><?php esc_html_e( 'Expiry', 'dreamax-license-manager' ); ?></dt><dd><?php echo esc_html( $this->expiry_label( $row, false ) ); ?></dd></div></dl>
-				<div class="dreamax-lm-dashboard-key-row"><div><span><?php esc_html_e( 'License key', 'dreamax-license-manager' ); ?></span><code id="dreamax-key-<?php echo esc_attr( $public_id ); ?>" class="dreamax-lm-key" aria-live="polite"><?php echo esc_html( $masked ); ?></code></div><button type="button" class="dreamax-lm-reveal" data-license="<?php echo esc_attr( $public_id ); ?>" aria-controls="dreamax-key-<?php echo esc_attr( $public_id ); ?>"><?php esc_html_e( 'Reveal and copy', 'dreamax-license-manager' ); ?></button></div>
+				<div class="dreamax-lm-dashboard-key-row">
+					<div><span><?php esc_html_e( 'License key', 'dreamax-license-manager' ); ?></span><code id="dreamax-key-<?php echo esc_attr( $public_id ); ?>" class="dreamax-lm-key<?php echo $key_available ? '' : ' is-unavailable'; ?>" aria-live="polite"><?php echo esc_html( $masked ); ?></code></div>
+					<?php if ( $key_available ) : ?>
+						<button type="button" class="dreamax-lm-reveal" data-license="<?php echo esc_attr( $public_id ); ?>" aria-controls="dreamax-key-<?php echo esc_attr( $public_id ); ?>"><?php esc_html_e( 'Reveal and copy', 'dreamax-license-manager' ); ?></button>
+					<?php else : ?>
+						<button type="button" class="dreamax-lm-reveal" disabled aria-disabled="true"><?php esc_html_e( 'Key unavailable', 'dreamax-license-manager' ); ?></button>
+					<?php endif; ?>
+				</div>
 			</article>
 			<?php
 		}
 		echo '</div>';
+	}
+
+	/**
+	 * Decrypts customer keys behind a bounded degraded-mode boundary.
+	 *
+	 * A missing, changed, or otherwise unavailable master key must not turn the
+	 * customer portal into a fatal-error disclosure. License metadata remains
+	 * readable while sensitive key actions pause for administrator recovery.
+	 *
+	 * @param array $rows License rows.
+	 * @phpstan-param list<array<string,mixed>> $rows License rows.
+	 * @return array{keys:array<string,string>,unavailable:array<string,true>}
+	 */
+	private function prepare_key_access( array $rows ): array {
+		$keys        = array();
+		$unavailable = array();
+
+		foreach ( $rows as $row ) {
+			$public_id = (string) ( $row['public_id'] ?? '' );
+			if ( '' === $public_id ) {
+				continue;
+			}
+
+			try {
+				$keys[ $public_id ] = $this->licenses->decrypt_key( $row );
+			} catch ( Throwable ) {
+				$unavailable[ $public_id ] = true;
+			}
+		}
+
+		return array(
+			'keys'        => $keys,
+			'unavailable' => $unavailable,
+		);
+	}
+
+	/**
+	 * Shows a customer-safe degraded-mode notice without exposing key details.
+	 *
+	 * @param array $unavailable Public IDs for licenses whose keys cannot be read.
+	 * @phpstan-param array<string,true> $unavailable Public IDs for unavailable keys.
+	 */
+	private function render_key_access_notice( array $unavailable ): void {
+		if ( array() === $unavailable ) {
+			return;
+		}
+
+		echo '<div class="dreamax-lm-dashboard-notice dreamax-lm-dashboard-notice--warning" role="status"><span aria-hidden="true"></span><p><strong>' . esc_html__( 'Secure key access is temporarily unavailable.', 'dreamax-license-manager' ) . '</strong> ' . esc_html__( 'Your license records remain listed, but revealing and copying affected keys is paused while the site administrator restores secure access.', 'dreamax-license-manager' ) . '</p></div>';
 	}
 
 	/**
@@ -303,11 +366,13 @@ final class LicenseDashboard {
 	/**
 	 * Calculates dashboard summary metrics.
 	 *
-	 * @param array $rows License rows.
+	 * @param array $rows        License rows.
+	 * @param array $unavailable Public IDs for licenses whose keys cannot be read.
 	 * @phpstan-param list<array<string,mixed>> $rows License rows.
+	 * @phpstan-param array<string,true> $unavailable Public IDs for unavailable keys.
 	 * @return array{total:int,ready:int,expiring:int,attention:int}
 	 */
-	private function metrics( array $rows ): array {
+	private function metrics( array $rows, array $unavailable = array() ): array {
 		$now       = time();
 		$soon      = $now + ( 30 * DAY_IN_SECONDS );
 		$ready     = 0;
@@ -315,15 +380,17 @@ final class LicenseDashboard {
 		$attention = 0;
 
 		foreach ( $rows as $row ) {
-			$status = strtolower( (string) ( $row['lifecycle_status'] ?? '' ) );
-			$expiry = $this->timestamp( $row['expires_at'] ?? null );
-			if ( in_array( $status, array( 'assigned', 'active' ), true ) && ( null === $expiry || $expiry > $now ) ) {
+			$status        = strtolower( (string) ( $row['lifecycle_status'] ?? '' ) );
+			$expiry        = $this->timestamp( $row['expires_at'] ?? null );
+			$public_id     = (string) ( $row['public_id'] ?? '' );
+			$key_available = '' === $public_id || ! isset( $unavailable[ $public_id ] );
+			if ( $key_available && in_array( $status, array( 'assigned', 'active' ), true ) && ( null === $expiry || $expiry > $now ) ) {
 				++$ready;
 			}
 			if ( null !== $expiry && $expiry > $now && $expiry <= $soon ) {
 				++$expiring;
 			}
-			if ( in_array( $status, array( 'revoked', 'expired', 'suspended' ), true ) || ( null !== $expiry && $expiry <= $now ) ) {
+			if ( ! $key_available || in_array( $status, array( 'revoked', 'expired', 'suspended' ), true ) || ( null !== $expiry && $expiry <= $now ) ) {
 				++$attention;
 			}
 		}
