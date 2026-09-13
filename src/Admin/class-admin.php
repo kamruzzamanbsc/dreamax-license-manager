@@ -61,7 +61,7 @@ final class Admin {
 			return;
 		}
 
-		$asset_version = DREAMAX_LM_VERSION . '.portal-setup-2';
+		$asset_version = DREAMAX_LM_VERSION . '.impact-preview-1';
 		wp_enqueue_style( 'dreamax-lm-admin', DREAMAX_LM_URL . 'assets/css/admin.css', array(), $asset_version );
 		wp_enqueue_script( 'dreamax-lm-admin', DREAMAX_LM_URL . 'assets/js/admin.js', array(), $asset_version, true );
 		wp_localize_script(
@@ -90,6 +90,30 @@ final class Admin {
 				'policyFixed'     => __( 'The license expires at %s UTC.', 'dreamax-license-manager' ),
 				/* translators: %d: Current active installation count. */
 				'policyActive'    => __( '%d installation(s) are currently active.', 'dreamax-license-manager' ),
+				'impactSuspend'   => __( 'Keys become temporarily unusable. Restore can reverse suspension; installation history remains.', 'dreamax-license-manager' ),
+				'impactRestore'   => __( 'Eligible suspended keys become usable again. They can be suspended later.', 'dreamax-license-manager' ),
+				'impactRevoke'    => __( 'Keys become permanently unusable. Revocation cannot be reversed; history remains.', 'dreamax-license-manager' ),
+				'impactExtend'    => __( 'Expiry moves forward from the later of current expiry or server time. Lifetime licenses are rejected. There is no automatic undo.', 'dreamax-license-manager' ),
+				'impactReset'     => __( 'Active installations are deactivated. Eligible keys remain usable and may be activated again; history remains.', 'dreamax-license-manager' ),
+				'impactDelete'    => __( 'Only eligible unused pool records are permanently deleted. Deletion cannot be reversed.', 'dreamax-license-manager' ),
+				'impactExport'    => __( 'Download a masked CSV. No license records change and no full keys are included.', 'dreamax-license-manager' ),
+				'impactReassign'  => __( 'The old owner loses portal access. The key is unchanged; another audited reassignment can transfer ownership again, but there is no automatic undo.', 'dreamax-license-manager' ),
+				'impactResetYes'  => __( 'Existing installations will be deactivated.', 'dreamax-license-manager' ),
+				'impactResetNo'   => __( 'Existing installations will stay active.', 'dreamax-license-manager' ),
+				'impactNotifyYes' => __( 'The new customer will receive an email without the key.', 'dreamax-license-manager' ),
+				'impactNotifyNo'  => __( 'No customer email will be sent.', 'dreamax-license-manager' ),
+				'impactCustomer'  => __( 'Customer', 'dreamax-license-manager' ),
+				'impactOrder'     => __( 'Order', 'dreamax-license-manager' ),
+				'impactProduct'   => __( 'Product', 'dreamax-license-manager' ),
+				'impactActive'    => __( 'Active installations', 'dreamax-license-manager' ),
+				'impactStatus'    => __( 'Current lifecycle state', 'dreamax-license-manager' ),
+				'impactExpiry'    => __( 'Expiry (UTC)', 'dreamax-license-manager' ),
+				'impactReason'    => __( 'Audit reason', 'dreamax-license-manager' ),
+				'impactDays'      => __( 'Extension days', 'dreamax-license-manager' ),
+				'impactResult'    => __( 'Estimated new expiry (UTC)', 'dreamax-license-manager' ),
+				'impactNone'      => __( 'Not linked', 'dreamax-license-manager' ),
+				'impactNever'     => __( 'Never', 'dreamax-license-manager' ),
+				'impactActor'     => __( 'Administrator', 'dreamax-license-manager' ),
 			)
 		);
 	}
@@ -324,7 +348,7 @@ final class Admin {
 				admin_url( 'admin.php' )
 			);
 			/* translators: %s: License public ID. */
-			echo '<tr><th class="check-column"><input class="dreamax-license-select" data-dlm-license-checkbox type="checkbox" name="license_ids[]" value="' . esc_attr( (string) $row['public_id'] ) . '" aria-label="' . esc_attr( sprintf( __( 'Select license %s', 'dreamax-license-manager' ), (string) $row['public_id'] ) ) . '"></th>';
+			echo '<tr><th class="check-column"><input class="dreamax-license-select" data-dlm-license-checkbox type="checkbox" name="license_ids[]" value="' . esc_attr( (string) $row['public_id'] ) . '"' . $this->impact_attributes( $row, $count ) . ' aria-label="' . esc_attr( sprintf( __( 'Select license %s', 'dreamax-license-manager' ), (string) $row['public_id'] ) ) . '"></th>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Preview helper escapes dynamic attributes.
 			echo '<td><a class="dreamax-lm-license-link" href="' . esc_url( $detail ) . '"><code>' . esc_html( (string) $row['public_id'] ) . '</code><span class="dashicons dashicons-arrow-right-alt2" aria-hidden="true"></span></a><span class="dreamax-lm-cell-meta">' . esc_html__( 'View details', 'dreamax-license-manager' ) . '</span></td>';
 			echo '<td>';
 			$this->render_product_reference( $row );
@@ -364,7 +388,10 @@ final class Admin {
 		if ( current_user_can( Capabilities::DELETE ) ) {
 			echo '<option value="delete">' . esc_html__( 'Permanently delete eligible pool records', 'dreamax-license-manager' ) . '</option>';
 		}
-		echo '<option value="export">' . esc_html__( 'Export selected (masked CSV)', 'dreamax-license-manager' ) . '</option></select></label><label class="dreamax-lm-field" data-dlm-extension hidden><span>' . esc_html__( 'Extension days', 'dreamax-license-manager' ) . '</span><input type="number" name="extension_days" min="1" max="3650" value="30"></label><label class="dreamax-lm-field dreamax-lm-field--reason"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input type="text" name="reason" minlength="3" maxlength="500" required placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label><label class="dreamax-lm-confirm"><input data-dlm-confirm type="checkbox" name="confirm_operation" value="1" required> <span>' . esc_html__( 'I reviewed the selected licenses and confirm this operation.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" data-dlm-submit>' . esc_html__( 'Apply action', 'dreamax-license-manager' ) . '</button></div></div></form></section>';
+		echo '<option value="export">' . esc_html__( 'Export selected (masked CSV)', 'dreamax-license-manager' ) . '</option></select></label><label class="dreamax-lm-field" data-dlm-extension hidden><span>' . esc_html__( 'Extension days', 'dreamax-license-manager' ) . '</span><input type="number" name="extension_days" min="1" max="3650" value="30"></label><label class="dreamax-lm-field dreamax-lm-field--reason"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input type="text" name="reason" minlength="3" maxlength="500" required placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label>';
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Preview helper escapes every dynamic attribute or label at construction.
+		echo $this->impact_preview_html();
+		echo '<label class="dreamax-lm-confirm"><input data-dlm-confirm type="checkbox" name="confirm_operation" value="1" required> <span>' . esc_html__( 'I reviewed the selected licenses and confirm this operation.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" data-dlm-submit>' . esc_html__( 'Apply action', 'dreamax-license-manager' ) . '</button></div></div></form></section>';
 		$base = remove_query_arg( 'paged' );
 		echo '<nav class="dreamax-lm-pagination" aria-label="' . esc_attr__( 'License pages', 'dreamax-license-manager' ) . '">';
 		if ( $page > 1 ) {
@@ -390,8 +417,10 @@ final class Admin {
 		}
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
 		$activations = $wpdb->get_results( $wpdb->prepare( "SELECT public_id,instance_label,status,first_activated_at,activated_at,deactivated_at,last_seen_at FROM {$wpdb->prefix}dreamax_lm_activations WHERE license_id=%d ORDER BY id DESC LIMIT 100", (int) $license['id'] ), ARRAY_A );
-		$events      = ( new EventRepository() )->for_license( (int) $license['id'], 100 );
-		$list_url    = admin_url( 'admin.php?page=dreamax-license-manager' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- An exact fresh count is required even when only the newest 100 rows are displayed.
+		$active_count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}dreamax_lm_activations WHERE license_id=%d AND status='active'", (int) $license['id'] ) );
+		$events       = ( new EventRepository() )->for_license( (int) $license['id'], 100 );
+		$list_url     = admin_url( 'admin.php?page=dreamax-license-manager' );
 		if ( null === $license['activation_limit'] ) {
 			$limit_label = __( 'Unlimited', 'dreamax-license-manager' );
 		} else {
@@ -427,20 +456,24 @@ final class Admin {
 		}
 		echo '</div></article><article><span class="dashicons dashicons-admin-network" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Activation policy', 'dreamax-license-manager' ) . '</span><strong>' . esc_html( $limit_label ) . '</strong></div></article><article><span class="dashicons dashicons-calendar-alt" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Expiry', 'dreamax-license-manager' ) . '</span><strong>' . esc_html( $expiry_label ) . '</strong></div></article></div></section>';
 
-		$this->render_policy_editor( $license, is_array( $activations ) ? count( array_filter( $activations, static fn( array $activation ): bool => 'active' === $activation['status'] ) ) : 0 );
+		$this->render_policy_editor( $license, $active_count );
 		$this->render_merchant_notes( $license );
 		echo '<div class="dreamax-lm-detail-operation-grid"><section class="dreamax-lm-panel dreamax-lm-detail-operation"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Lifecycle operation', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Change availability, expiry, or active installations.', 'dreamax-license-manager' ) . '</p></div><span class="dashicons dashicons-update-alt" aria-hidden="true"></span></div>';
-		echo '<form class="dreamax-lm-operation-form" data-dlm-lifecycle-form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_bulk_lifecycle"><input type="hidden" name="license_ids[]" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="return_license" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Preview helper escapes every dynamic attribute or label at construction.
+		echo '<form class="dreamax-lm-operation-form" data-dlm-lifecycle-form' . $this->impact_attributes( $license, $active_count ) . ' method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_bulk_lifecycle"><input type="hidden" name="license_ids[]" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="return_license" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
 		wp_nonce_field( 'dreamax_lm_bulk_lifecycle' );
 		echo '<div class="dreamax-lm-operation-body"><label class="dreamax-lm-field"><span>' . esc_html__( 'Action', 'dreamax-license-manager' ) . '</span><select name="bulk_operation" data-dlm-operation required><option value="">' . esc_html__( 'Choose an action', 'dreamax-license-manager' ) . '</option><option value="suspend">' . esc_html__( 'Suspend temporarily', 'dreamax-license-manager' ) . '</option><option value="restore">' . esc_html__( 'Restore from suspension', 'dreamax-license-manager' ) . '</option><option value="revoke">' . esc_html__( 'Permanently revoke', 'dreamax-license-manager' ) . '</option><option value="extend">' . esc_html__( 'Extend expiry', 'dreamax-license-manager' ) . '</option><option value="reset">' . esc_html__( 'Reset all active installations', 'dreamax-license-manager' ) . '</option>';
 		if ( current_user_can( Capabilities::DELETE ) ) {
 			echo '<option value="delete">' . esc_html__( 'Permanently delete eligible pool record', 'dreamax-license-manager' ) . '</option>';
 		}
-		echo '</select></label><label class="dreamax-lm-field" data-dlm-extension hidden><span>' . esc_html__( 'Extension days', 'dreamax-license-manager' ) . '</span><input type="number" name="extension_days" min="1" max="3650" value="30"></label><label class="dreamax-lm-field"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input name="reason" minlength="3" maxlength="500" required placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label><div class="dreamax-lm-operation-note"><span class="dashicons dashicons-info-outline" aria-hidden="true"></span><span>' . esc_html__( 'Extension starts from the later of the current expiry or current server time. Revocation is permanent.', 'dreamax-license-manager' ) . '</span></div><label class="dreamax-lm-confirm"><input data-dlm-confirm type="checkbox" name="confirm_operation" value="1" required><span>' . esc_html__( 'I understand the effect and confirm this operation.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" data-dlm-submit disabled>' . esc_html__( 'Apply operation', 'dreamax-license-manager' ) . '</button></div></form></section>';
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Preview helper escapes every dynamic attribute or label at construction.
+		echo '</select></label><label class="dreamax-lm-field" data-dlm-extension hidden><span>' . esc_html__( 'Extension days', 'dreamax-license-manager' ) . '</span><input type="number" name="extension_days" min="1" max="3650" value="30"></label><label class="dreamax-lm-field"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input name="reason" minlength="3" maxlength="500" required placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label><div class="dreamax-lm-operation-note"><span class="dashicons dashicons-info-outline" aria-hidden="true"></span><span>' . esc_html__( 'Extension starts from the later of the current expiry or current server time. Revocation is permanent.', 'dreamax-license-manager' ) . '</span></div>' . $this->impact_preview_html() . '<label class="dreamax-lm-confirm"><input data-dlm-confirm type="checkbox" name="confirm_operation" value="1" required><span>' . esc_html__( 'I understand the effect and confirm this operation.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" data-dlm-submit disabled>' . esc_html__( 'Apply operation', 'dreamax-license-manager' ) . '</button></div></form></section>';
 
-		echo '<section class="dreamax-lm-panel dreamax-lm-detail-operation"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Reassign ownership', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Transfer this license to a verified customer and optional order.', 'dreamax-license-manager' ) . '</p></div><span class="dashicons dashicons-migrate" aria-hidden="true"></span></div><form class="dreamax-lm-operation-form" data-dlm-confirmed-form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_reassign_license"><input type="hidden" name="license" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Preview helper escapes every dynamic attribute or label at construction.
+		echo '<section class="dreamax-lm-panel dreamax-lm-detail-operation"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Reassign ownership', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Transfer this license to a verified customer and optional order.', 'dreamax-license-manager' ) . '</p></div><span class="dashicons dashicons-migrate" aria-hidden="true"></span></div><form class="dreamax-lm-operation-form" data-dlm-reassign-form' . $this->impact_attributes( $license, $active_count ) . ' method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_reassign_license"><input type="hidden" name="license" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
 		wp_nonce_field( 'dreamax_lm_reassign_license' );
-		echo '<div class="dreamax-lm-operation-body"><div class="dreamax-lm-form-grid"><label class="dreamax-lm-field"><span>' . esc_html__( 'Target customer ID', 'dreamax-license-manager' ) . '</span><input type="number" min="1" required id="target_customer_id" name="target_customer_id"></label><label class="dreamax-lm-field"><span>' . esc_html__( 'Target order ID', 'dreamax-license-manager' ) . ' <span class="dreamax-lm-optional">' . esc_html__( 'Optional', 'dreamax-license-manager' ) . '</span></span><input type="number" min="1" id="target_order_id" name="target_order_id"></label></div><label class="dreamax-lm-field"><span>' . esc_html__( 'Target product public ID', 'dreamax-license-manager' ) . '</span><input pattern="prd_[A-Za-z0-9_-]{22}" id="target_product_public_id" name="target_product_public_id" value="' . esc_attr( (string) $license['product_public_id'] ) . '"></label><label class="dreamax-lm-field"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input minlength="3" maxlength="500" required id="reassign_reason" name="reason" placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label><div class="dreamax-lm-check-stack"><label><input type="checkbox" name="reset_activations" value="1"><span>' . esc_html__( 'Deactivate all existing installations', 'dreamax-license-manager' ) . '</span></label><label><input type="checkbox" name="notify_customer" value="1"><span>' . esc_html__( 'Email the target customer without including the key', 'dreamax-license-manager' ) . '</span></label></div><div class="dreamax-lm-operation-note dreamax-lm-operation-note--warning"><span class="dashicons dashicons-warning" aria-hidden="true"></span><span>' . esc_html__( 'The former owner immediately loses access through the old order-item link.', 'dreamax-license-manager' ) . '</span></div><label class="dreamax-lm-confirm"><input data-dlm-confirm type="checkbox" name="confirm_operation" value="1" required><span>' . esc_html__( 'I verified the old and new ownership and confirm reassignment.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" data-dlm-submit disabled>' . esc_html__( 'Reassign license', 'dreamax-license-manager' ) . '</button></div></form></section></div>';
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Preview helper escapes every dynamic attribute or label at construction.
+		echo '<div class="dreamax-lm-operation-body"><div class="dreamax-lm-form-grid"><label class="dreamax-lm-field"><span>' . esc_html__( 'Target customer ID', 'dreamax-license-manager' ) . '</span><input type="number" min="1" required id="target_customer_id" name="target_customer_id"></label><label class="dreamax-lm-field"><span>' . esc_html__( 'Target order ID', 'dreamax-license-manager' ) . ' <span class="dreamax-lm-optional">' . esc_html__( 'Optional', 'dreamax-license-manager' ) . '</span></span><input type="number" min="1" id="target_order_id" name="target_order_id"></label></div><label class="dreamax-lm-field"><span>' . esc_html__( 'Target product public ID', 'dreamax-license-manager' ) . '</span><input pattern="prd_[A-Za-z0-9_-]{22}" id="target_product_public_id" name="target_product_public_id" value="' . esc_attr( (string) $license['product_public_id'] ) . '"></label><label class="dreamax-lm-field"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input minlength="3" maxlength="500" required id="reassign_reason" name="reason" placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label><div class="dreamax-lm-check-stack"><label><input type="checkbox" name="reset_activations" value="1"><span>' . esc_html__( 'Deactivate all existing installations', 'dreamax-license-manager' ) . '</span></label><label><input type="checkbox" name="notify_customer" value="1"><span>' . esc_html__( 'Email the target customer without including the key', 'dreamax-license-manager' ) . '</span></label></div><div class="dreamax-lm-operation-note dreamax-lm-operation-note--warning"><span class="dashicons dashicons-warning" aria-hidden="true"></span><span>' . esc_html__( 'The former owner immediately loses access through the old order-item link.', 'dreamax-license-manager' ) . '</span></div>' . $this->impact_preview_html() . '<label class="dreamax-lm-confirm"><input data-dlm-confirm type="checkbox" name="confirm_operation" value="1" required><span>' . esc_html__( 'I verified the old and new ownership and confirm reassignment.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" data-dlm-submit disabled>' . esc_html__( 'Reassign license', 'dreamax-license-manager' ) . '</button></div></form></section></div>';
 
 		$all_activations_url = add_query_arg(
 			array(
@@ -459,6 +492,36 @@ final class Admin {
 		echo '</tbody></table></div></section><section class="dreamax-lm-panel dreamax-lm-detail-table-panel dreamax-lm-audit-panel"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Audit trail', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Immutable operational history for this license.', 'dreamax-license-manager' ) . '</p></div><span class="dreamax-lm-count">' . esc_html( number_format_i18n( count( $events ) ) ) . '</span></div><div class="dreamax-lm-table-scroll">';
 		$this->render_events( $events );
 		echo '</div></section></div>';
+	}
+
+	/**
+	 * Returns only non-secret license facts needed for an admin action preview.
+	 *
+	 * @param array<string,mixed> $license License row.
+	 * @param int                 $active_count Active installation count.
+	 */
+	private function impact_attributes( array $license, int $active_count ): string {
+		$facts      = array(
+			'public-id'  => (string) $license['public_id'],
+			'product'    => (string) $license['product_public_id'],
+			'customer'   => (string) (int) $license['customer_id'],
+			'order'      => (string) (int) $license['order_id'],
+			'active'     => (string) $active_count,
+			'status'     => (string) $license['lifecycle_status'],
+			'expiry'     => (string) ( $license['expires_at'] ?? '' ),
+			'actor'      => (string) get_current_user_id(),
+			'server-now' => (string) time(),
+		);
+		$attributes = '';
+		foreach ( $facts as $name => $value ) {
+			$attributes .= ' data-' . $name . '="' . esc_attr( $value ) . '"';
+		}
+		return $attributes;
+	}
+
+	/** Renders an action summary before the confirmation control. */
+	private function impact_preview_html(): string {
+		return '<div class="dreamax-lm-impact-preview" data-dlm-impact-preview hidden aria-live="polite"><strong>' . esc_html__( 'Effect preview', 'dreamax-license-manager' ) . '</strong><p data-dlm-impact-effect></p><ul data-dlm-impact-records></ul><p data-dlm-impact-context></p></div>';
 	}
 
 	/**

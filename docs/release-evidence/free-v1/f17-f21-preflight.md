@@ -10,9 +10,9 @@ Result: 12 tests, 14 assertions, no failures. The tested cases include default e
 
 ## F21 preliminary checks
 
-- Full branch PHPUnit: 326 tests, 2086 assertions, no failures.
+- Full branch PHPUnit (latest preview preflight): 332 tests, 2101 assertions, no failures.
 - `composer phpcs`: passed.
-- `composer analyse`: 71 files, no errors.
+- `composer analyse`: 72 files, no errors.
 - `composer audit --locked --no-interaction`: no security vulnerability advisories found in the lockfile.
 
 These checks are preliminary. A candidate-specific manual security review, full disposable-runtime regression, reproducible release build, and official plugin-directory checks are still required. F21 remains open.

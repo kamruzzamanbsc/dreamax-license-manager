@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Admin impact preview smoke</title>
+<body>
+<form data-dlm-bulk>
+  <input type="checkbox" data-dlm-select-all>
+  <input type="checkbox" data-dlm-license-checkbox data-public-id="lic_test" data-product="prd_test" data-customer="15" data-order="7" data-active="2" data-status="assigned" data-expiry="2027-09-07 00:00:00" data-actor="1" data-server-now="1780000000">
+  <select required data-dlm-operation><option value="">Choose</option><option value="revoke">Revoke</option><option value="extend">Extend</option><option value="export">Export</option></select>
+  <label data-dlm-extension hidden><input type="number" min="1" max="3650" value="30"></label>
+  <label><input name="reason" minlength="3" required></label>
+  <div class="dreamax-lm-bulk"><div class="dreamax-lm-bulk-grid">
+    <div data-dlm-impact-preview hidden><p data-dlm-impact-effect></p><ul data-dlm-impact-records></ul><p data-dlm-impact-context></p></div>
+  </div></div>
+  <input type="checkbox" data-dlm-confirm required><button type="submit" data-dlm-submit>Apply</button>
+  <p data-dlm-selection-status></p>
+</form>
+<form data-dlm-lifecycle-form data-public-id="lic_test" data-product="prd_test" data-customer="15" data-order="7" data-active="2" data-status="assigned" data-expiry="2027-09-07 00:00:00" data-actor="1" data-server-now="1780000000">
+  <select required data-dlm-operation><option value="">Choose</option><option value="revoke">Revoke</option><option value="reset">Reset</option></select>
+  <label data-dlm-extension hidden><input type="number" min="1" value="30"></label>
+  <input name="reason" required minlength="3">
+  <div data-dlm-impact-preview hidden><p data-dlm-impact-effect></p><ul data-dlm-impact-records></ul><p data-dlm-impact-context></p></div>
+  <input type="checkbox" data-dlm-confirm required><button type="submit" data-dlm-submit disabled>Apply</button>
+</form>
+<form data-dlm-reassign-form data-public-id="lic_test" data-product="prd_test" data-customer="15" data-order="7" data-active="2" data-status="assigned" data-expiry="2027-09-07 00:00:00" data-actor="1" data-server-now="1780000000">
+  <input type="number" min="1" required name="target_customer_id"><input type="number" min="1" name="target_order_id">
+  <input name="target_product_public_id" value="prd_test"><input name="reason" required minlength="3">
+  <input type="checkbox" name="reset_activations"><input type="checkbox" name="notify_customer">
+  <div data-dlm-impact-preview hidden><p data-dlm-impact-effect></p><ul data-dlm-impact-records></ul><p data-dlm-impact-context></p></div>
+  <input type="checkbox" data-dlm-confirm required><button type="submit" data-dlm-submit disabled>Reassign</button>
+</form>
+<pre id="results">NOT RUN</pre>
+<script>window.dreamaxLmAdmin = {
+  impactRevoke: 'Keys become permanently unusable.',
+  impactExport: 'Download a masked CSV.',
+  impactResetYes: 'Existing installations will be deactivated.',
+  impactResetNo: 'Existing installations will stay active.',
+  impactNotifyYes: 'The customer will be emailed.',
+  impactNotifyNo: 'No email will be sent.'
+};</script>
+<script src="../../assets/js/admin.js"></script>
+<script>
+window.addEventListener('load', function () {
+  var results = [];
+  function check(value, message) { results.push((value ? 'PASS ' : 'FAIL ') + message); }
+  function change(field, value, eventName) {
+    if (field.type === 'checkbox') { field.checked = value; } else { field.value = value; }
+    field.dispatchEvent(new Event(eventName || 'change', { bubbles: true }));
+  }
+  var bulk = document.querySelector('[data-dlm-bulk]');
+  change(bulk.querySelector('[data-dlm-license-checkbox]'), true);
+  change(bulk.querySelector('[data-dlm-operation]'), 'revoke');
+  change(bulk.querySelector('[name="reason"]'), 'security incident', 'input');
+  check(bulk.querySelector('[data-dlm-impact-records]').textContent.includes('prd_test') && bulk.querySelector('[data-dlm-impact-effect]').textContent.includes('permanently'), 'bulk facts and irreversible effect');
+  change(bulk.querySelector('[data-dlm-confirm]'), true);
+  check(!bulk.querySelector('[data-dlm-submit]').disabled, 'bulk confirmed');
+  change(bulk.querySelector('[name="reason"]'), 'updated reason', 'input');
+  check(!bulk.querySelector('[data-dlm-confirm]').checked && bulk.querySelector('[data-dlm-submit]').disabled, 'bulk edit invalidates confirmation');
+  change(bulk.querySelector('[data-dlm-operation]'), 'extend');
+  check(bulk.querySelector('[data-dlm-impact-records]').textContent.includes('2027-10-07 00:00:00'), 'UTC extension estimate');
+  change(bulk.querySelector('[data-dlm-operation]'), 'export');
+  change(bulk.querySelector('[data-dlm-confirm]'), true);
+  check(!bulk.querySelector('[data-dlm-submit]').disabled && bulk.querySelector('[name="reason"]').disabled && bulk.querySelector('[data-dlm-impact-effect]').textContent.includes('masked CSV'), 'masked export requires preview');
+  var lifecycle = document.querySelector('[data-dlm-lifecycle-form]');
+  change(lifecycle.querySelector('[data-dlm-operation]'), 'revoke');
+  change(lifecycle.querySelector('[name="reason"]'), 'user request', 'input');
+  change(lifecycle.querySelector('[data-dlm-confirm]'), true);
+  check(!lifecycle.querySelector('[data-dlm-submit]').disabled, 'lifecycle confirmed');
+  change(lifecycle.querySelector('[data-dlm-operation]'), 'reset');
+  check(!lifecycle.querySelector('[data-dlm-confirm]').checked && lifecycle.querySelector('[data-dlm-submit]').disabled, 'lifecycle edit invalidates confirmation');
+  var reassign = document.querySelector('[data-dlm-reassign-form]');
+  change(reassign.querySelector('[name="target_customer_id"]'), '22', 'input');
+  change(reassign.querySelector('[name="reason"]'), 'ownership transfer', 'input');
+  check(reassign.querySelector('[data-dlm-impact-context]').textContent.includes('22'), 'reassignment target preview');
+  change(reassign.querySelector('[data-dlm-confirm]'), true);
+  check(!reassign.querySelector('[data-dlm-submit]').disabled, 'reassignment confirmed');
+  change(reassign.querySelector('[name="reset_activations"]'), true);
+  check(!reassign.querySelector('[data-dlm-confirm]').checked && reassign.querySelector('[data-dlm-impact-context]').textContent.includes('deactivated'), 'reassignment options invalidate confirmation');
+  document.getElementById('results').textContent = results.join('\n');
+});
+</script>
+</body></html>

@@ -1,6 +1,57 @@
 (function () {
 	'use strict';
 
+	function renderImpact(preview, records, action, reason, days, extra) {
+		var strings = window.dreamaxLmAdmin || {};
+		var effects = {
+			suspend: 'impactSuspend', restore: 'impactRestore', revoke: 'impactRevoke',
+			extend: 'impactExtend', reset: 'impactReset', delete: 'impactDelete',
+			export: 'impactExport', reassign: 'impactReassign'
+		};
+		var ready = !!effects[action] && records.length > 0;
+		var validExpiry = true;
+		preview.hidden = !ready;
+		if (!ready) {
+			return false;
+		}
+		preview.querySelector('[data-dlm-impact-effect]').textContent = strings[effects[action]] || '';
+		var list = preview.querySelector('[data-dlm-impact-records]');
+		list.replaceChildren();
+		records.forEach(function (record) {
+			var data = record.dataset;
+			var expiry = data.expiry || (strings.impactNever || 'Never');
+			var facts = [data.publicId,
+				(strings.impactProduct || 'Product') + ': ' + data.product,
+				(strings.impactCustomer || 'Customer') + ': ' + (Number(data.customer) || (strings.impactNone || 'Not linked')),
+				(strings.impactOrder || 'Order') + ': ' + (Number(data.order) || (strings.impactNone || 'Not linked')),
+				(strings.impactActive || 'Active installations') + ': ' + data.active,
+				(strings.impactStatus || 'Current lifecycle state') + ': ' + data.status,
+				(strings.impactExpiry || 'Expiry (UTC)') + ': ' + expiry];
+			if (action === 'extend' && data.expiry && Number.isInteger(Number(days)) && Number(days) >= 1 && Number(days) <= 3650) {
+				var original = Date.parse(data.expiry.replace(' ', 'T') + 'Z') / 1000;
+				var base = Math.max(original, Number(data.serverNow));
+				facts.push((strings.impactDays || 'Extension days') + ': ' + days);
+				if (Number.isFinite(base)) {
+					facts.push((strings.impactResult || 'Estimated new expiry (UTC)') + ': ' + new Date((base + Number(days) * 86400) * 1000).toISOString().replace('T', ' ').slice(0, 19));
+				} else {
+					validExpiry = false;
+				}
+			}
+			var item = document.createElement('li');
+			item.textContent = facts.join(' | ');
+			list.appendChild(item);
+		});
+		var context = (strings.impactActor || 'Administrator') + ' #' + records[0].dataset.actor;
+		if (action !== 'export') {
+			context += ' | ' + (strings.impactReason || 'Audit reason') + ': ' + (reason || '...');
+		}
+		if (extra) {
+			context += ' | ' + extra;
+		}
+		preview.querySelector('[data-dlm-impact-context]').textContent = context;
+		return ready && validExpiry && (action !== 'extend' || (records.every(function (record) { return !!record.dataset.expiry; }) && Number.isInteger(Number(days)) && Number(days) >= 1 && Number(days) <= 3650));
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
 		document.querySelectorAll('.dreamax-lm-merchant-notes').forEach(function (panel) {
 			var rows = panel.querySelector('[data-dlm-merchant-fields]');
@@ -72,8 +123,14 @@
 				preview.textContent = activationText + ' ' + expiryText + ' ' + activeText;
 				submit.disabled = !form.checkValidity() || !confirmation.checked;
 			}
-			form.addEventListener('input', updatePolicy);
-			form.addEventListener('change', updatePolicy);
+			form.addEventListener('input', function (event) {
+				if (event.target !== confirmation) { confirmation.checked = false; }
+				updatePolicy();
+			});
+			form.addEventListener('change', function (event) {
+				if (event.target !== confirmation) { confirmation.checked = false; }
+				updatePolicy();
+			});
 			updatePolicy();
 		});
 
@@ -251,8 +308,9 @@
 			var reason = form.querySelector('input[name="reason"]');
 			var confirmation = form.querySelector('[data-dlm-confirm]');
 			var submit = form.querySelector('[data-dlm-submit]');
+			var preview = form.querySelector('[data-dlm-impact-preview]');
 
-			if (!operation || !reason || !confirmation || !submit) {
+			if (!operation || !reason || !confirmation || !submit || !preview) {
 				return;
 			}
 
@@ -265,13 +323,46 @@
 					extensionInput.disabled = !extending;
 					extensionInput.required = extending;
 				}
-				submit.disabled = operation.value === '' || reason.value.trim().length < 3 || !confirmation.checked;
+				var shown = renderImpact(preview, [form], operation.value, reason.value.trim(), extensionInput ? extensionInput.value : '', '');
+				confirmation.disabled = !shown;
+				submit.disabled = !shown || !form.checkValidity() || !confirmation.checked;
 			}
 
-			operation.addEventListener('change', updateLifecycle);
-			reason.addEventListener('input', updateLifecycle);
+			[operation, reason, extensionInput].filter(Boolean).forEach(function (field) {
+				field.addEventListener('input', function () { confirmation.checked = false; updateLifecycle(); });
+				field.addEventListener('change', function () { confirmation.checked = false; updateLifecycle(); });
+			});
 			confirmation.addEventListener('change', updateLifecycle);
 			updateLifecycle();
+		});
+
+		document.querySelectorAll('[data-dlm-reassign-form]').forEach(function (form) {
+			var preview = form.querySelector('[data-dlm-impact-preview]');
+			var confirmation = form.querySelector('[data-dlm-confirm]');
+			var submit = form.querySelector('[data-dlm-submit]');
+			var customer = form.querySelector('[name="target_customer_id"]');
+			var order = form.querySelector('[name="target_order_id"]');
+			var product = form.querySelector('[name="target_product_public_id"]');
+			var reason = form.querySelector('[name="reason"]');
+			var reset = form.querySelector('[name="reset_activations"]');
+			var notify = form.querySelector('[name="notify_customer"]');
+			var strings = window.dreamaxLmAdmin || {};
+			if (!preview || !confirmation || !submit || !customer || !order || !product || !reason || !reset || !notify) { return; }
+			function update() {
+				var target = (strings.impactCustomer || 'Customer') + ': ' + (customer.value || '...') + ', ' +
+					(strings.impactOrder || 'Order') + ': ' + (order.value || (strings.impactNone || 'Not linked')) + ', ' +
+					(strings.impactProduct || 'Product') + ': ' + (product.value || form.dataset.product);
+				var effects = (reset.checked ? strings.impactResetYes : strings.impactResetNo) + ' ' + (notify.checked ? strings.impactNotifyYes : strings.impactNotifyNo);
+			renderImpact(preview, [form], 'reassign', reason.value.trim(), '', target + ' | ' + effects);
+			confirmation.disabled = !customer.validity.valid || !order.validity.valid || !product.validity.valid || !reason.validity.valid;
+			submit.disabled = confirmation.disabled || !confirmation.checked || !form.checkValidity();
+			}
+			[customer, order, product, reason, reset, notify].forEach(function (field) {
+				field.addEventListener('input', function () { confirmation.checked = false; update(); });
+				field.addEventListener('change', function () { confirmation.checked = false; update(); });
+			});
+			confirmation.addEventListener('change', update);
+			update();
 		});
 
 		document.querySelectorAll('[data-dlm-order-preview]').forEach(function (form) {
@@ -341,8 +432,9 @@
 			var submit = form.querySelector('[data-dlm-submit]');
 			var status = form.querySelector('[data-dlm-selection-status]');
 			var bulkPanel = form.querySelector('.dreamax-lm-bulk');
+			var preview = form.querySelector('[data-dlm-impact-preview]');
 
-			if (!selectAll || !operation || !reason || !confirmation || !submit || !status) {
+			if (!selectAll || !operation || !reason || !confirmation || !submit || !status || !preview) {
 				return;
 			}
 
@@ -358,7 +450,8 @@
 			}
 
 			function update() {
-				var selected = checkboxes.filter(function (checkbox) { return checkbox.checked; }).length;
+				var records = checkboxes.filter(function (checkbox) { return checkbox.checked; });
+				var selected = records.length;
 				var hasSelection = selected > 0;
 				var extending = operation.value === 'extend';
 				var exporting = operation.value === 'export';
@@ -371,8 +464,9 @@
 				reason.disabled = !hasSelection || exporting;
 				reason.required = hasSelection && !exporting;
 				reason.closest('label').hidden = exporting;
-				confirmation.disabled = !hasSelection;
-				if (!hasSelection) {
+				var shown = renderImpact(preview, records, operation.value, reason.value.trim(), extensionInput ? extensionInput.value : '', '');
+				confirmation.disabled = !shown;
+				if (!shown) {
 					confirmation.checked = false;
 				}
 				if (bulkPanel) {
@@ -385,17 +479,20 @@
 					extensionInput.disabled = !hasSelection || !extending;
 					extensionInput.required = hasSelection && extending;
 				}
-				submit.disabled = !hasSelection || operation.value === '' || !reasonReady || !confirmation.checked;
+				submit.disabled = !shown || !reasonReady || !form.checkValidity() || !confirmation.checked;
 				submit.textContent = exporting ? ((window.dreamaxLmAdmin || {}).selectedExport || 'Download masked CSV') : ((window.dreamaxLmAdmin || {}).applyAction || 'Apply action');
 			}
 
 			selectAll.addEventListener('change', function () {
 				checkboxes.forEach(function (checkbox) { checkbox.checked = selectAll.checked; });
+				confirmation.checked = false;
 				update();
 			});
-			checkboxes.forEach(function (checkbox) { checkbox.addEventListener('change', update); });
-			operation.addEventListener('change', update);
-			reason.addEventListener('input', update);
+			checkboxes.forEach(function (checkbox) { checkbox.addEventListener('change', function () { confirmation.checked = false; update(); }); });
+			[operation, reason, extensionInput].filter(Boolean).forEach(function (field) {
+				field.addEventListener('input', function () { confirmation.checked = false; update(); });
+				field.addEventListener('change', function () { confirmation.checked = false; update(); });
+			});
 			confirmation.addEventListener('change', update);
 			update();
 		});

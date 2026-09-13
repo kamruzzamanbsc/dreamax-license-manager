@@ -49,7 +49,9 @@ final class AdminLicenseExperienceSourceContractTest extends TestCase {
 		self::assertStringContainsString( 'reason.value.trim().length >= 3', $script );
 		self::assertStringContainsString( 'operation.disabled = !hasSelection', $script );
 		self::assertStringContainsString( 'reason.disabled = !hasSelection', $script );
-		self::assertStringContainsString( 'confirmation.disabled = !hasSelection', $script );
+		self::assertStringContainsString( 'confirmation.disabled = !shown', $script );
+		self::assertStringContainsString( 'renderImpact(preview, records, operation.value', $script );
+		self::assertStringContainsString( 'confirmation.checked = false', $script );
 		self::assertStringContainsString( '!confirmation.checked', $script );
 		self::assertStringContainsString( 'submit.disabled', $script );
 	}
@@ -77,12 +79,14 @@ final class AdminLicenseExperienceSourceContractTest extends TestCase {
 
 		self::assertStringContainsString( 'dreamax-lm-license-overview', $source );
 		self::assertStringContainsString( 'data-dlm-lifecycle-form', $source );
-		self::assertStringContainsString( 'data-dlm-confirmed-form', $source );
+		self::assertStringContainsString( 'data-dlm-reassign-form', $source );
+		self::assertStringContainsString( 'data-dlm-impact-preview', $source );
 		self::assertStringContainsString( 'Immutable operational history', $source );
 		self::assertStringContainsString( "_n( '%d installation', '%d installations'", $source );
 		self::assertStringContainsString( 'render_event_details', $source );
 		self::assertStringContainsString( "operation.value === 'extend'", $script );
 		self::assertStringContainsString( '!form.checkValidity()', $script );
+		self::assertStringContainsString( "data.expiry.replace(' ', 'T') + 'Z'", $script );
 	}
 
 	public function test_activity_page_summarizes_sanitized_events(): void {

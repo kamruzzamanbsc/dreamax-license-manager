@@ -720,6 +720,21 @@
 	line-height: 1.55;
 }
 
+.dreamax-lm-impact-preview {
+	flex: 1 1 100%;
+	min-width: 0;
+	padding: 12px 14px;
+	border-left: 3px solid #a65b0c;
+	background: #fff9ec;
+	color: var(--dlm-ink);
+	line-height: 1.5;
+}
+
+.dreamax-lm-impact-preview p { margin: 7px 0; }
+.dreamax-lm-impact-preview ul { margin: 10px 0; padding-left: 20px; max-height: 220px; overflow-y: auto; }
+.dreamax-lm-impact-preview li { overflow-wrap: anywhere; margin: 4px 0; }
+.dreamax-lm-impact-preview[hidden] { display: none; }
+
 .dreamax-lm-policy-body > .button {
 	justify-self: start;
 }
