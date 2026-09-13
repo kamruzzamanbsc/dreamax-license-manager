@@ -95,12 +95,15 @@ final class PrivilegedRoutes {
 					'methods'             => \WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'licenses' ),
 					'permission_callback' => array( $this, 'can_read_licenses' ),
+					'args'                => RouteSchema::list_args(),
 				),
 				array(
 					'methods'             => \WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'create' ),
 					'permission_callback' => array( $this, 'can_write_licenses' ),
+					'args'                => RouteSchema::create_license_args(),
 				),
+				'schema' => array( RouteSchema::class, 'envelope' ),
 			)
 		);
 		register_rest_route(
@@ -111,39 +114,52 @@ final class PrivilegedRoutes {
 					'methods'             => \WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'license' ),
 					'permission_callback' => array( $this, 'can_read_licenses' ),
+					'args'                => array( 'public_id' => RouteSchema::public_id_arg( 'lic', true ) ),
 				),
 				array(
 					'methods'             => \WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update' ),
 					'permission_callback' => array( $this, 'can_write_licenses' ),
+					'args'                => array_merge( array( 'public_id' => RouteSchema::public_id_arg( 'lic', true ) ), RouteSchema::update_license_args() ),
 				),
+				'schema' => array( RouteSchema::class, 'envelope' ),
 			)
 		);
 		register_rest_route(
 			self::NAMESPACE,
 			'/licenses/(?P<public_id>lic_[A-Za-z0-9_-]{22})/revoke',
 			array(
-				'methods'             => \WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'revoke' ),
-				'permission_callback' => array( $this, 'can_write_licenses' ),
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'revoke' ),
+					'permission_callback' => array( $this, 'can_write_licenses' ),
+					'args'                => array( 'public_id' => RouteSchema::public_id_arg( 'lic', true ) ),
+				),
+				'schema' => array( RouteSchema::class, 'envelope' ),
 			)
 		);
 		register_rest_route(
 			self::NAMESPACE,
 			'/activations',
 			array(
-				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'activations' ),
-				'permission_callback' => array( $this, 'can_read_activations' ),
+				array(
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'activations' ),
+					'permission_callback' => array( $this, 'can_read_activations' ),
+				),
+				'schema' => array( RouteSchema::class, 'envelope' ),
 			)
 		);
 		register_rest_route(
 			self::NAMESPACE,
 			'/generators',
 			array(
-				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'generators' ),
-				'permission_callback' => array( $this, 'can_read_generators' ),
+				array(
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'generators' ),
+					'permission_callback' => array( $this, 'can_read_generators' ),
+				),
+				'schema' => array( RouteSchema::class, 'envelope' ),
 			)
 		);
 	}

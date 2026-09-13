@@ -98,9 +98,13 @@ final class PublicRoutes {
 				self::NAMESPACE,
 				'/licenses/' . $operation,
 				array(
-					'methods'             => \WP_REST_Server::CREATABLE,
-					'callback'            => array( $this, $operation ),
-					'permission_callback' => '__return_true',
+					array(
+						'methods'             => \WP_REST_Server::CREATABLE,
+						'callback'            => array( $this, $operation ),
+						'permission_callback' => '__return_true',
+						'args'                => RouteSchema::public_operation_args( in_array( $operation, array( 'activate', 'deactivate' ), true ) ),
+					),
+					'schema' => array( RouteSchema::class, 'envelope' ),
 				)
 			);
 		}
@@ -109,9 +113,12 @@ final class PublicRoutes {
 			self::NAMESPACE,
 			'/system/ping',
 			array(
-				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'ping' ),
-				'permission_callback' => '__return_true',
+				array(
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'ping' ),
+					'permission_callback' => '__return_true',
+				),
+				'schema' => array( RouteSchema::class, 'envelope' ),
 			)
 		);
 	}
