@@ -1,0 +1,11 @@
+# Queued CSV import acceptance
+
+Date: 2026-09-14. Unreleased `feature/free-v1-completion` branch. Disposable local WordPress 7.1 / WooCommerce 11.0.1 / PHP 8.2.12 / MariaDB 10.4.28.
+
+Command: `wp eval-file scripts/verify-live-queued-csv-import.php` against the guarded `affiliates-test` site.
+
+Observed result: a private 501-row fixture exceeded the 256 KiB asynchronous threshold and processed in exact 250, 250 and 1-row batches. Persisted byte offsets and row counters advanced between batches; the opaque status remained accessible only to its administrator owner. A pre-owned token lock prevented a second worker from changing offset or count. Completion deleted the private input file, produced exactly 501 licenses and 501 `license_created` audit events, and reported no skipped/error rows. The verifier removed its job option, lock, scheduled hooks, licenses and events; license/event aggregate counts returned to the exact baseline.
+
+Implementation hardening: `CsvImportJob` now acquires an atomic, non-autoloaded per-token option lock. An expired lock is claimed with a single conditional database update; a contended worker schedules a delayed retry. `finally` releases normal locks, while the bounded TTL and cleanup path cover interrupted workers.
+
+Result: PASS for the explicit queued-job drill. No key, cookie, database credential or filesystem path was printed or retained. This is Free V1 branch evidence, not an SVN release authorization.

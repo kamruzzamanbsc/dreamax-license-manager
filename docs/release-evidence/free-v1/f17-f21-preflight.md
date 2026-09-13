@@ -10,7 +10,7 @@ Result: 12 tests, 14 assertions, no failures. The tested cases include default e
 
 ## F21 preliminary checks
 
-- Full branch PHPUnit (latest preview preflight): 332 tests, 2101 assertions, no failures.
+- Full branch PHPUnit (latest queued-import preflight): 332 tests, 2104 assertions, no failures.
 - `composer phpcs`: passed.
 - `composer analyse`: 72 files, no errors.
 - `composer audit --locked --no-interaction`: no security vulnerability advisories found in the lockfile.

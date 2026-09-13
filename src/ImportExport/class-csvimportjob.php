@@ -17,8 +17,10 @@ use Throwable;
  */
 final class CsvImportJob {
 	private const OPTION_PREFIX = 'dreamax_lm_csv_job_';
+	private const LOCK_SUFFIX   = '_lock';
 	private const GROUP         = 'dreamax-license-manager';
 	private const RETENTION     = HOUR_IN_SECONDS;
+	private const LOCK_TTL      = 15 * MINUTE_IN_SECONDS;
 
 	/**
 	 * Registers queue callbacks.
@@ -105,6 +107,26 @@ final class CsvImportJob {
 	 * @param string $token Opaque job token.
 	 */
 	public function process( string $token ): void {
+		if ( 1 !== preg_match( '/^[a-f0-9]{32}$/D', $token ) ) {
+			return;
+		}
+		if ( ! $this->acquire_lock( $token ) ) {
+			$this->schedule( $token, 15 );
+			return;
+		}
+		try {
+			$this->process_locked( $token );
+		} finally {
+			delete_option( self::OPTION_PREFIX . $token . self::LOCK_SUFFIX );
+		}
+	}
+
+	/**
+	 * Runs one batch while the token-specific worker lock is owned.
+	 *
+	 * @param string $token Opaque job token.
+	 */
+	private function process_locked( string $token ): void {
 		$state = $this->get( $token );
 		if ( null === $state || ! in_array( (string) $state['status'], array( 'queued', 'processing' ), true ) ) {
 			return;
@@ -180,6 +202,7 @@ final class CsvImportJob {
 			}
 		}
 		delete_option( self::OPTION_PREFIX . $token );
+		delete_option( self::OPTION_PREFIX . $token . self::LOCK_SUFFIX );
 	}
 
 	/**
@@ -214,13 +237,39 @@ final class CsvImportJob {
 	 * Schedules the next batch using Action Scheduler when available.
 	 *
 	 * @param string $token Opaque job token.
+	 * @param int    $delay Delay in seconds for a contended worker retry.
 	 */
-	private function schedule( string $token ): void {
+	private function schedule( string $token, int $delay = 0 ): void {
+		if ( $delay > 0 ) {
+			wp_schedule_single_event( time() + $delay, 'dreamax_lm_process_csv_import', array( $token ) );
+			return;
+		}
 		if ( function_exists( 'as_enqueue_async_action' ) ) {
 			as_enqueue_async_action( 'dreamax_lm_process_csv_import', array( $token ), self::GROUP );
 			return;
 		}
 		wp_schedule_single_event( time() + 5, 'dreamax_lm_process_csv_import', array( $token ) );
+	}
+
+	/**
+	 * Acquires an atomic option-backed worker lock and replaces only expired locks.
+	 *
+	 * @param string $token Opaque job token.
+	 */
+	private function acquire_lock( string $token ): bool {
+		global $wpdb;
+		$name    = self::OPTION_PREFIX . $token . self::LOCK_SUFFIX;
+		$expires = time() + self::LOCK_TTL;
+		if ( add_option( $name, $expires, '', false ) ) {
+			return true;
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Compare-and-swap prevents two workers from replacing the same expired lock.
+		$claimed = $wpdb->query( $wpdb->prepare( 'UPDATE %i SET option_value=%s WHERE option_name=%s AND CAST(option_value AS UNSIGNED)<%d', $wpdb->options, (string) $expires, $name, time() ) );
+		if ( 1 === $claimed ) {
+			wp_cache_delete( $name, 'options' );
+			return true;
+		}
+		return false;
 	}
 
 	/**

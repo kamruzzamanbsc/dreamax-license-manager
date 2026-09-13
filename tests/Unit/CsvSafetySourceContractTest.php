@@ -31,6 +31,9 @@ final class CsvSafetySourceContractTest extends TestCase {
 		self::assertStringContainsString( 'if ( ! $dry_run )', $this->processor );
 		self::assertStringContainsString( 'CsvImportProcessor::MAX_ROWS', $this->job );
 		self::assertStringContainsString( 'as_enqueue_async_action', $this->job );
+		self::assertStringContainsString( 'acquire_lock( $token )', $this->job );
+		self::assertStringContainsString( "LOCK_SUFFIX   = '_lock'", $this->job );
+		self::assertStringContainsString( 'finally', $this->job );
 	}
 
 	public function test_export_retains_capability_formula_and_keyset_guards(): void {
