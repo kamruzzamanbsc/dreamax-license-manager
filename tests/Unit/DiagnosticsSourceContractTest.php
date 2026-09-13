@@ -15,12 +15,14 @@ final class DiagnosticsSourceContractTest extends TestCase {
 	private string $diagnostics;
 	private string $admin;
 	private string $plugin;
+	private string $verifier;
 
 	protected function setUp(): void {
 		$root              = dirname( __DIR__, 2 );
 		$this->diagnostics = (string) file_get_contents( $root . '/src/Support/class-diagnostics.php' );
 		$this->admin       = (string) file_get_contents( $root . '/src/Admin/class-diagnosticsadmin.php' );
 		$this->plugin      = (string) file_get_contents( $root . '/src/class-plugin.php' );
+		$this->verifier    = (string) file_get_contents( $root . '/scripts/verify-live-setup-diagnostics.php' );
 	}
 
 	public function test_diagnostics_cover_free_release_readiness(): void {
@@ -50,5 +52,11 @@ final class DiagnosticsSourceContractTest extends TestCase {
 		self::assertStringNotContainsString( "'master_key'", $this->diagnostics );
 		self::assertStringNotContainsString( "'server_path'", $this->diagnostics );
 		self::assertStringNotContainsString( "'user_email'", $this->diagnostics );
+	}
+
+	public function test_live_verifier_covers_guarded_screen_and_secret_free_report(): void {
+		foreach ( array( 'DisposableEnvironmentGuard::assertSafe(', 'complete_checklist', 'runtime_api_private', 'report_secret_free', 'status_screen_rendered', 'forms_nonce_guarded', 'status_secret_free' ) as $contract ) {
+			self::assertStringContainsString( $contract, $this->verifier );
+		}
 	}
 }
