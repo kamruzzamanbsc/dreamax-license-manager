@@ -32,6 +32,10 @@ Customers can review the installations attached to each owned license and, when 
 
 The Import / Export screen provides a downloadable CSV template, source-column mapping, UTF-8 and legacy Western encoding choices, delimiter selection, dry-run validation, and explicit duplicate handling. Larger committed imports run in resumable 250-row background batches. License exports can be filtered and masked by default; full keys require the dedicated export capability. Activation inventory exports never contain instance fingerprints or license keys. See `docs/IMPORT-EXPORT.md`.
 
+## Setup and diagnostics
+
+The System Status screen checks the runtime, schema and storage engines, encryption, delivery policy, first generator and test license, customer portal, REST cache contract, background queue, proxy/rate-limit storage, and backup acknowledgement. Administrators can send a key-free test email or download a secret-free JSON support report. Security settings accept only exact trusted proxy IP addresses and bind backup acknowledgement to the current non-secret master-key identity. See `docs/SETUP-DIAGNOSTICS.md`.
+
 ## Security model
 
 License keys use XChaCha20-Poly1305 authenticated encryption and a separate keyed HMAC-SHA-256 lookup fingerprint. The root key must be a dedicated 32-byte unpadded base64url value in `DREAMAX_LICENSE_MANAGER_MASTER_KEY`; it is never stored in the database. See `docs/RECOVERY.md`.

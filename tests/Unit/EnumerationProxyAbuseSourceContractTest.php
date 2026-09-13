@@ -21,6 +21,7 @@ final class EnumerationProxyAbuseSourceContractTest extends TestCase {
 	}
 
 	public function test_forwarded_headers_require_an_explicitly_trusted_direct_proxy(): void {
+		self::assertStringContainsString( 'Settings::trusted_proxies()', $this->source );
 		self::assertStringContainsString( "in_array( \$remote, \$trusted, true )", $this->source );
 		self::assertStringContainsString( '$this->source->remote_is_trusted_proxy()', $this->transport );
 		self::assertStringContainsString( "'https' === strtolower", $this->transport );

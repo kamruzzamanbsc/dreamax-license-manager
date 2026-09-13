@@ -1815,7 +1815,8 @@
 	line-height: 1.55;
 }
 
-.dreamax-lm-recovery-panel {
+.dreamax-lm-recovery-panel,
+.dreamax-lm-diagnostic-actions {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -1825,11 +1826,14 @@
 }
 
 .dreamax-lm-recovery-panel h2,
-.dreamax-lm-recovery-panel p {
+.dreamax-lm-recovery-panel p,
+.dreamax-lm-diagnostic-actions h2,
+.dreamax-lm-diagnostic-actions p {
 	margin: 0;
 }
 
-.dreamax-lm-recovery-panel p {
+.dreamax-lm-recovery-panel p,
+.dreamax-lm-diagnostic-actions p {
 	margin-top: 5px;
 	color: var(--dlm-muted);
 }
@@ -2384,6 +2388,12 @@
 	color: var(--dlm-muted);
 }
 
+.dreamax-lm-settings-options textarea {
+	width: 100%;
+	min-height: 120px;
+	font-family: Consolas, Monaco, monospace;
+}
+
 .dreamax-lm-settings-actions {
 	display: flex;
 	justify-content: flex-end;
@@ -2459,7 +2469,8 @@
 	.dreamax-lm-credential-create-footer .button { width: 100%; }
 	.dreamax-lm-health-summary { grid-template-columns: auto 1fr; }
 	.dreamax-lm-health-pill { grid-column: 2; justify-self: start; }
-	.dreamax-lm-recovery-panel { align-items: flex-start; flex-direction: column; }
+	.dreamax-lm-recovery-panel,
+	.dreamax-lm-diagnostic-actions { align-items: flex-start; flex-direction: column; }
 	.dreamax-lm-order-preview-button,
 	.dreamax-lm-order-action-body > .button,
 	.dreamax-lm-claim-body > .button { width: 100%; }

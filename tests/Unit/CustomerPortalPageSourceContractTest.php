@@ -22,7 +22,7 @@ final class CustomerPortalPageSourceContractTest extends TestCase {
 	}
 
 	public function test_customer_portal_setup_is_registered_under_the_existing_admin_menu(): void {
-		self::assertStringContainsString( "private const MENU_SLUG      = 'dreamax-license-manager-customer-portal'", $this->page );
+		self::assertMatchesRegularExpression( "/private const MENU_SLUG\\s+= 'dreamax-license-manager-customer-portal'/", $this->page );
 		self::assertStringContainsString( "add_submenu_page(\n\t\t\t'dreamax-license-manager'", $this->page );
 		self::assertStringContainsString( 'Capabilities::MANAGE', $this->page );
 		self::assertStringContainsString( '( new CustomerPortalPage() )->register();', $this->plugin );
@@ -32,7 +32,7 @@ final class CustomerPortalPageSourceContractTest extends TestCase {
 		self::assertStringContainsString( "check_admin_referer( 'dreamax_lm_create_customer_portal' )", $this->page );
 		self::assertStringContainsString( 'current_user_can( Capabilities::MANAGE )', $this->page );
 		self::assertStringContainsString( "'post_status'  => 'publish'", $this->page );
-		self::assertStringContainsString( "private const SHORTCODE      = 'dreamax_license_dashboard'", $this->page );
+		self::assertMatchesRegularExpression( "/private const SHORTCODE\\s+= 'dreamax_license_dashboard'/", $this->page );
 		self::assertStringContainsString( 'wp_insert_post(', $this->page );
 		self::assertStringContainsString( 'wp_safe_redirect(', $this->page );
 	}

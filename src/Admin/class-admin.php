@@ -20,6 +20,7 @@ use Dreamax\LicenseManager\Licenses\LicenseRepository;
 use Dreamax\LicenseManager\Licenses\LicenseService;
 use Dreamax\LicenseManager\Support\Base64Url;
 use Dreamax\LicenseManager\Support\Capabilities;
+use Dreamax\LicenseManager\Support\Diagnostics;
 use Throwable;
 
 /**
@@ -520,21 +521,55 @@ final class Admin {
 	 * Handles the status page operation.
 	 */
 	public function status_page(): void {
-		global $wpdb;
 		$this->authorize( Capabilities::DIAGNOSTICS );
-		$crypto       = new Crypto();
-		$crypto_ready = $crypto->ready();
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
-		$engine            = (string) $wpdb->get_var( "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='{$wpdb->prefix}dreamax_lm_licenses'" );
-		$engine_ready      = 'INNODB' === strtoupper( $engine );
-		$cleanup_scheduled = false !== wp_next_scheduled( 'dreamax_lm_cleanup' );
-		$healthy           = $crypto_ready && $engine_ready && $cleanup_scheduled;
-		echo '<div class="wrap dreamax-lm-admin dreamax-lm-status-page"><header class="dreamax-lm-page-header"><div><p class="dreamax-lm-eyebrow">' . esc_html__( 'Operational readiness', 'dreamax-license-manager' ) . '</p><h1>' . esc_html__( 'System status', 'dreamax-license-manager' ) . '</h1><p class="dreamax-lm-page-intro">' . esc_html__( 'Monitor the security, storage, and maintenance services required for reliable licensing.', 'dreamax-license-manager' ) . '</p></div></header>';
-		echo '<section class="dreamax-lm-health-summary ' . esc_attr( $healthy ? 'is-ready' : 'is-warning' ) . '"><span class="dashicons ' . esc_attr( $healthy ? 'dashicons-yes-alt' : 'dashicons-warning' ) . '" aria-hidden="true"></span><div><h2>' . esc_html( $healthy ? __( 'All core systems operational', 'dreamax-license-manager' ) : __( 'One or more systems need attention', 'dreamax-license-manager' ) ) . '</h2><p>' . esc_html( $healthy ? __( 'Dreamax License Manager is ready to protect and maintain license data.', 'dreamax-license-manager' ) : __( 'Review the status cards below before processing license operations.', 'dreamax-license-manager' ) ) . '</p></div><span class="dreamax-lm-health-pill">' . esc_html( $healthy ? __( 'Healthy', 'dreamax-license-manager' ) : __( 'Attention', 'dreamax-license-manager' ) ) . '</span></section>';
-		echo '<div class="dreamax-lm-status-grid">';
-		echo '<section class="dreamax-lm-status-card ' . esc_attr( $crypto_ready ? 'is-ready' : 'is-warning' ) . '"><div class="dreamax-lm-status-icon"><span class="dashicons dashicons-shield" aria-hidden="true"></span></div><div class="dreamax-lm-status-card-heading"><h2>' . esc_html__( 'Encryption', 'dreamax-license-manager' ) . '</h2><span class="dreamax-lm-status-pill">' . esc_html( $crypto_ready ? __( 'Ready', 'dreamax-license-manager' ) : __( 'Recovery mode', 'dreamax-license-manager' ) ) . '</span></div><p>' . esc_html( $crypto_ready ? __( 'The configured key can encrypt and decrypt protected license data.', 'dreamax-license-manager' ) : __( 'Protected data remains unavailable until the exact encryption key is restored.', 'dreamax-license-manager' ) ) . '</p></section>';
-		echo '<section class="dreamax-lm-status-card ' . esc_attr( $engine_ready ? 'is-ready' : 'is-warning' ) . '"><div class="dreamax-lm-status-icon"><span class="dashicons dashicons-database" aria-hidden="true"></span></div><div class="dreamax-lm-status-card-heading"><h2>' . esc_html__( 'Database storage', 'dreamax-license-manager' ) . '</h2><span class="dreamax-lm-status-pill">' . esc_html( '' !== $engine ? $engine : __( 'Unavailable', 'dreamax-license-manager' ) ) . '</span></div><p>' . esc_html( $engine_ready ? __( 'The license table uses InnoDB for transactional consistency.', 'dreamax-license-manager' ) : __( 'The license table must use InnoDB for safe transactional operations.', 'dreamax-license-manager' ) ) . '</p></section>';
-		echo '<section class="dreamax-lm-status-card ' . esc_attr( $cleanup_scheduled ? 'is-ready' : 'is-warning' ) . '"><div class="dreamax-lm-status-icon"><span class="dashicons dashicons-clock" aria-hidden="true"></span></div><div class="dreamax-lm-status-card-heading"><h2>' . esc_html__( 'Background cleanup', 'dreamax-license-manager' ) . '</h2><span class="dreamax-lm-status-pill">' . esc_html( $cleanup_scheduled ? __( 'Scheduled', 'dreamax-license-manager' ) : __( 'Not scheduled', 'dreamax-license-manager' ) ) . '</span></div><p>' . esc_html( $cleanup_scheduled ? __( 'WordPress Cron is scheduled to remove eligible expired operational data.', 'dreamax-license-manager' ) : __( 'The maintenance event is missing and should be restored before release.', 'dreamax-license-manager' ) ) . '</p></section></div>';
+		$checks       = ( new Diagnostics() )->checks();
+		$ready_count  = count( array_filter( $checks, static fn( array $check ): bool => $check['ready'] ) );
+		$total_count  = count( $checks );
+		$healthy      = $ready_count === $total_count;
+		$crypto_ready = $checks['encryption']['ready'];
+		$links        = array(
+			'delivery'        => admin_url( 'admin.php?page=dreamax-license-manager-settings' ),
+			'generator'       => admin_url( 'admin.php?page=dreamax-license-manager-generators' ),
+			'test_license'    => admin_url( 'admin.php?page=dreamax-license-manager-add' ),
+			'customer_portal' => admin_url( 'admin.php?page=dreamax-license-manager-customer-portal' ),
+			'backup'          => admin_url( 'admin.php?page=dreamax-license-manager-settings' ),
+		);
+		$icons        = array(
+			'environment'      => 'admin-tools',
+			'schema'           => 'database',
+			'storage_engine'   => 'database-view',
+			'encryption'       => 'shield',
+			'delivery'         => 'email-alt',
+			'generator'        => 'randomize',
+			'test_license'     => 'admin-network',
+			'customer_portal'  => 'groups',
+			'api'              => 'rest-api',
+			'background'       => 'clock',
+			'proxy_rate_limit' => 'lock',
+			'backup'           => 'backup',
+		);
+
+		echo '<div class="wrap dreamax-lm-admin dreamax-lm-status-page"><header class="dreamax-lm-page-header"><div><p class="dreamax-lm-eyebrow">' . esc_html__( 'Setup and operational readiness', 'dreamax-license-manager' ) . '</p><h1>' . esc_html__( 'System status', 'dreamax-license-manager' ) . '</h1><p class="dreamax-lm-page-intro">' . esc_html__( 'Complete the setup checklist, verify protected delivery, and download a secret-free support report.', 'dreamax-license-manager' ) . '</p></div><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_download_system_report">';
+		wp_nonce_field( 'dreamax_lm_download_system_report' );
+		echo '<button class="button" type="submit"><span class="dashicons dashicons-download" aria-hidden="true"></span>' . esc_html__( 'Download system report', 'dreamax-license-manager' ) . '</button></form></header>';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only result notice follows a nonce-protected email action.
+		if ( isset( $_GET['email_test'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- The value only selects fixed notice copy.
+			$sent = 'sent' === sanitize_key( wp_unslash( (string) $_GET['email_test'] ) );
+			echo '<div class="notice ' . esc_attr( $sent ? 'notice-success' : 'notice-error' ) . ' is-dismissible"><p>' . esc_html( $sent ? __( 'WordPress accepted the test email for delivery.', 'dreamax-license-manager' ) : __( 'WordPress could not accept the test email. Review the site mail configuration.', 'dreamax-license-manager' ) ) . '</p></div>';
+		}
+		/* translators: 1: ready check count, 2: total check count. */
+		echo '<section class="dreamax-lm-health-summary ' . esc_attr( $healthy ? 'is-ready' : 'is-warning' ) . '"><span class="dashicons ' . esc_attr( $healthy ? 'dashicons-yes-alt' : 'dashicons-warning' ) . '" aria-hidden="true"></span><div><h2>' . esc_html( $healthy ? __( 'Setup complete', 'dreamax-license-manager' ) : __( 'Setup needs attention', 'dreamax-license-manager' ) ) . '</h2><p>' . esc_html( sprintf( __( '%1$d of %2$d readiness checks pass.', 'dreamax-license-manager' ), $ready_count, $total_count ) ) . '</p></div><span class="dreamax-lm-health-pill">' . esc_html( $healthy ? __( 'Ready', 'dreamax-license-manager' ) : __( 'Review', 'dreamax-license-manager' ) ) . '</span></section><div class="dreamax-lm-status-grid">';
+		foreach ( $checks as $id => $check ) {
+			echo '<section class="dreamax-lm-status-card ' . esc_attr( $check['ready'] ? 'is-ready' : 'is-warning' ) . '"><div class="dreamax-lm-status-icon"><span class="dashicons dashicons-' . esc_attr( $icons[ $id ] ?? 'info-outline' ) . '" aria-hidden="true"></span></div><div class="dreamax-lm-status-card-heading"><h2>' . esc_html( $check['label'] ) . '</h2><span class="dreamax-lm-status-pill">' . esc_html( $check['ready'] ? __( 'Ready', 'dreamax-license-manager' ) : __( 'Action needed', 'dreamax-license-manager' ) ) . '</span></div><p>' . esc_html( $check['detail'] ) . '</p>';
+			if ( ! $check['ready'] && isset( $links[ $id ] ) ) {
+				echo '<a class="button" href="' . esc_url( $links[ $id ] ) . '">' . esc_html__( 'Open setup', 'dreamax-license-manager' ) . '</a>';
+			}
+			echo '</section>';
+		}
+		echo '</div><section class="dreamax-lm-panel dreamax-lm-diagnostic-actions"><div><h2>' . esc_html__( 'Delivery smoke test', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Send a key-free message to your own administrator email address.', 'dreamax-license-manager' ) . '</p></div><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_send_test_email">';
+		wp_nonce_field( 'dreamax_lm_send_test_email' );
+		echo '<button class="button" type="submit"><span class="dashicons dashicons-email-alt" aria-hidden="true"></span>' . esc_html__( 'Send test email', 'dreamax-license-manager' ) . '</button></form></section>';
 		if ( current_user_can( Capabilities::SECURITY ) && ! $crypto_ready ) {
 			echo '<section class="dreamax-lm-panel dreamax-lm-recovery-panel"><div><h2>' . esc_html__( 'Configure encryption', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Generate a copy-safe wp-config.php constant once. The generated value is not stored by this plugin.', 'dreamax-license-manager' ) . '</p></div><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_generate_master_key">';
 			wp_nonce_field( 'dreamax_lm_generate_master_key' );

@@ -9,12 +9,17 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\Support;
 
+use Dreamax\LicenseManager\Encryption\MasterKey;
+use Throwable;
+
 /**
  * Provides bounded merchant configuration used by operational services.
  */
 final class Settings {
 	public const OPTION_ALLOCATION_STATUSES            = 'dreamax_lm_allocation_statuses';
 	public const OPTION_CUSTOMER_ACTIVATION_MANAGEMENT = 'dreamax_lm_customer_activation_management';
+	public const OPTION_BACKUP_CONFIRMED_KEY_ID        = 'dreamax_lm_backup_confirmed_key_id';
+	public const OPTION_TRUSTED_PROXIES                = 'dreamax_lm_trusted_proxies';
 
 	/**
 	 * Returns normalized WooCommerce statuses that trigger automatic allocation.
@@ -59,5 +64,53 @@ final class Settings {
 	 */
 	public static function customer_activation_management(): bool {
 		return 1 === (int) get_option( self::OPTION_CUSTOMER_ACTIVATION_MANAGEMENT, 1 );
+	}
+
+	/**
+	 * Reports whether backup coverage was confirmed for the current key identity.
+	 */
+	public static function backup_confirmed(): bool {
+		try {
+			$current = ( new MasterKey() )->identifier();
+		} catch ( Throwable $error ) {
+			return false;
+		}
+		$confirmed = get_option( self::OPTION_BACKUP_CONFIRMED_KEY_ID, '' );
+		return is_string( $confirmed ) && hash_equals( $current, $confirmed );
+	}
+
+	/**
+	 * Records or clears backup acknowledgement for the loaded key identity.
+	 *
+	 * @param bool $confirmed Whether the current key backup has been confirmed.
+	 */
+	public static function confirm_backup( bool $confirmed ): void {
+		if ( ! $confirmed ) {
+			delete_option( self::OPTION_BACKUP_CONFIRMED_KEY_ID );
+			return;
+		}
+		try {
+			update_option( self::OPTION_BACKUP_CONFIRMED_KEY_ID, ( new MasterKey() )->identifier(), false );
+		} catch ( Throwable $error ) {
+			delete_option( self::OPTION_BACKUP_CONFIRMED_KEY_ID );
+		}
+	}
+
+	/**
+	 * Returns exact proxy IPs allowed to supply forwarding headers.
+	 *
+	 * @return list<string>
+	 */
+	public static function trusted_proxies(): array {
+		$stored = get_option( self::OPTION_TRUSTED_PROXIES, array() );
+		$stored = is_array( $stored ) ? $stored : array();
+		$result = array();
+		foreach ( $stored as $address ) {
+			$address = trim( (string) $address );
+			if ( false !== filter_var( $address, FILTER_VALIDATE_IP ) && ! in_array( $address, $result, true ) ) {
+				$result[] = $address;
+			}
+		}
+		return array_slice( $result, 0, 100 );
 	}
 }

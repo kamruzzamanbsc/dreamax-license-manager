@@ -29,6 +29,18 @@ final class SettingsSourceContractTest extends TestCase {
 		self::assertStringContainsString( 'customer_activation_management', $admin );
 	}
 
+	public function test_security_settings_are_restricted_and_normalized(): void {
+		$settings = $this->read( 'src/Support/class-settings.php' );
+		$admin    = $this->read( 'src/Admin/class-settingsadmin.php' );
+
+		self::assertStringContainsString( 'current_user_can( Capabilities::SECURITY )', $admin );
+		self::assertStringContainsString( 'Settings::confirm_backup', $admin );
+		self::assertStringContainsString( 'FILTER_VALIDATE_IP', $admin );
+		self::assertStringContainsString( 'array_slice( array_unique( $proxies ), 0, 100 )', $admin );
+		self::assertStringContainsString( 'MasterKey() )->identifier()', $settings );
+		self::assertStringContainsString( 'hash_equals( $current, $confirmed )', $settings );
+	}
+
 	private function read( string $relative_path ): string {
 		$contents = file_get_contents( dirname( __DIR__, 2 ) . '/' . $relative_path );
 		self::assertIsString( $contents );

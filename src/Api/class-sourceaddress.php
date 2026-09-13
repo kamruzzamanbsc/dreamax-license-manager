@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\Api;
 
+use Dreamax\LicenseManager\Support\Settings;
+
 /**
  * Handles Source address operations.
  */
@@ -22,8 +24,8 @@ final class SourceAddress {
 			return '0.0.0.0';
 		}
 
-		$trusted = get_option( 'dreamax_lm_trusted_proxies', array() );
-		if ( ! is_array( $trusted ) || ! in_array( $remote, $trusted, true ) ) {
+		$trusted = Settings::trusted_proxies();
+		if ( ! in_array( $remote, $trusted, true ) ) {
 			return $remote;
 		}
 
@@ -63,7 +65,7 @@ final class SourceAddress {
 	 */
 	public function remote_is_trusted_proxy(): bool {
 		$remote  = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( (string) $_SERVER['REMOTE_ADDR'] ) ) : '';
-		$trusted = get_option( 'dreamax_lm_trusted_proxies', array() );
-		return is_array( $trusted ) && in_array( $remote, $trusted, true );
+		$trusted = Settings::trusted_proxies();
+		return in_array( $remote, $trusted, true );
 	}
 }

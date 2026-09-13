@@ -52,6 +52,10 @@ final class SettingsAdmin {
 		}
 		echo '</fieldset></section>';
 		echo '<section class="dreamax-lm-panel"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Customer installations', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Customers can manage only activations belonging to their own licenses.', 'dreamax-license-manager' ) . '</p></div></div><div class="dreamax-lm-settings-options"><label><input type="checkbox" name="customer_activation_management" value="1" ' . checked( Settings::customer_activation_management(), true, false ) . '><span><strong>' . esc_html__( 'Allow activation management in the customer portal', 'dreamax-license-manager' ) . '</strong><small>' . esc_html__( 'Customers may activate a new installation or deactivate an old one when the license policy permits.', 'dreamax-license-manager' ) . '</small></span></label></div></section>';
+		if ( current_user_can( Capabilities::SECURITY ) ) {
+			echo '<section class="dreamax-lm-panel"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Network trust', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Forwarded client addresses are accepted only from exact proxy IPs listed here.', 'dreamax-license-manager' ) . '</p></div></div><div class="dreamax-lm-settings-options"><label><span><strong>' . esc_html__( 'Trusted proxy IP addresses', 'dreamax-license-manager' ) . '</strong><small>' . esc_html__( 'Enter one IPv4 or IPv6 address per line. Leave empty unless a known reverse proxy connects directly to WordPress.', 'dreamax-license-manager' ) . '</small></span><textarea name="trusted_proxies" rows="5" spellcheck="false">' . esc_textarea( implode( "\n", Settings::trusted_proxies() ) ) . '</textarea></label></div></section>';
+			echo '<section class="dreamax-lm-panel"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Backup readiness', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'A database backup cannot recover license keys without the external master key.', 'dreamax-license-manager' ) . '</p></div></div><div class="dreamax-lm-settings-options"><label><input type="checkbox" name="backup_confirmed" value="1" ' . checked( Settings::backup_confirmed(), true, false ) . '><span><strong>' . esc_html__( 'The current master key is included in my tested backup plan', 'dreamax-license-manager' ) . '</strong><small>' . esc_html__( 'Confirm again after changing or restoring the master key. The plugin stores only a non-secret key identifier.', 'dreamax-license-manager' ) . '</small></span></label></div></section>';
+		}
 		echo '<div class="dreamax-lm-settings-actions"><button class="button button-primary" type="submit">' . esc_html__( 'Save settings', 'dreamax-license-manager' ) . '</button></div></form></div>';
 	}
 
@@ -76,6 +80,14 @@ final class SettingsAdmin {
 		}
 		update_option( Settings::OPTION_ALLOCATION_STATUSES, $statuses, false );
 		update_option( Settings::OPTION_CUSTOMER_ACTIVATION_MANAGEMENT, isset( $_POST['customer_activation_management'] ) ? 1 : 0, false );
+		if ( current_user_can( Capabilities::SECURITY ) ) {
+			Settings::confirm_backup( isset( $_POST['backup_confirmed'] ) );
+			$raw_proxies = isset( $_POST['trusted_proxies'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['trusted_proxies'] ) ) : '';
+			$proxies     = preg_split( '/[\r\n,]+/', $raw_proxies );
+			$proxies     = false === $proxies ? array() : $proxies;
+			$proxies     = array_values( array_filter( array_map( 'trim', $proxies ), static fn( string $address ): bool => false !== filter_var( $address, FILTER_VALIDATE_IP ) ) );
+			update_option( Settings::OPTION_TRUSTED_PROXIES, array_slice( array_unique( $proxies ), 0, 100 ), false );
+		}
 		wp_safe_redirect( admin_url( 'admin.php?page=dreamax-license-manager-settings&saved=1' ) );
 		exit;
 	}

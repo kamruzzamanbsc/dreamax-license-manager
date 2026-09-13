@@ -16,9 +16,9 @@ use WP_Post;
  * Creates and reports the standalone customer license dashboard page.
  */
 final class CustomerPortalPage {
-	private const MENU_SLUG      = 'dreamax-license-manager-customer-portal';
-	private const OPTION_PAGE_ID = 'dreamax_lm_customer_portal_page_id';
-	private const SHORTCODE      = 'dreamax_license_dashboard';
+	private const MENU_SLUG     = 'dreamax-license-manager-customer-portal';
+	public const OPTION_PAGE_ID = 'dreamax_lm_customer_portal_page_id';
+	private const SHORTCODE     = 'dreamax_license_dashboard';
 
 	/**
 	 * Registers the setup screen and its protected action.

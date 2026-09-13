@@ -12,6 +12,7 @@ namespace Dreamax\LicenseManager;
 use Dreamax\LicenseManager\Admin\Admin;
 use Dreamax\LicenseManager\Admin\ActivationAdmin;
 use Dreamax\LicenseManager\Admin\CustomerPortalPage;
+use Dreamax\LicenseManager\Admin\DiagnosticsAdmin;
 use Dreamax\LicenseManager\Admin\GeneratorAdmin;
 use Dreamax\LicenseManager\Admin\SettingsAdmin;
 use Dreamax\LicenseManager\Api\PublicRoutes;
@@ -56,6 +57,7 @@ final class Plugin {
 		( new GeneratorAdmin() )->register();
 		( new SettingsAdmin() )->register();
 		( new CustomerPortalPage() )->register();
+		( new DiagnosticsAdmin() )->register();
 		( new CsvController() )->register();
 		( new Privacy() )->register();
 		( new Health() )->register();

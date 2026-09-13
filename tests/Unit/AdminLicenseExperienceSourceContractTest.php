@@ -114,13 +114,18 @@ final class AdminLicenseExperienceSourceContractTest extends TestCase {
 	}
 
 	public function test_system_status_summarizes_operational_health(): void {
-		$source = $this->read( 'src/Admin/class-admin.php' );
+		$source      = $this->read( 'src/Admin/class-admin.php' );
+		$diagnostics = $this->read( 'src/Support/class-diagnostics.php' );
 
 		self::assertStringContainsString( 'dreamax-lm-status-page', $source );
-		self::assertStringContainsString( 'All core systems operational', $source );
+		self::assertStringContainsString( 'Setup and operational readiness', $source );
+		self::assertStringContainsString( 'Download system report', $source );
+		self::assertStringContainsString( 'Send test email', $source );
 		self::assertStringContainsString( 'dreamax-lm-status-grid', $source );
-		self::assertStringContainsString( 'Database storage', $source );
-		self::assertStringContainsString( 'Background cleanup', $source );
+		self::assertStringContainsString( "'storage_engine'", $diagnostics );
+		self::assertStringContainsString( "'background'", $diagnostics );
+		self::assertStringContainsString( "'proxy_rate_limit'", $diagnostics );
+		self::assertStringContainsString( "'backup'", $diagnostics );
 		self::assertStringContainsString( 'dreamax-lm-recovery-panel', $source );
 	}
 
