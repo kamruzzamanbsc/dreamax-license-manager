@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0 - Commercial extension contract
+
+- Added a versioned compatibility descriptor, locked provider registry, immutable contract values, and five typed extension-provider interfaces.
+- Added a Free-owned authority adapter that returns sanitized license snapshots and authoritative license or installation decisions without exposing tables, internal IDs, ciphertext, fingerprints, or repository objects.
+- Added exact active-installation proof verification to the existing Free activation service while preserving all public REST v1 semantics.
+- Kept Free behavior independent of any extension: no provider, remote call, paywall, trial, premium menu, or dormant commercial feature is included.
+
 ## 0.3.8 - Paid-order allocation guard
 
 - Required WooCommerce payment confirmation for every automatic or manual allocation path, even when a merchant-selected custom status triggers the automatic hook.

@@ -20,6 +20,7 @@ use Dreamax\LicenseManager\Api\PrivilegedRoutes;
 use Dreamax\LicenseManager\CustomerPortal\AccountEndpoint;
 use Dreamax\LicenseManager\CustomerPortal\GuestClaimService;
 use Dreamax\LicenseManager\CustomerPortal\LicenseDashboard;
+use Dreamax\LicenseManager\Contracts\Commercial\V1\CommercialContracts;
 use Dreamax\LicenseManager\Database\Installer;
 use Dreamax\LicenseManager\ImportExport\CsvController;
 use Dreamax\LicenseManager\Integrations\WooCommerce\OrderLicensing;
@@ -37,6 +38,7 @@ final class Plugin {
 	 */
 	public function register(): void {
 		Installer::maybe_upgrade();
+		CommercialContracts::bootstrap();
 		if ( is_multisite() ) {
 			$network_plugins = (array) get_site_option( 'active_sitewide_plugins', array() );
 			$plugin_root     = defined( 'DREAMAX_LM_FILE' ) ? constant( 'DREAMAX_LM_FILE' ) : '';

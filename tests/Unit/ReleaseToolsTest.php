@@ -67,7 +67,7 @@ final class ReleaseToolsTest extends TestCase {
 	public function test_readme_header_and_distribution_policy_are_consistent(): void {
 		$root = dirname( __DIR__, 2 );
 		$headers = ReadmeHeaderValidator::validate( $root );
-		self::assertSame( '0.3.8', $headers['Version'] );
+		self::assertSame( '0.4.0', $headers['Version'] );
 		self::assertSame( 'dreamax-license-manager', $headers['Text Domain'] );
 		self::assertSame( '7.1', $headers['Tested up to'] );
 		self::assertSame( '11.0.1', $headers['WC tested up to'] );

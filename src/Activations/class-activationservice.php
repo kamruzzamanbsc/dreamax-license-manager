@@ -365,6 +365,50 @@ final class ActivationService {
 	}
 
 	/**
+	 * Verifies that a presented key, product, activation, and instance belong together.
+	 *
+	 * @param string $key Presented license key.
+	 * @param string $product_public_id Product public identifier.
+	 * @param string $activation_public_id Activation public identifier.
+	 * @param string $instance_id Presented installation identifier.
+	 * @throws LicenseException When the proof is not authoritative and active.
+	 * @return array{license_public_id:string,product_public_id:string,activation_public_id:string,status:'active',expires_at:string|null}
+	 */
+	public function verify_installation( string $key, string $product_public_id, string $activation_public_id, string $instance_id ): array {
+		$this->guard_inputs( $product_public_id, $instance_id, null );
+		if ( 1 !== preg_match( '/^act_[A-Za-z0-9_-]{22}$/D', $activation_public_id ) ) {
+			throw new LicenseException( 'invalid_request', 'The activation identifier is invalid.', 400 );
+		}
+
+		$license = $this->find_for_product( $key, $product_public_id );
+		$this->assert_eligible( $license );
+		$fingerprint = bin2hex( $this->crypto->fingerprint( $instance_id, 'instance-identity' ) );
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Free owns the authoritative installation state and must perform a fresh exact proof lookup.
+		$activation = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT public_id,status FROM {$wpdb->prefix}dreamax_lm_activations WHERE license_id=%d AND public_id=%s AND instance_fingerprint=UNHEX(%s) AND status='active' LIMIT 1",
+				(int) $license['id'],
+				$activation_public_id,
+				$fingerprint
+			),
+			ARRAY_A
+		);
+		if ( ! is_array( $activation ) ) {
+			throw new LicenseException( 'authentication_required', 'Installation authentication is required.', 401 );
+		}
+
+		return array(
+			'license_public_id'    => (string) $license['public_id'],
+			'product_public_id'    => (string) $license['product_public_id'],
+			'activation_public_id' => (string) $activation['public_id'],
+			'status'               => 'active',
+			'expires_at'           => null === $license['expires_at'] ? null : (string) $license['expires_at'],
+		);
+	}
+
+	/**
 	 * Finds a license for the presented key and product contract.
 	 *
 	 * @param string $key Presented key.

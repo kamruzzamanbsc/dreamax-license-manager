@@ -76,9 +76,9 @@ final class WordPressOrgReviewSourceContractTest extends TestCase {
 		$plugin = $this->read( 'dreamax-license-manager.php' );
 		$readme = $this->read( 'readme.txt' );
 
-		self::assertStringContainsString( 'Version: 0.3.8', $plugin );
-		self::assertStringContainsString( "DREAMAX_LM_VERSION', '0.3.8'", $plugin );
-		self::assertStringContainsString( 'Stable tag: 0.3.8', $readme );
+		self::assertStringContainsString( 'Version: 0.4.0', $plugin );
+		self::assertStringContainsString( "DREAMAX_LM_VERSION', '0.4.0'", $plugin );
+		self::assertStringContainsString( 'Stable tag: 0.4.0', $readme );
 		self::assertStringContainsString( 'does not require a license key, payment, subscription, trial, quota, or external service', $readme );
 		self::assertStringContainsString( 'Every feature included in this plugin is available without an upgrade.', $readme );
 	}
