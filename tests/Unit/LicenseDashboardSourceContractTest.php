@@ -12,6 +12,7 @@ final class LicenseDashboardSourceContractTest extends TestCase {
 	private string $plugin;
 	private string $script;
 	private string $styles;
+	private string $verifier;
 
 	protected function setUp(): void {
 		$root            = dirname( __DIR__, 2 );
@@ -20,6 +21,7 @@ final class LicenseDashboardSourceContractTest extends TestCase {
 		$this->plugin    = (string) file_get_contents( $root . '/src/class-plugin.php' );
 		$this->script    = (string) file_get_contents( $root . '/assets/js/account.js' );
 		$this->styles    = (string) file_get_contents( $root . '/assets/css/dashboard.css' );
+		$this->verifier  = (string) file_get_contents( $root . '/scripts/verify-live-license-dashboard.php' );
 	}
 
 	public function test_standalone_dashboard_is_registered_and_scoped_to_its_shortcode_page(): void {
@@ -99,5 +101,14 @@ final class LicenseDashboardSourceContractTest extends TestCase {
 		self::assertStringContainsString( 'width: calc(100vw - 12px)', $this->styles );
 		self::assertStringContainsString( 'padding: 18px 14px', $this->styles );
 		self::assertStringContainsString( '@media screen and (max-width: 340px)', $this->styles );
+	}
+
+	public function test_live_verifier_covers_access_isolation_and_exact_cleanup(): void {
+		foreach ( array( 'guest_login_only', 'owner_masked', 'attacker_isolated', 'activation_visible', 'assets_enqueued', 'database_restored' ) as $contract ) {
+			self::assertStringContainsString( $contract, $this->verifier );
+		}
+		self::assertStringContainsString( 'DisposableEnvironmentGuard::assertSafe(', $this->verifier );
+		self::assertStringContainsString( "'request_id' => \$request_id", $this->verifier );
+		self::assertStringContainsString( 'wp_delete_user( $attacker_id )', $this->verifier );
 	}
 }

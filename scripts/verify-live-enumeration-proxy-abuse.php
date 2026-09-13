@@ -181,11 +181,14 @@ try {
 	$_SERVER['HTTP_X_FORWARDED_FOR']   = '203.0.113.70';
 	$_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
 	unset( $_SERVER['HTTPS'] );
-	$_SERVER['CONTENT_TYPE']         = 'application/json';
-	$_SERVER['CONTENT_LENGTH']       = '2';
+	$_SERVER['CONTENT_TYPE']   = 'application/json';
+	$_SERVER['CONTENT_LENGTH'] = '2';
+	$transport_request         = new WP_REST_Request( 'POST', '/dreamax-license-manager/v1/licenses/validate' );
+	$transport_request->set_header( 'Content-Type', 'application/json' );
+	$transport_request->set_body( '{}' );
 	$checks['untrusted_xff_ignored'] = '198.51.100.50' === ( new SourceAddress() )->resolve();
 	try {
-		( new TransportGuard() )->assert_public_request();
+		( new TransportGuard() )->assert_public_request( $transport_request );
 		$checks['untrusted_xfp_rejected'] = false;
 	} catch ( LicenseException $error ) {
 		$checks['untrusted_xfp_rejected'] = 'server_unavailable' === $error->machine_code();
@@ -194,7 +197,7 @@ try {
 	update_option( 'dreamax_lm_trusted_proxies', array( '198.51.100.50', '198.51.100.51' ), false );
 	$_SERVER['HTTP_X_FORWARDED_FOR']  = '203.0.113.70, 198.51.100.51';
 	$checks['trusted_chain_resolved'] = '203.0.113.70' === ( new SourceAddress() )->resolve();
-	( new TransportGuard() )->assert_public_request();
+	( new TransportGuard() )->assert_public_request( $transport_request );
 	$checks['trusted_xfp_allowed'] = true;
 
 	foreach ( array( 'breaker|validate', 'failure|127.0.0.0/24|validate', 'failure|0000000000000000/56|validate', 'aggregate|203.0.113.0/24', 'failure|203.0.113.0/24|validate' ) as $scope ) {
@@ -267,7 +270,8 @@ try {
 	}
 	$checks['failure_rate_limit_enforced'] = true;
 	if ( in_array( false, $checks, true ) ) {
-		throw new RuntimeException( 'An enumeration or proxy-abuse assertion failed.' );
+		$failed_checks = array_keys( array_filter( $checks, static fn( bool $passed ): bool => ! $passed ) );
+		throw new RuntimeException( 'An enumeration or proxy-abuse assertion failed: ' . implode( ',', $failed_checks ) . '.' );
 	}
 } catch ( Throwable $error ) {
 	$failure = $error;

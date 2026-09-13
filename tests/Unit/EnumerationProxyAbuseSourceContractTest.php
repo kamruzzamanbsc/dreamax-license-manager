@@ -39,5 +39,7 @@ final class EnumerationProxyAbuseSourceContractTest extends TestCase {
 			self::assertStringContainsString( $contract, $this->verifier );
 		}
 		self::assertStringContainsString( 'DisposableEnvironmentGuard::assertSafe(', $this->verifier );
+		self::assertStringContainsString( 'new WP_REST_Request(', $this->verifier );
+		self::assertStringContainsString( 'assert_public_request( $transport_request )', $this->verifier );
 	}
 }
