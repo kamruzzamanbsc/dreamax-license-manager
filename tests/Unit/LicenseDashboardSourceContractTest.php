@@ -23,7 +23,7 @@ final class LicenseDashboardSourceContractTest extends TestCase {
 	}
 
 	public function test_standalone_dashboard_is_registered_and_scoped_to_its_shortcode_page(): void {
-		self::assertStringContainsString( "private const SHORTCODE = 'dreamax_license_dashboard'", $this->dashboard );
+		self::assertMatchesRegularExpression( "/private const SHORTCODE\\s+= 'dreamax_license_dashboard'/", $this->dashboard );
 		self::assertStringContainsString( 'add_shortcode( self::SHORTCODE', $this->dashboard );
 		self::assertStringContainsString( "wp_enqueue_style( 'dreamax-lm-dashboard'", $this->dashboard );
 		self::assertStringContainsString( "'dreamax-lm-dashboard-page'", $this->dashboard );

@@ -256,9 +256,9 @@ final class AuditEventCatalog {
 			),
 			self::LICENSE_ASSIGNED                         => self::v1( $issuers, 'required', 'optional', 'optional', $order_refs, array(), array( 'src/Licenses/class-licenseservice.php' ) ),
 			self::LICENSE_DELIVERED                        => self::v1( $issuers, 'required', 'optional', 'optional', $order_refs, array(), array( 'src/Licenses/class-licenseservice.php' ) ),
-			self::LICENSE_ACTIVATED                        => self::v1( array( 'public_api' ), 'required', 'none', 'required', array( 'activation_public_id' => 'activation-public-id' ), array(), array( 'src/Activations/class-activationservice.php' ) ),
-			self::LICENSE_REACTIVATED                      => self::v1( array( 'public_api' ), 'required', 'none', 'required', array( 'activation_public_id' => 'activation-public-id' ), array(), array( 'src/Activations/class-activationservice.php' ) ),
-			self::LICENSE_DEACTIVATED                      => self::v1( array( 'public_api' ), 'required', 'none', 'required', array( 'activation_public_id' => 'activation-public-id' ), array(), array( 'src/Activations/class-activationservice.php' ) ),
+			self::LICENSE_ACTIVATED                        => self::v1( array( 'public_api', 'customer' ), 'required', 'optional', 'required', array( 'activation_public_id' => 'activation-public-id' ), array(), array( 'src/Activations/class-activationservice.php' ) ),
+			self::LICENSE_REACTIVATED                      => self::v1( array( 'public_api', 'customer' ), 'required', 'optional', 'required', array( 'activation_public_id' => 'activation-public-id' ), array(), array( 'src/Activations/class-activationservice.php' ) ),
+			self::LICENSE_DEACTIVATED                      => self::v1( array( 'public_api', 'customer' ), 'required', 'optional', 'required', array( 'activation_public_id' => 'activation-public-id' ), array(), array( 'src/Activations/class-activationservice.php' ) ),
 			self::LICENSE_REVEALED                         => self::v1( $customer, 'required', 'required', 'optional', array( 'channel' => self::enum( array( 'my_account' ) ) ), array(), array( 'src/CustomerPortal/class-accountendpoint.php' ) ),
 			self::LICENSE_EXPORTED                         => self::v1(
 				$admin,

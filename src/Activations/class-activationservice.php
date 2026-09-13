@@ -65,17 +65,19 @@ final class ActivationService {
 	 * @param ?string $label Label value.
 	 * @phpstan-param string|null $label Label value.
 	 * @param string  $request_id Request id value.
+	 * @param string  $actor_type Audited actor classification.
+	 * @param ?int    $actor_id Audited actor identifier.
 	 * @throws LicenseException When the operation cannot be completed.
 	 * @return array<string,mixed>
 	 */
-	public function activate( string $key, string $product_public_id, string $instance_id, ?string $label, string $request_id ): array {
+	public function activate( string $key, string $product_public_id, string $instance_id, ?string $label, string $request_id, string $actor_type = 'public_api', ?int $actor_id = null ): array {
 		$this->guard_inputs( $product_public_id, $instance_id, $label );
 		$found = $this->find_for_product( $key, $product_public_id );
 
 		$instance_fingerprint = $this->crypto->fingerprint( $instance_id, 'instance-identity' );
 
 		return $this->transaction->run(
-			function () use ( $found, $instance_fingerprint, $label, $request_id ): array {
+			function () use ( $found, $instance_fingerprint, $label, $request_id, $actor_type, $actor_id ): array {
 				global $wpdb;
 				$license = $this->licenses->lock_by_id( (int) $found['id'] );
 				if ( null === $license ) {
@@ -167,8 +169,8 @@ final class ActivationService {
 				$this->events->append(
 					is_array( $existing ) ? AuditEventCatalog::LICENSE_REACTIVATED : AuditEventCatalog::LICENSE_ACTIVATED,
 					(int) $license['id'],
-					'public_api',
-					null,
+					$actor_type,
+					$actor_id,
 					$request_id,
 					array( 'activation_public_id' => $public_id ),
 					AuditEventCatalog::SCHEMA_V1
@@ -181,6 +183,77 @@ final class ActivationService {
 					'activated_at' => $now,
 				);
 				return $this->result( $license, $activation, false );
+			}
+		);
+	}
+
+	/**
+	 * Deactivates an owned installation by opaque activation identifier.
+	 *
+	 * @param int    $license_id Internal owned license identifier.
+	 * @param string $activation_public_id Opaque activation identifier.
+	 * @param string $request_id Request identifier.
+	 * @param string $actor_type Audited actor classification.
+	 * @param ?int   $actor_id Audited actor identifier.
+	 * @throws LicenseException When the activation is missing or cannot be stored.
+	 * @return array<string,mixed>
+	 */
+	public function deactivate_record( int $license_id, string $activation_public_id, string $request_id, string $actor_type, ?int $actor_id ): array {
+		if ( $license_id < 1 || 1 !== preg_match( '/^act_[A-Za-z0-9_-]{22}$/D', $activation_public_id ) ) {
+			throw new LicenseException( 'invalid_request', 'The activation identifier is invalid.', 400 );
+		}
+
+		return $this->transaction->run(
+			function () use ( $license_id, $activation_public_id, $request_id, $actor_type, $actor_id ): array {
+				global $wpdb;
+				$license = $this->licenses->lock_by_id( $license_id );
+				if ( null === $license ) {
+					throw new LicenseException( 'invalid_license', 'The license could not be validated.', 404 );
+				}
+				$table = $wpdb->prefix . 'dreamax_lm_activations';
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The owned activation must be locked before transition.
+				$activation = $wpdb->get_row(
+					$wpdb->prepare( 'SELECT * FROM %i WHERE license_id=%d AND public_id=%s LIMIT 1 FOR UPDATE', $table, $license_id, $activation_public_id ),
+					ARRAY_A
+				);
+				if ( ! is_array( $activation ) ) {
+					throw new LicenseException( 'activation_not_found', 'The activation could not be found.', 404 );
+				}
+				if ( 'inactive' === $activation['status'] ) {
+					return array(
+						'license_public_id'    => $license['public_id'],
+						'activation_public_id' => $activation_public_id,
+						'status'               => 'inactive',
+						'replayed'             => true,
+					);
+				}
+
+				$now = gmdate( 'Y-m-d H:i:s' );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned activation transition requires a fresh conditional write.
+				$updated = $wpdb->update(
+					$table,
+					array(
+						'status'         => 'inactive',
+						'deactivated_at' => $now,
+						'updated_at'     => $now,
+					),
+					array(
+						'id'     => (int) $activation['id'],
+						'status' => 'active',
+					),
+					array( '%s', '%s', '%s' ),
+					array( '%d', '%s' )
+				);
+				if ( 1 !== $updated ) {
+					throw new LicenseException( 'server_unavailable', 'Deactivation could not be stored.', 503 );
+				}
+				$this->events->append( AuditEventCatalog::LICENSE_DEACTIVATED, $license_id, $actor_type, $actor_id, $request_id, array( 'activation_public_id' => $activation_public_id ), AuditEventCatalog::SCHEMA_V1 );
+				return array(
+					'license_public_id'    => $license['public_id'],
+					'activation_public_id' => $activation_public_id,
+					'status'               => 'inactive',
+					'replayed'             => false,
+				);
 			}
 		);
 	}

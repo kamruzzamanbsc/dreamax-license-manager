@@ -658,6 +658,102 @@
 	text-transform: uppercase;
 }
 
+.dreamax-lm-dashboard-installations {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid var(--dreamax-dashboard-border);
+}
+
+.dreamax-lm-dashboard-installations__heading,
+.dreamax-lm-dashboard-installation {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+}
+
+.dreamax-lm-dashboard-installations__heading h4 {
+	margin: 0 !important;
+	font-size: 14px !important;
+}
+
+.dreamax-lm-dashboard-installations__heading p,
+.dreamax-lm-dashboard-installations__empty {
+	margin: 4px 0 0 !important;
+	color: #66758d !important;
+	font-size: 12px !important;
+}
+
+.dreamax-lm-dashboard-installations__heading > span {
+	padding: 4px 8px;
+	border-radius: 6px;
+	background: #e9f9f0;
+	color: #087857;
+	font-size: 11px;
+	font-weight: 700;
+}
+
+.dreamax-lm-dashboard-installation-list {
+	display: grid;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.dreamax-lm-dashboard-installation {
+	padding: 10px 12px;
+	border: 1px solid var(--dreamax-dashboard-border);
+	border-radius: 7px;
+	background: #ffffff;
+}
+
+.dreamax-lm-dashboard-installation strong,
+.dreamax-lm-dashboard-installation span {
+	display: block;
+}
+
+.dreamax-lm-dashboard-installation span {
+	margin-top: 3px;
+	color: #66758d;
+	font-size: 11px;
+}
+
+.dreamax-lm-dashboard-button--small {
+	min-height: 34px !important;
+	padding: 7px 11px !important;
+	font-size: 11px !important;
+}
+
+.dreamax-lm-dashboard-activation-form {
+	display: grid;
+	grid-template-columns: minmax(180px, 1.2fr) minmax(160px, 1fr) auto;
+	gap: 10px;
+	align-items: end;
+	margin-top: 12px;
+	padding: 12px;
+	border: 1px solid var(--dreamax-dashboard-border);
+	border-radius: 7px;
+	background: #f8fafc;
+}
+
+.dreamax-lm-dashboard-activation-form label > span {
+	display: block;
+	margin-bottom: 5px;
+	color: #52617a;
+	font-size: 10px;
+	font-weight: 750;
+	text-transform: uppercase;
+}
+
+.dreamax-lm-dashboard-activation-form input {
+	width: 100%;
+	min-height: 39px;
+	padding: 8px 10px;
+	border: 1px solid #c8d4e5;
+	border-radius: 6px;
+	background: #ffffff;
+	color: #14213a;
+}
+
 .dreamax-lm-dashboard .dreamax-lm-key {
 	display: block;
 	max-width: 100%;
@@ -993,6 +1089,10 @@
 	.dreamax-lm-dashboard-license dl {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
+
+	.dreamax-lm-dashboard-activation-form {
+		grid-template-columns: 1fr;
+	}
 }
 
 @media screen and (max-width: 540px) {
@@ -1116,6 +1216,16 @@
 	}
 
 	.dreamax-lm-dashboard .dreamax-lm-reveal {
+		width: 100%;
+	}
+
+	.dreamax-lm-dashboard-installation {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.dreamax-lm-dashboard-installation form,
+	.dreamax-lm-dashboard-installation .dreamax-lm-dashboard-button {
 		width: 100%;
 	}
 

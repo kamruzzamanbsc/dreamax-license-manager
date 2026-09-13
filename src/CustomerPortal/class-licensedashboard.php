@@ -9,14 +9,18 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\CustomerPortal;
 
+use Dreamax\LicenseManager\Activations\ActivationRepository;
+use Dreamax\LicenseManager\Activations\ActivationService;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
+use Dreamax\LicenseManager\Support\Settings;
 use Throwable;
 
 /**
  * Renders a theme-independent customer license portal through a shortcode.
  */
 final class LicenseDashboard {
-	private const SHORTCODE = 'dreamax_license_dashboard';
+	private const SHORTCODE          = 'dreamax_license_dashboard';
+	private const PORTAL_PAGE_OPTION = 'dreamax_lm_customer_portal_page_id';
 
 	/**
 	 * License repository.
@@ -48,6 +52,8 @@ final class LicenseDashboard {
 		add_action( 'template_redirect', array( $this, 'send_private_headers' ) );
 		add_filter( 'body_class', array( $this, 'body_classes' ) );
 		add_filter( 'the_title', array( $this, 'hide_theme_page_title' ), 10, 2 );
+		add_action( 'admin_post_dreamax_lm_customer_activate', array( $this, 'activate' ) );
+		add_action( 'admin_post_dreamax_lm_customer_deactivate', array( $this, 'deactivate' ) );
 	}
 
 	/**
@@ -261,10 +267,122 @@ final class LicenseDashboard {
 						<button type="button" class="dreamax-lm-reveal" disabled aria-disabled="true"><?php esc_html_e( 'Key unavailable', 'dreamax-license-manager' ); ?></button>
 					<?php endif; ?>
 				</div>
+				<?php $this->render_activations( $row, $key_available ); ?>
 			</article>
 			<?php
 		}
 		echo '</div>';
+	}
+
+	/**
+	 * Renders installations and merchant-enabled customer controls.
+	 *
+	 * @param array $license Owned license row.
+	 * @param bool  $key_available Whether secure key operations are ready.
+	 * @phpstan-param array<string,mixed> $license Owned license row.
+	 */
+	private function render_activations( array $license, bool $key_available ): void {
+		$activations = ( new ActivationRepository() )->for_license( (int) $license['id'] );
+		$enabled     = Settings::customer_activation_management();
+		$public_id   = (string) $license['public_id'];
+		$active      = count( array_filter( $activations, static fn( array $row ): bool => 'active' === $row['status'] ) );
+
+		echo '<section class="dreamax-lm-dashboard-installations"><div class="dreamax-lm-dashboard-installations__heading"><div><h4>' . esc_html__( 'Installations', 'dreamax-license-manager' ) . '</h4><p>' . esc_html__( 'Device and site labels are supplied by your software.', 'dreamax-license-manager' ) . '</p></div><span>' . esc_html( (string) $active ) . ' ' . esc_html__( 'active', 'dreamax-license-manager' ) . '</span></div>';
+		if ( array() === $activations ) {
+			echo '<p class="dreamax-lm-dashboard-installations__empty">' . esc_html__( 'No installations have been registered yet.', 'dreamax-license-manager' ) . '</p>';
+		} else {
+			echo '<div class="dreamax-lm-dashboard-installation-list">';
+			foreach ( $activations as $activation ) {
+				$is_active = 'active' === $activation['status'];
+				$label     = '' !== (string) ( $activation['instance_label'] ?? '' ) ? (string) $activation['instance_label'] : __( 'Unnamed installation', 'dreamax-license-manager' );
+				echo '<div class="dreamax-lm-dashboard-installation"><div><strong>' . esc_html( $label ) . '</strong><span>' . esc_html( $is_active ? __( 'Active', 'dreamax-license-manager' ) : __( 'Inactive', 'dreamax-license-manager' ) ) . ' | ' . esc_html( $this->format_date( (string) $activation['activated_at'] ) ) . '</span></div>';
+				if ( $enabled && $is_active ) {
+					echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_customer_deactivate"><input type="hidden" name="license" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="activation" value="' . esc_attr( (string) $activation['public_id'] ) . '">';
+					wp_nonce_field( 'dreamax_lm_customer_activation_' . $public_id );
+					echo '<button class="dreamax-lm-dashboard-button dreamax-lm-dashboard-button--small" type="submit">' . esc_html__( 'Deactivate', 'dreamax-license-manager' ) . '</button></form>';
+				}
+				echo '</div>';
+			}
+			echo '</div>';
+		}
+		if ( $enabled && $key_available ) {
+			echo '<form class="dreamax-lm-dashboard-activation-form" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_customer_activate"><input type="hidden" name="license" value="' . esc_attr( $public_id ) . '">';
+			wp_nonce_field( 'dreamax_lm_customer_activation_' . $public_id );
+			echo '<label><span>' . esc_html__( 'Installation ID', 'dreamax-license-manager' ) . '</span><input type="text" name="instance_id" minlength="16" maxlength="128" pattern="[A-Za-z0-9._:-]{16,128}" required placeholder="' . esc_attr__( 'Paste the ID shown by your software', 'dreamax-license-manager' ) . '"></label><label><span>' . esc_html__( 'Label', 'dreamax-license-manager' ) . '</span><input type="text" name="instance_label" maxlength="255" placeholder="' . esc_attr__( 'Example: Office website', 'dreamax-license-manager' ) . '"></label><button class="dreamax-lm-dashboard-button" type="submit">' . esc_html__( 'Activate installation', 'dreamax-license-manager' ) . '</button></form>';
+		}
+		echo '</section>';
+	}
+
+	/**
+	 * Activates an installation for a license owned by the current customer.
+	 */
+	public function activate(): void {
+		$public_id = isset( $_POST['license'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['license'] ) ) : '';
+		check_admin_referer( 'dreamax_lm_customer_activation_' . $public_id );
+		$license = $this->owned_license( $public_id );
+		if ( ! Settings::customer_activation_management() ) {
+			$this->redirect_after_activation( 'disabled' );
+		}
+		$instance_id = isset( $_POST['instance_id'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['instance_id'] ) ) : '';
+		$label       = isset( $_POST['instance_label'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['instance_label'] ) ) : '';
+		try {
+			$key = $this->licenses->decrypt_key( $license );
+			( new ActivationService() )->activate( $key, (string) $license['product_public_id'], $instance_id, '' === $label ? null : $label, 'customer:' . wp_generate_uuid4(), 'customer', get_current_user_id() );
+			$this->redirect_after_activation( 'activated' );
+		} catch ( Throwable $error ) {
+			unset( $error );
+			$this->redirect_after_activation( 'failed' );
+		}
+	}
+
+	/**
+	 * Deactivates one activation bound to an owned license.
+	 */
+	public function deactivate(): void {
+		$public_id = isset( $_POST['license'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['license'] ) ) : '';
+		check_admin_referer( 'dreamax_lm_customer_activation_' . $public_id );
+		$license = $this->owned_license( $public_id );
+		if ( ! Settings::customer_activation_management() ) {
+			$this->redirect_after_activation( 'disabled' );
+		}
+		$activation = isset( $_POST['activation'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['activation'] ) ) : '';
+		try {
+			( new ActivationService() )->deactivate_record( (int) $license['id'], $activation, 'customer:' . wp_generate_uuid4(), 'customer', get_current_user_id() );
+			$this->redirect_after_activation( 'deactivated' );
+		} catch ( Throwable $error ) {
+			unset( $error );
+			$this->redirect_after_activation( 'failed' );
+		}
+	}
+
+	/**
+	 * Returns a license only when it belongs to the signed-in customer.
+	 *
+	 * @param string $public_id Posted public license identifier.
+	 * @return array<string,mixed>
+	 */
+	private function owned_license( string $public_id ): array {
+		if ( ! is_user_logged_in() ) {
+			auth_redirect();
+		}
+		$license = $this->licenses->by_public_id( $public_id );
+		if ( ! is_array( $license ) || get_current_user_id() !== (int) $license['customer_id'] ) {
+			wp_die( esc_html__( 'You cannot manage that license.', 'dreamax-license-manager' ), 403 );
+		}
+		return $license;
+	}
+
+	/**
+	 * Redirects to the canonical portal with an allowlisted result code.
+	 *
+	 * @param string $result Result code.
+	 */
+	private function redirect_after_activation( string $result ): never {
+		$page_id = absint( get_option( self::PORTAL_PAGE_OPTION, 0 ) );
+		$url     = $page_id > 0 ? get_permalink( $page_id ) : home_url( '/' );
+		$url     = is_string( $url ) ? $url : home_url( '/' );
+		wp_safe_redirect( add_query_arg( 'dreamax_lm_activation_result', $result, $url ) . '#license-library' );
+		exit;
 	}
 
 	/**
@@ -349,6 +467,18 @@ final class LicenseDashboard {
 	 * Renders the allowlisted result of a nonce-protected guest-claim POST.
 	 */
 	private function render_claim_notice(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This allowlisted value displays the result of a nonce-protected activation action.
+		$activation_result  = isset( $_GET['dreamax_lm_activation_result'] ) ? sanitize_key( wp_unslash( (string) $_GET['dreamax_lm_activation_result'] ) ) : '';
+		$activation_notices = array(
+			'activated'   => array( 'success', __( 'The installation is active.', 'dreamax-license-manager' ) ),
+			'deactivated' => array( 'success', __( 'The installation was deactivated.', 'dreamax-license-manager' ) ),
+			'disabled'    => array( 'warning', __( 'Customer installation management is disabled by the store.', 'dreamax-license-manager' ) ),
+			'failed'      => array( 'error', __( 'The installation could not be changed. Check the identifier, license status, and available activation slots.', 'dreamax-license-manager' ) ),
+		);
+		if ( isset( $activation_notices[ $activation_result ] ) ) {
+			echo '<div class="dreamax-lm-dashboard-notice dreamax-lm-dashboard-notice--' . esc_attr( $activation_notices[ $activation_result ][0] ) . '" role="status"><span aria-hidden="true"></span><p>' . esc_html( $activation_notices[ $activation_result ][1] ) . '</p></div>';
+		}
+
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This allowlisted value selects a read-only customer notice after a nonce-protected POST.
 		$result  = isset( $_GET['dreamax_lm_claim_result'] ) ? sanitize_key( wp_unslash( (string) $_GET['dreamax_lm_claim_result'] ) ) : '';
 		$notices = array(
