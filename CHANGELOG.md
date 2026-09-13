@@ -6,6 +6,7 @@
 - Added merchant delivery settings, customer-managed activations, a global activation inventory, and explicit REST request/response schemas.
 - Expanded CSV portability with templates, field mapping, encoding and delimiter choices, duplicate policies, filtered license and activation exports, downloadable row reports, and resumable background batches for larger imports.
 - Expanded System Status into a setup and readiness checklist with REST/cache and queue smoke checks, trusted-proxy configuration, master-key-aware backup acknowledgement, a key-free email test, and a secret-free downloadable support report.
+- Added allowlisted license sorting, exact product filtering, authorized product/order/customer links, installation navigation, and bounded expiry/low-pool inventory warnings.
 
 ## 0.3.6 - Recovery Boundary Hardening
 

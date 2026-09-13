@@ -36,6 +36,10 @@ The Import / Export screen provides a downloadable CSV template, source-column m
 
 The System Status screen checks the runtime, schema and storage engines, encryption, delivery policy, first generator and test license, customer portal, REST cache contract, background queue, proxy/rate-limit storage, and backup acknowledgement. Administrators can send a key-free test email or download a secret-free JSON support report. Security settings accept only exact trusted proxy IP addresses and bind backup acknowledgement to the current non-secret master-key identity. See `docs/SETUP-DIAGNOSTICS.md`.
 
+## License inventory
+
+The administrator inventory supports allowlisted column sorting, exact product-ID and other read-only filters, and links to existing product, order, customer, and installation records only when the current user can access them. It highlights licenses expiring within 30 days and imported-key pools at or below five available keys. Pool warnings scan a bounded set of configured products and show at most 20 results; they are operational hints, not a complete stock report.
+
 ## Security model
 
 License keys use XChaCha20-Poly1305 authenticated encryption and a separate keyed HMAC-SHA-256 lookup fingerprint. The root key must be a dedicated 32-byte unpadded base64url value in `DREAMAX_LICENSE_MANAGER_MASTER_KEY`; it is never stored in the database. See `docs/RECOVERY.md`.

@@ -29,7 +29,7 @@ final class ActivationRepository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Administration inventory requires current operational state.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT a.public_id,a.license_id,a.instance_label,a.status,a.first_activated_at,a.activated_at,a.deactivated_at,a.last_seen_at,l.public_id AS license_public_id,l.product_public_id,l.customer_id
+				"SELECT a.public_id,a.license_id,a.instance_label,a.status,a.first_activated_at,a.activated_at,a.deactivated_at,a.last_seen_at,l.public_id AS license_public_id,l.product_public_id,l.product_id,l.customer_id
 				FROM {$wpdb->prefix}dreamax_lm_activations a
 				INNER JOIN {$wpdb->prefix}dreamax_lm_licenses l ON l.id=a.license_id
 				WHERE (%s='' OR a.status=%s) AND (%s='' OR l.public_id=%s)
