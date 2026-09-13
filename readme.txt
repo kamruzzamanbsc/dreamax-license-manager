@@ -24,7 +24,8 @@ Dreamax License Manager is published by [Dreamax Soft](https://dreamaxsoft.com/)
 * Track ownership, lifecycle state, activation use, and expiry in one inventory.
 * Assign, extend, suspend, revoke, release, reassign, or delete licenses through controlled workflows.
 * Record creation, delivery, activation, reveal, reassignment, and lifecycle changes in an audit trail.
-* Preview CSV imports before writing data and export authorized license records when needed.
+* Preview mapped CSV imports before writing data, process larger imports in background batches, and download row-level error reports.
+* Export filtered license or activation inventories, with keys masked unless an authorized administrator explicitly confirms a full-key export.
 
 = WooCommerce automation =
 
@@ -43,6 +44,7 @@ Dreamax License Manager is published by [Dreamax Soft](https://dreamaxsoft.com/)
 * Keep license keys masked until an authorized customer chooses to reveal and copy one.
 * Let guest purchasers claim eligible orders through a time-limited one-time-code flow.
 * Prevent one customer from viewing another customer's license records.
+* Let customers activate replacements and deactivate old installations when the merchant enables self-service management.
 
 = API and integrations =
 

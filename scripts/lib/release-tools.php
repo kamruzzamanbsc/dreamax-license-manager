@@ -21,7 +21,7 @@ final class DisposableEnvironmentGuard {
 		if ('DREAMAX_LM_DISPOSABLE_TEST' !== $marker) {
 			throw new RuntimeException('A disposable test marker is required.');
 		}
-		if (1 !== preg_match('/(?:^|_)(?:test|testing|tmp|disposable)(?:_|$)/D', $database)) {
+		if (1 !== preg_match('/(?:^|[_-])(?:test|testing|tmp|disposable)(?:[_-]|$)/D', $database)) {
 			throw new RuntimeException('The database name is not unmistakably disposable.');
 		}
 		if (preg_match('/(?:prod|production|live)/D', $database)) {

@@ -36,7 +36,9 @@
 		});
 
 		document.querySelectorAll('[data-dlm-export-form]').forEach(function (form) {
+			var exportType = form.querySelector('select[name="export_type"]');
 			var fullKeys = form.querySelector('[data-dlm-full-keys]');
+			var fullKeysWrap = fullKeys ? fullKeys.closest('label') : null;
 			var confirmWrap = form.querySelector('[data-dlm-export-confirm]');
 			var confirmation = confirmWrap ? confirmWrap.querySelector('input') : null;
 			var submit = form.querySelector('[data-dlm-export-submit]');
@@ -48,7 +50,12 @@
 			}
 
 			function updateExport() {
-				var sensitive = fullKeys.checked;
+				var licenseExport = !exportType || exportType.value === 'licenses';
+				var sensitive = licenseExport && fullKeys.checked;
+				fullKeys.disabled = !licenseExport;
+				if (fullKeysWrap) {
+					fullKeysWrap.hidden = !licenseExport;
+				}
 				confirmWrap.hidden = !sensitive;
 				confirmation.disabled = !sensitive;
 				confirmation.required = sensitive;
@@ -60,6 +67,9 @@
 			}
 
 			fullKeys.addEventListener('change', updateExport);
+			if (exportType) {
+				exportType.addEventListener('change', updateExport);
+			}
 			confirmation.addEventListener('change', updateExport);
 			updateExport();
 		});

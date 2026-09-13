@@ -1,8 +1,8 @@
 # Master specification coverage ledger
 
 Controlling prompt SHA-256: `9015f7168559ec9ff4030328f0ea921151a03a2968232c12a8edfa6b2132b0e7`  
-Review date: 2026-08-24  
-Build status: published Standalone Portal Navigation baseline `0.3.4`.
+Review date: 2026-09-13
+Build status: published `0.3.6`; Free V1 completion work is isolated on `feature/free-v1-completion` and is not yet released.
 
 | Specification area | Evidence | Status |
 | --- | --- | --- |
@@ -24,12 +24,12 @@ Build status: published Standalone Portal Navigation baseline `0.3.4`.
 | Release provenance | release docs/scripts/manifest schema | Deterministic two-clean-build comparison and external provenance sidecar implemented; artifact remains an unshipped candidate |
 | P0 lifecycle | creation, state machine, `LifecycleService`, expiry/activation/order-slot unit sources, operations guides | Guarded live refund/cancel/quantity/resend/backfill and extend/reset/reassign acceptance complete; recovery/degraded release gates remain |
 | P0 WooCommerce | product/variation settings, allocation, email/order display, refund/cancel policy, quantity safety, resend, preview-confirmed backfill, secure guest account claim/release/override | Simple/variable allocation, duplicate/concurrent hooks, captured processing and guest-claim mail, complete guest ownership/replay/concurrency and F13 order-policy matrices, and repeated HPOS/Checkout Block versus classic-storage/classic-checkout parity have live evidence |
-| P0 customer portal | masked list and audited reveal | Partial: activation list/deactivation and complete cache tests pending |
-| P0 REST | public + management foundation | Partial: complete JSON schemas, HMAC mode, exact abuse/timing evidence pending |
+| P0 customer portal | standalone masked list, audited reveal, owned activation management | Implementation and source contracts complete; exact release-candidate browser/runtime regression remains |
+| P0 REST | public + management foundation and route schemas | Request/response schemas implemented; optional trusted-server HMAC mode remains outside the current public-client contract; release-candidate abuse/runtime rerun remains |
 | P0 credentials | creation/authentication/scopes/expiration/rotation/revocation | Source, administrator replay, real REST/HTTP, failure rollback, parallel lifecycle, migration, capability, and multisite contracts complete |
 | P0 storage/recovery | authenticated encryption/blind index/recovery notice | Partial: full backup wizard and rotation plan tests pending |
-| P0 admin | filtered list, bulk actions, detail/installations/audit, reassignment, activity, guarded delete, order preview/confirm tools | Partial: setup wizard, product/order/customer links, indicators, UI/a11y and runtime authorization evidence remain |
-| P0 portability | bounded CSV import/export | Partial: mapping UI, background jobs, downloadable error report incomplete |
+| P0 admin | filtered list, activation inventory, generator editor, bulk actions, detail/installations/audit, reassignment, activity, guarded delete, order preview/confirm tools | Partial: setup wizard, sorting, product/order/customer links, indicators, UI/a11y and runtime authorization evidence remain |
+| P0 portability | bounded CSV import/export | Templates, mapping, encoding/delimiter handling, duplicate policies, preview, filtered license/activation exports, private row reports, and resumable 250-row queued batches implemented; original guarded live CSV matrix passes, while an explicit queued-job release-candidate drill remains |
 | P0 audit | central versioned catalog, validated repository boundary, consumer fixtures, recursive redaction, guarded F32 verifier | Complete live acceptance for transactional writes/rollback, integrated producers, all compatibility labels, recursive redaction, warning-free administrator rendering, byte-stable history, privacy, and multisite isolation |
 | P0 setup/diagnostics | requirements, Site Health, master-key snippet | Partial smoke tests and system report |
 | P1 migration/webhooks/tooling/reminders/renewal | Milestone 6 roadmap | Intentionally not implemented before stable P0 |

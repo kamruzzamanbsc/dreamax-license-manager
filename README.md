@@ -26,6 +26,12 @@ Never test migrations, fixture generation, destructive actions, or recovery dril
 
 Open **License Manager -> Customer Portal** and choose **Create dashboard page**. The plugin publishes a login-protected, responsive license dashboard without requiring the WordPress block editor. Repeat submissions reuse the configured page instead of creating a duplicate. The WooCommerce My Account Licenses link then opens this standalone dashboard. The same dashboard can be placed manually with `[dreamax_license_dashboard]` when needed.
 
+Customers can review the installations attached to each owned license and, when the merchant setting allows it, activate a replacement installation or deactivate an old one without administrator intervention.
+
+## Data portability
+
+The Import / Export screen provides a downloadable CSV template, source-column mapping, UTF-8 and legacy Western encoding choices, delimiter selection, dry-run validation, and explicit duplicate handling. Larger committed imports run in resumable 250-row background batches. License exports can be filtered and masked by default; full keys require the dedicated export capability. Activation inventory exports never contain instance fingerprints or license keys. See `docs/IMPORT-EXPORT.md`.
+
 ## Security model
 
 License keys use XChaCha20-Poly1305 authenticated encryption and a separate keyed HMAC-SHA-256 lookup fingerprint. The root key must be a dedicated 32-byte unpadded base64url value in `DREAMAX_LICENSE_MANAGER_MASTER_KEY`; it is never stored in the database. See `docs/RECOVERY.md`.

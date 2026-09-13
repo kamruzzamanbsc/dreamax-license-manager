@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased - Free V1 completion
+
+- Added configurable secure generators and product/variation policy precedence.
+- Added merchant delivery settings, customer-managed activations, a global activation inventory, and explicit REST request/response schemas.
+- Expanded CSV portability with templates, field mapping, encoding and delimiter choices, duplicate policies, filtered license and activation exports, downloadable row reports, and resumable background batches for larger imports.
+
 ## 0.3.6 - Recovery Boundary Hardening
 
 - Extended recovery-safe key handling to the legacy account endpoint, order details, thank-you pages, customer emails, resend operations, and CSV exports.

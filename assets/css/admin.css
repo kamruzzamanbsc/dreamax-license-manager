@@ -838,6 +838,48 @@
 	padding: 22px;
 }
 
+.dreamax-lm-import-progress {
+	grid-column: 1 / -1;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 18px 20px;
+}
+
+.dreamax-lm-import-progress h2,
+.dreamax-lm-import-progress p {
+	margin: 0;
+}
+
+.dreamax-lm-import-progress p {
+	margin-top: 5px;
+	color: var(--dlm-muted);
+}
+
+.dreamax-lm-csv-mapping {
+	padding: 14px;
+	border: 1px solid var(--dlm-border);
+	border-radius: 8px;
+	background: #fbfcfe;
+}
+
+.dreamax-lm-csv-mapping summary {
+	font-weight: 650;
+	cursor: pointer;
+}
+
+.dreamax-lm-csv-mapping > p {
+	color: var(--dlm-muted);
+}
+
+.dreamax-lm-transfer-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
 .dreamax-lm-file-picker {
 	display: grid;
 	place-items: center;
@@ -2408,6 +2450,10 @@
 	.dreamax-lm-detail-facts article:last-child { border-bottom: 0; }
 	.dreamax-lm-operation-body > .button { width: 100%; }
 	.dreamax-lm-transfer-form > .button { width: 100%; }
+	.dreamax-lm-import-progress,
+	.dreamax-lm-transfer-actions { align-items: stretch; flex-direction: column; }
+	.dreamax-lm-import-progress .button,
+	.dreamax-lm-transfer-actions .button { width: 100%; text-align: center; }
 	.dreamax-lm-credentials-page .dreamax-lm-summary { grid-template-columns: 1fr; }
 	.dreamax-lm-credential-create-footer { align-items: flex-start; flex-direction: column; }
 	.dreamax-lm-credential-create-footer .button { width: 100%; }

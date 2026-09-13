@@ -18,6 +18,7 @@ require_once dirname( __DIR__, 2 ) . '/scripts/lib/release-tools.php';
 final class ReleaseToolsTest extends TestCase {
 	public function test_disposable_environment_guard_accepts_only_explicit_test_targets(): void {
 		DisposableEnvironmentGuard::assertSafe( array( 'marker' => 'DREAMAX_LM_DISPOSABLE_TEST', 'database' => 'dreamax_lm_test', 'site_url' => 'https://store.test' ) );
+		DisposableEnvironmentGuard::assertSafe( array( 'marker' => 'DREAMAX_LM_DISPOSABLE_TEST', 'database' => 'affiliates-test', 'site_url' => 'http://localhost/affiliates-test/' ) );
 		self::assertTrue( true );
 
 		foreach ( array(
@@ -146,7 +147,8 @@ final class ReleaseToolsTest extends TestCase {
 		$admin = (string) file_get_contents( $root . '/src/Admin/class-admin.php' );
 		$export = (string) file_get_contents( $root . '/src/ImportExport/class-csvcontroller.php' );
 		self::assertStringContainsString( 'LIMIT 50 OFFSET %d', $admin );
-		self::assertStringContainsString( 'WHERE id>%d ORDER BY id LIMIT %d', $export );
+		self::assertStringContainsString( 'WHERE l.id>%d', $export );
+		self::assertStringContainsString( 'WHERE a.id>%d', $export );
 		self::assertStringContainsString( '$batch_size = 250;', $export );
 		self::assertStringNotContainsString( 'SELECT * FROM {$wpdb->prefix}dreamax_lm_licenses ORDER BY id"', $export );
 	}

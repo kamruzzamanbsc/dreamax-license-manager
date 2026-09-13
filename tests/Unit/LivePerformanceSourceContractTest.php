@@ -26,7 +26,8 @@ final class LivePerformanceSourceContractTest extends TestCase {
 		self::assertStringContainsString( "'full' => array('licenses' => 10000, 'events' => 50000", $this->fixture );
 		self::assertStringContainsString( 'LIMIT 50 OFFSET %d', $this->admin );
 		self::assertStringContainsString( '$batch_size = 250;', $this->csv );
-		self::assertStringContainsString( 'WHERE id>%d ORDER BY id LIMIT %d', $this->csv );
+		self::assertStringContainsString( 'WHERE l.id>%d', $this->csv );
+		self::assertStringContainsString( 'WHERE a.id>%d', $this->csv );
 	}
 
 	public function test_live_verifier_uses_bounded_batches_and_exact_ownership_cleanup(): void {

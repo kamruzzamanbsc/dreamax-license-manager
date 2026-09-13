@@ -139,11 +139,11 @@ function dreamax_lm_f19_body_label( string $body ): string {
 	if ( str_contains( $body, 'not allowed' ) ) {
 		return 'denied';
 	}
-	if ( str_contains( $body, 'nonce' ) || str_contains( $body, 'Are you sure' ) ) {
-		return 'nonce';
-	}
 	if ( str_contains( $body, 'Import' ) || str_contains( $body, 'valid rows' ) ) {
 		return 'import';
+	}
+	if ( str_contains( $body, 'nonce' ) || str_contains( $body, 'Are you sure' ) ) {
+		return 'nonce';
 	}
 	if ( str_contains( $body, '5 MiB' ) ) {
 		return 'oversize';

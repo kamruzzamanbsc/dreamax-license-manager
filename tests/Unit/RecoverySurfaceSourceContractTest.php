@@ -57,9 +57,10 @@ final class RecoverySurfaceSourceContractTest extends TestCase {
 			strpos( $export, '$repository->decrypt_key( $row )' )
 		);
 		self::assertLessThan(
-			strpos( $export, "header( 'Content-Type: text/csv; charset=utf-8' )" ),
+			strpos( $export, '$this->download_headers(' ),
 			strpos( $export, '$repository->decrypt_key( $row )' )
 		);
+		self::assertStringContainsString( "header( 'Content-Type: text/csv; charset=utf-8' )", $this->csv );
 	}
 
 	private function method( string $source, string $start, string $next ): string {
