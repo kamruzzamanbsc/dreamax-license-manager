@@ -108,7 +108,21 @@ try {
 		throw new RuntimeException( 'The disposable queued state could not be stored.' );
 	}
 
-	$job = new CsvImportJob();
+	$job       = new CsvImportJob();
+	$lock_name = $option_name . '_lock';
+	$acquire   = new ReflectionMethod( CsvImportJob::class, 'acquire_lock' );
+	$release   = new ReflectionMethod( CsvImportJob::class, 'release_lock' );
+	$acquire->setAccessible( true );
+	$release->setAccessible( true );
+	add_option( $lock_name, '1:expired-verifier', '', false );
+	$successor = $acquire->invoke( $job, $token );
+	if ( ! is_string( $successor ) ) {
+		throw new RuntimeException( 'An expired verifier lock could not be claimed.' );
+	}
+	$release->invoke( $job, $token, '1:expired-verifier' );
+	$checks['expired_lock_handoff'] = get_option( $lock_name ) === $successor;
+	$release->invoke( $job, $token, $successor );
+	$checks['exact_lock_release'] = false === get_option( $lock_name, false );
 	add_option( $option_name . '_lock', time() + MINUTE_IN_SECONDS, '', false );
 	$job->process( $token );
 	$contended             = $job->for_owner( $token, (int) $admins[0] );

@@ -8,4 +8,6 @@ Observed result: a private 501-row fixture exceeded the 256 KiB asynchronous thr
 
 Implementation hardening: `CsvImportJob` now acquires an atomic, non-autoloaded per-token option lock. An expired lock is claimed with a single conditional database update; a contended worker schedules a delayed retry. `finally` releases normal locks, while the bounded TTL and cleanup path cover interrupted workers.
 
+Follow-up source review found that an expired worker could otherwise delete a successor's lock in `finally`. The lease now carries a random owner token, and release uses a conditional `option_name` plus exact `option_value` delete. The guarded drill covers expired-lock handoff, stale-owner release refusal, and exact-owner release before processing the 501 rows.
+
 Result: PASS for the explicit queued-job drill. No key, cookie, database credential or filesystem path was printed or retained. This is Free V1 branch evidence, not an SVN release authorization.

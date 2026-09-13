@@ -110,14 +110,15 @@ final class CsvImportJob {
 		if ( 1 !== preg_match( '/^[a-f0-9]{32}$/D', $token ) ) {
 			return;
 		}
-		if ( ! $this->acquire_lock( $token ) ) {
+		$lock_owner = $this->acquire_lock( $token );
+		if ( false === $lock_owner ) {
 			$this->schedule( $token, 15 );
 			return;
 		}
 		try {
 			$this->process_locked( $token );
 		} finally {
-			delete_option( self::OPTION_PREFIX . $token . self::LOCK_SUFFIX );
+			$this->release_lock( $token, $lock_owner );
 		}
 	}
 
@@ -256,20 +257,43 @@ final class CsvImportJob {
 	 *
 	 * @param string $token Opaque job token.
 	 */
-	private function acquire_lock( string $token ): bool {
+	private function acquire_lock( string $token ): string|false {
 		global $wpdb;
-		$name    = self::OPTION_PREFIX . $token . self::LOCK_SUFFIX;
-		$expires = time() + self::LOCK_TTL;
-		if ( add_option( $name, $expires, '', false ) ) {
-			return true;
+		$name       = self::OPTION_PREFIX . $token . self::LOCK_SUFFIX;
+		$lock_owner = (string) ( time() + self::LOCK_TTL ) . ':' . bin2hex( random_bytes( 16 ) );
+		if ( add_option( $name, $lock_owner, '', false ) ) {
+			return $lock_owner;
 		}
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Compare-and-swap prevents two workers from replacing the same expired lock.
-		$claimed = $wpdb->query( $wpdb->prepare( 'UPDATE %i SET option_value=%s WHERE option_name=%s AND CAST(option_value AS UNSIGNED)<%d', $wpdb->options, (string) $expires, $name, time() ) );
+		$claimed = $wpdb->query( $wpdb->prepare( 'UPDATE %i SET option_value=%s WHERE option_name=%s AND CAST(option_value AS UNSIGNED)<%d', $wpdb->options, $lock_owner, $name, time() ) );
 		if ( 1 === $claimed ) {
 			wp_cache_delete( $name, 'options' );
-			return true;
+			return $lock_owner;
 		}
 		return false;
+	}
+
+	/**
+	 * Releases only the lease acquired by this worker.
+	 *
+	 * @param string $token Opaque job token.
+	 * @param string $lock_owner Exact lease value.
+	 */
+	private function release_lock( string $token, string $lock_owner ): void {
+		global $wpdb;
+		$name = self::OPTION_PREFIX . $token . self::LOCK_SUFFIX;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic ownership check prevents an expired worker from releasing a successor's lease.
+		$deleted = $wpdb->delete(
+			$wpdb->options,
+			array(
+				'option_name'  => $name,
+				'option_value' => $lock_owner,
+			),
+			array( '%s', '%s' )
+		);
+		if ( 1 === $deleted ) {
+			wp_cache_delete( $name, 'options' );
+		}
 	}
 
 	/**

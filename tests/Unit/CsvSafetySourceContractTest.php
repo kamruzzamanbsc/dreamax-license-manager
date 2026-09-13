@@ -33,6 +33,8 @@ final class CsvSafetySourceContractTest extends TestCase {
 		self::assertStringContainsString( 'as_enqueue_async_action', $this->job );
 		self::assertStringContainsString( 'acquire_lock( $token )', $this->job );
 		self::assertStringContainsString( "LOCK_SUFFIX   = '_lock'", $this->job );
+		self::assertStringContainsString( 'release_lock( $token, $lock_owner )', $this->job );
+		self::assertStringContainsString( "'option_value' => \$lock_owner", $this->job );
 		self::assertStringContainsString( 'finally', $this->job );
 	}
 
