@@ -18,6 +18,10 @@ An extension accepts 1–3650 whole days. It adds time to the later of the exist
 
 Reset keeps every activation row for history and changes only currently active rows to `inactive`, with a server-time deactivation timestamp. The license key, fingerprint, public ID, and installation fingerprints are not regenerated. The audit event records the affected-row count.
 
+## Per-license policy override
+
+The detail screen can explicitly set activation to limited, unlimited, or disabled and expiry to never or one fixed UTC timestamp. This is the highest-precedence manual override for the effective license record; changing it clears any relative validity duration while preserving product/order snapshots, merchant notes, and lifecycle replay markers. A positive activation limit cannot be reduced below current active use. Zero intentionally blocks new activations without deleting existing installation history. Every update locks the license row, rejects a stale displayed revision, and records changed fields plus the administrator's reason without storing the license key.
+
 ## Reassignment
 
 Reassignment requires an existing customer. An optional target order must belong to that customer. Changing the product public ID requires an active WooCommerce product or variation carrying that stable ID.
@@ -32,6 +36,6 @@ Permanent deletion requires `dreamax_lm_delete_license_records` in addition to t
 
 ## Bulk behavior
 
-The administration list supports up to 100 selected public IDs per request, filters by lifecycle status, order, customer, expiry, or public/product ID, and offers suspend, restore, revoke, extend, reset, and capability-gated delete actions. Success and rejection counts are reported without exposing secrets. Rejected operations append `license_operation_rejected` when the license still exists.
+The administration list supports up to 100 selected public IDs per request, filters by lifecycle status, order, customer, expiry, or public/product ID, and offers suspend, restore, revoke, extend, reset, masked selected-record export, and capability-gated delete actions. Success and rejection counts are reported without exposing secrets. Rejected operations append `license_operation_rejected` when the license still exists.
 
 These source-level contracts still require WordPress/WooCommerce integration, authorization, concurrency, mail, and retry evidence before the related Free V1 gates may pass.

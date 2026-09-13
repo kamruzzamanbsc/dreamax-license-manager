@@ -701,6 +701,29 @@
 	margin-bottom: 18px;
 }
 
+.dreamax-lm-policy-editor {
+	margin-bottom: 18px;
+}
+
+.dreamax-lm-policy-body {
+	display: grid;
+	gap: 16px;
+	padding: 18px 22px;
+}
+
+.dreamax-lm-policy-preview {
+	max-width: 880px;
+	padding: 12px 14px;
+	border-left: 3px solid var(--dlm-accent);
+	background: #f6f8ff;
+	color: var(--dlm-ink);
+	line-height: 1.55;
+}
+
+.dreamax-lm-policy-body > .button {
+	justify-self: start;
+}
+
 .dreamax-lm-merchant-body {
 	display: grid;
 	gap: 14px;

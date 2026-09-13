@@ -19,6 +19,7 @@ use Dreamax\LicenseManager\Licenses\KeyNormalizer;
 use Dreamax\LicenseManager\Licenses\LifecycleService;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
 use Dreamax\LicenseManager\Licenses\LicenseService;
+use Dreamax\LicenseManager\Licenses\LicensePolicyEditor;
 use Dreamax\LicenseManager\Licenses\MerchantMetadata;
 use Dreamax\LicenseManager\Support\Base64Url;
 use Dreamax\LicenseManager\Support\Capabilities;
@@ -40,6 +41,7 @@ final class Admin {
 		add_action( 'admin_post_dreamax_lm_bulk_lifecycle', array( $this, 'bulk_lifecycle' ) );
 		add_action( 'admin_post_dreamax_lm_reassign_license', array( $this, 'reassign_license' ) );
 		add_action( 'admin_post_dreamax_lm_save_license_notes', array( $this, 'save_license_notes' ) );
+		add_action( 'admin_post_dreamax_lm_save_license_policy', array( $this, 'save_license_policy' ) );
 		add_action( 'admin_post_dreamax_lm_generate_master_key', array( $this, 'master_key' ) );
 		add_action( 'admin_post_dreamax_lm_create_credential', array( $this, 'create_credential' ) );
 		add_action( 'admin_post_dreamax_lm_rotate_credential', array( $this, 'rotate_credential' ) );
@@ -79,6 +81,15 @@ final class Admin {
 				'sensitiveExport' => __( 'Download sensitive export', 'dreamax-license-manager' ),
 				'selectedExport'  => __( 'Download masked CSV', 'dreamax-license-manager' ),
 				'applyAction'     => __( 'Apply action', 'dreamax-license-manager' ),
+				/* translators: %d: Activation slot count. */
+				'policyLimited'   => __( '%d activation slot(s).', 'dreamax-license-manager' ),
+				'policyUnlimited' => __( 'No activation limit.', 'dreamax-license-manager' ),
+				'policyDisabled'  => __( 'New activations will be blocked; existing installations remain registered.', 'dreamax-license-manager' ),
+				'policyNever'     => __( 'The license will not expire.', 'dreamax-license-manager' ),
+				/* translators: %s: UTC expiry date and time. */
+				'policyFixed'     => __( 'The license expires at %s UTC.', 'dreamax-license-manager' ),
+				/* translators: %d: Current active installation count. */
+				'policyActive'    => __( '%d installation(s) are currently active.', 'dreamax-license-manager' ),
 			)
 		);
 	}
@@ -400,6 +411,9 @@ final class Admin {
 		if ( isset( $_GET['notes_saved'] ) ) {
 			echo '<div class="notice notice-success"><p>' . esc_html__( 'Internal notes saved.', 'dreamax-license-manager' ) . '</p></div>';
 		}
+		if ( isset( $_GET['policy_saved'] ) ) {
+			echo '<div class="notice notice-success"><p>' . esc_html__( 'License policy saved.', 'dreamax-license-manager' ) . '</p></div>';
+		}
 		/* phpcs:enable WordPress.Security.NonceVerification.Recommended */
 		echo '<section class="dreamax-lm-panel dreamax-lm-license-overview"><div class="dreamax-lm-license-identity"><div><span class="dreamax-lm-detail-label">' . esc_html__( 'License public ID', 'dreamax-license-manager' ) . '</span><code>' . esc_html( $public_id ) . '</code></div><span class="dreamax-lm-status dreamax-lm-status--' . esc_attr( $this->status_key( $license ) ) . '"><span aria-hidden="true"></span>' . esc_html( $this->status_label( $license ) ) . '</span></div><div class="dreamax-lm-detail-facts">';
 		echo '<article><span class="dashicons dashicons-products" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Product', 'dreamax-license-manager' ) . '</span>';
@@ -413,6 +427,7 @@ final class Admin {
 		}
 		echo '</div></article><article><span class="dashicons dashicons-admin-network" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Activation policy', 'dreamax-license-manager' ) . '</span><strong>' . esc_html( $limit_label ) . '</strong></div></article><article><span class="dashicons dashicons-calendar-alt" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Expiry', 'dreamax-license-manager' ) . '</span><strong>' . esc_html( $expiry_label ) . '</strong></div></article></div></section>';
 
+		$this->render_policy_editor( $license, is_array( $activations ) ? count( array_filter( $activations, static fn( array $activation ): bool => 'active' === $activation['status'] ) ) : 0 );
 		$this->render_merchant_notes( $license );
 		echo '<div class="dreamax-lm-detail-operation-grid"><section class="dreamax-lm-panel dreamax-lm-detail-operation"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Lifecycle operation', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Change availability, expiry, or active installations.', 'dreamax-license-manager' ) . '</p></div><span class="dashicons dashicons-update-alt" aria-hidden="true"></span></div>';
 		echo '<form class="dreamax-lm-operation-form" data-dlm-lifecycle-form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_bulk_lifecycle"><input type="hidden" name="license_ids[]" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="return_license" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
@@ -444,6 +459,24 @@ final class Admin {
 		echo '</tbody></table></div></section><section class="dreamax-lm-panel dreamax-lm-detail-table-panel dreamax-lm-audit-panel"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Audit trail', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Immutable operational history for this license.', 'dreamax-license-manager' ) . '</p></div><span class="dreamax-lm-count">' . esc_html( number_format_i18n( count( $events ) ) ) . '</span></div><div class="dreamax-lm-table-scroll">';
 		$this->render_events( $events );
 		echo '</div></section></div>';
+	}
+
+	/**
+	 * Renders an audited editor for the effective per-license policy.
+	 *
+	 * @param array<string,mixed> $license License row.
+	 * @param int                 $active_count Active installation count.
+	 */
+	private function render_policy_editor( array $license, int $active_count ): void {
+		$limit       = null === $license['activation_limit'] ? null : (int) $license['activation_limit'];
+		$limit_mode  = null === $limit ? 'unlimited' : ( 0 === $limit ? 'disabled' : 'limited' );
+		$expiry_mode = empty( $license['expires_at'] ) ? 'never' : 'fixed';
+		$expiry      = 'fixed' === $expiry_mode ? gmdate( 'Y-m-d\TH:i', strtotime( (string) $license['expires_at'] . ' UTC' ) ) : '';
+		$revision    = ( new LicensePolicyEditor() )->revision( $license );
+		echo '<section class="dreamax-lm-panel dreamax-lm-policy-editor"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'License policy', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Override activation and expiry rules for this license only.', 'dreamax-license-manager' ) . '</p></div></div><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" data-dlm-policy-form data-active-count="' . esc_attr( (string) $active_count ) . '"><input type="hidden" name="action" value="dreamax_lm_save_license_policy"><input type="hidden" name="license" value="' . esc_attr( (string) $license['public_id'] ) . '"><input type="hidden" name="revision" value="' . esc_attr( $revision ) . '">';
+		wp_nonce_field( 'dreamax_lm_save_license_policy' );
+		/* translators: %d: Current active installation count. */
+		echo '<div class="dreamax-lm-policy-body"><div class="dreamax-lm-form-grid"><label class="dreamax-lm-field"><span>' . esc_html__( 'Activation mode', 'dreamax-license-manager' ) . '</span><select name="activation_mode" data-dlm-activation-mode><option value="limited"' . selected( $limit_mode, 'limited', false ) . '>' . esc_html__( 'Limited', 'dreamax-license-manager' ) . '</option><option value="unlimited"' . selected( $limit_mode, 'unlimited', false ) . '>' . esc_html__( 'Unlimited', 'dreamax-license-manager' ) . '</option><option value="disabled"' . selected( $limit_mode, 'disabled', false ) . '>' . esc_html__( 'Disabled', 'dreamax-license-manager' ) . '</option></select></label><label class="dreamax-lm-field" data-dlm-policy-limit><span>' . esc_html__( 'Activation limit', 'dreamax-license-manager' ) . '</span><input type="number" name="activation_limit" min="1" max="1000000" value="' . esc_attr( null !== $limit && $limit > 0 ? (string) $limit : '1' ) . '"><small>' . esc_html( sprintf( __( '%d currently active.', 'dreamax-license-manager' ), $active_count ) ) . '</small></label><label class="dreamax-lm-field"><span>' . esc_html__( 'Expiry mode', 'dreamax-license-manager' ) . '</span><select name="expiry_mode" data-dlm-expiry-mode><option value="never"' . selected( $expiry_mode, 'never', false ) . '>' . esc_html__( 'Never expires', 'dreamax-license-manager' ) . '</option><option value="fixed"' . selected( $expiry_mode, 'fixed', false ) . '>' . esc_html__( 'Fixed UTC date', 'dreamax-license-manager' ) . '</option></select></label><label class="dreamax-lm-field" data-dlm-policy-expiry><span>' . esc_html__( 'Expires at (UTC)', 'dreamax-license-manager' ) . '</span><input type="datetime-local" name="expires_at" value="' . esc_attr( $expiry ) . '"></label></div><label class="dreamax-lm-field"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input type="text" name="reason" minlength="3" maxlength="500" required placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label><div class="dreamax-lm-policy-preview" data-dlm-policy-preview aria-live="polite"></div><label class="dreamax-lm-confirm"><input type="checkbox" name="confirm_operation" value="1" required data-dlm-confirm><span>' . esc_html__( 'I reviewed the resulting policy and confirm this override.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" type="submit" data-dlm-submit disabled>' . esc_html__( 'Save license policy', 'dreamax-license-manager' ) . '</button></div></form></section>';
 	}
 
 	/**
@@ -783,6 +816,59 @@ final class Admin {
 					'page'        => 'dreamax-license-manager-license',
 					'license'     => $public_id,
 					'notes_saved' => 1,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Saves one license's effective activation and expiry policy.
+	 *
+	 * @throws \InvalidArgumentException When a fixed expiry is omitted.
+	 */
+	public function save_license_policy(): void {
+		$this->authorize( Capabilities::MANAGE );
+		check_admin_referer( 'dreamax_lm_save_license_policy' );
+		$confirmed = isset( $_POST['confirm_operation'] ) && is_string( $_POST['confirm_operation'] ) ? sanitize_key( wp_unslash( $_POST['confirm_operation'] ) ) : '';
+		if ( '1' !== $confirmed ) {
+			wp_die( esc_html__( 'Explicit confirmation is required.', 'dreamax-license-manager' ) );
+		}
+		$public_id       = isset( $_POST['license'] ) && is_string( $_POST['license'] ) ? sanitize_text_field( wp_unslash( $_POST['license'] ) ) : '';
+		$revision        = isset( $_POST['revision'] ) && is_string( $_POST['revision'] ) ? sanitize_text_field( wp_unslash( $_POST['revision'] ) ) : '';
+		$activation_mode = isset( $_POST['activation_mode'] ) && is_string( $_POST['activation_mode'] ) ? sanitize_key( wp_unslash( $_POST['activation_mode'] ) ) : '';
+		$expiry_mode     = isset( $_POST['expiry_mode'] ) && is_string( $_POST['expiry_mode'] ) ? sanitize_key( wp_unslash( $_POST['expiry_mode'] ) ) : '';
+		$reason          = isset( $_POST['reason'] ) && is_string( $_POST['reason'] ) ? sanitize_text_field( wp_unslash( $_POST['reason'] ) ) : '';
+		if ( ! in_array( $activation_mode, array( 'limited', 'unlimited', 'disabled' ), true ) || ! in_array( $expiry_mode, array( 'fixed', 'never' ), true ) ) {
+			wp_die( esc_html__( 'Choose valid activation and expiry modes.', 'dreamax-license-manager' ) );
+		}
+		$limit = null;
+		if ( 'disabled' === $activation_mode ) {
+			$limit = 0;
+		} elseif ( 'limited' === $activation_mode ) {
+			$limit = isset( $_POST['activation_limit'] ) ? absint( wp_unslash( $_POST['activation_limit'] ) ) : 0;
+			if ( $limit < 1 ) {
+				wp_die( esc_html__( 'A limited policy requires a positive activation limit.', 'dreamax-license-manager' ) );
+			}
+		}
+		$expiry_input = isset( $_POST['expires_at'] ) && is_string( $_POST['expires_at'] ) ? sanitize_text_field( wp_unslash( $_POST['expires_at'] ) ) : '';
+		try {
+			$editor     = new LicensePolicyEditor();
+			$expires_at = 'never' === $expiry_mode ? null : $editor->expiry( $expiry_input );
+			if ( 'fixed' === $expiry_mode && null === $expires_at ) {
+				throw new \InvalidArgumentException( 'A fixed expiry date is required.' );
+			}
+			$editor->save( $public_id, $revision, $limit, $expires_at, $reason, get_current_user_id() );
+		} catch ( Throwable $error ) {
+			wp_die( esc_html( $error->getMessage() ) );
+		}
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'         => 'dreamax-license-manager-license',
+					'license'      => $public_id,
+					'policy_saved' => 1,
 				),
 				admin_url( 'admin.php' )
 			)

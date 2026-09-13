@@ -9,6 +9,7 @@
 - Added allowlisted license sorting, exact product filtering, authorized product/order/customer links, installation navigation, and bounded expiry/low-pool inventory warnings.
 - Added administrator-only license notes and bounded reference fields with stale-form protection, transactional audit, and no customer/API disclosure.
 - Added a masked selected-license CSV action to the inventory; unsuccessful export auditing now removes the completed temporary file without sending a download.
+- Added guarded per-license activation and fixed-UTC expiry overrides with strict date parsing, stale-form protection, active-installation validation, and audited reasons.
 
 ## 0.3.6 - Recovery Boundary Hardening
 

@@ -52,7 +52,7 @@ final class AuditEventCatalogTest extends TestCase {
 		foreach ( $this->production_php( $root . '/src' ) as $file ) {
 			$calls = array_merge( $calls, $this->append_calls( (string) file_get_contents( $file ) ) );
 		}
-		self::assertCount( 46, $calls );
+		self::assertCount( 47, $calls );
 		foreach ( $calls as $call ) {
 			self::assertStringContainsString( 'AuditEventCatalog::', $call );
 			self::assertStringContainsString( 'AuditEventCatalog::SCHEMA_V1', $call );

@@ -43,6 +43,8 @@ The administrator inventory supports allowlisted column sorting, exact product-I
 
 License details also include administrator-only notes and up to 10 short reference fields. These are not shown to customers or returned by the management API. Notes are not a vault: do not put license keys, credentials, or personal information in them. Each change is recorded in the audit trail without copying note contents into the event.
 
+Administrators can override the effective activation limit and expiry for an individual license. Explicit modes preserve the difference between unlimited, disabled, never-expiring, and fixed UTC values. Updates reject stale forms and positive limits below current active use, preserve unrelated policy metadata, and record the operator's reason.
+
 ## Security model
 
 License keys use XChaCha20-Poly1305 authenticated encryption and a separate keyed HMAC-SHA-256 lookup fingerprint. The root key must be a dedicated 32-byte unpadded base64url value in `DREAMAX_LICENSE_MANAGER_MASTER_KEY`; it is never stored in the database. See `docs/RECOVERY.md`.

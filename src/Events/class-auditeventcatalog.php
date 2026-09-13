@@ -289,7 +289,7 @@ final class AuditEventCatalog {
 				)
 			),
 			self::LICENSE_RESTORED                         => self::v1( $license_ops, 'required', 'required', 'required', $transition, array(), array( 'src/Licenses/class-lifecycleservice.php' ) ),
-			self::LICENSE_UPDATED                          => self::v1( array( 'administrator', 'api_credential' ), 'required', 'optional', 'optional', array( 'changed_fields' => 'string-list' ), array(), array( 'src/Api/class-privilegedroutes.php', 'src/Licenses/class-merchantmetadata.php' ) ),
+			self::LICENSE_UPDATED                          => self::v1( array( 'administrator', 'api_credential' ), 'required', 'optional', 'optional', array( 'changed_fields' => 'string-list' ), array( 'reason' => 'reason' ), array( 'src/Api/class-privilegedroutes.php', 'src/Licenses/class-licensepolicyeditor.php', 'src/Licenses/class-merchantmetadata.php' ) ),
 			self::LICENSE_EXTENDED                         => self::v1(
 				$license_ops,
 				'required',

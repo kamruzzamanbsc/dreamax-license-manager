@@ -32,6 +32,51 @@
 			update();
 		});
 
+		document.querySelectorAll('[data-dlm-policy-form]').forEach(function (form) {
+			var activationMode = form.querySelector('[data-dlm-activation-mode]');
+			var limitWrap = form.querySelector('[data-dlm-policy-limit]');
+			var limit = limitWrap ? limitWrap.querySelector('input') : null;
+			var expiryMode = form.querySelector('[data-dlm-expiry-mode]');
+			var expiryWrap = form.querySelector('[data-dlm-policy-expiry]');
+			var expiry = expiryWrap ? expiryWrap.querySelector('input') : null;
+			var reason = form.querySelector('input[name="reason"]');
+			var confirmation = form.querySelector('[data-dlm-confirm]');
+			var submit = form.querySelector('[data-dlm-submit]');
+			var preview = form.querySelector('[data-dlm-policy-preview]');
+			var strings = window.dreamaxLmAdmin || {};
+			if (!activationMode || !limitWrap || !limit || !expiryMode || !expiryWrap || !expiry || !reason || !confirmation || !submit || !preview) {
+				return;
+			}
+
+			function format(pattern, value) {
+				return pattern.replace('%d', String(value)).replace('%s', String(value));
+			}
+			function updatePolicy() {
+				var limited = activationMode.value === 'limited';
+				var fixed = expiryMode.value === 'fixed';
+				limitWrap.hidden = !limited;
+				limit.disabled = !limited;
+				limit.required = limited;
+				expiryWrap.hidden = !fixed;
+				expiry.disabled = !fixed;
+				expiry.required = fixed;
+				var activationText = activationMode.value === 'unlimited'
+					? (strings.policyUnlimited || 'No activation limit.')
+					: activationMode.value === 'disabled'
+						? (strings.policyDisabled || 'New activations will be blocked; existing installations remain registered.')
+						: format(strings.policyLimited || '%d activation slot(s).', limit.value || 0);
+				var expiryText = fixed
+					? format(strings.policyFixed || 'The license expires at %s UTC.', expiry.value || '')
+					: (strings.policyNever || 'The license will not expire.');
+				var activeText = format(strings.policyActive || '%d installation(s) are currently active.', form.dataset.activeCount || 0);
+				preview.textContent = activationText + ' ' + expiryText + ' ' + activeText;
+				submit.disabled = !form.checkValidity() || !confirmation.checked;
+			}
+			form.addEventListener('input', updatePolicy);
+			form.addEventListener('change', updatePolicy);
+			updatePolicy();
+		});
+
 		document.querySelectorAll('[data-dlm-import-form]').forEach(function (form) {
 			var input = form.querySelector('[data-dlm-file-input]');
 			var filename = form.querySelector('[data-dlm-file-name]');
