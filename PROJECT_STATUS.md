@@ -12,7 +12,7 @@ Prepare the recovery-boundary hardening patch as version `0.3.6`. Preserve all p
 - Validate CSV exports in a server-side temporary file before appending an export event or sending download headers.
 - PHPUnit: 288 tests and 1,872 assertions passed.
 - WordPress PHPCS passed with no output; PHPStan passed with no errors.
-- Release metadata validation passed at version `0.3.6`; live recovery-mode regression and deterministic packaging remain pending for the recorded release commit.
+- Release metadata validation passed at version `0.3.6`; the deterministic 68-file artifact and official Plugin Check passed, and WordPress.org SVN revision `3693643` contains trunk, `tags/0.3.6`, and the redacted customer-dashboard screenshot.
 
 ## 0.3.3 candidate scope
 
