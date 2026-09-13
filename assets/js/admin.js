@@ -316,13 +316,16 @@
 				var selected = checkboxes.filter(function (checkbox) { return checkbox.checked; }).length;
 				var hasSelection = selected > 0;
 				var extending = operation.value === 'extend';
-				var reasonReady = reason.value.trim().length >= 3;
+				var exporting = operation.value === 'export';
+				var reasonReady = exporting || reason.value.trim().length >= 3;
 
 				selectAll.checked = checkboxes.length > 0 && selected === checkboxes.length;
 				selectAll.indeterminate = selected > 0 && selected < checkboxes.length;
 				status.textContent = selectionMessage(selected);
 				operation.disabled = !hasSelection;
-				reason.disabled = !hasSelection;
+				reason.disabled = !hasSelection || exporting;
+				reason.required = hasSelection && !exporting;
+				reason.closest('label').hidden = exporting;
 				confirmation.disabled = !hasSelection;
 				if (!hasSelection) {
 					confirmation.checked = false;
@@ -338,6 +341,7 @@
 					extensionInput.required = hasSelection && extending;
 				}
 				submit.disabled = !hasSelection || operation.value === '' || !reasonReady || !confirmation.checked;
+				submit.textContent = exporting ? ((window.dreamaxLmAdmin || {}).selectedExport || 'Download masked CSV') : ((window.dreamaxLmAdmin || {}).applyAction || 'Apply action');
 			}
 
 			selectAll.addEventListener('change', function () {

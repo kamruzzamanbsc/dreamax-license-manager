@@ -31,6 +31,7 @@ Customers can review the installations attached to each owned license and, when 
 ## Data portability
 
 The Import / Export screen provides a downloadable CSV template, source-column mapping, UTF-8 and legacy Western encoding choices, delimiter selection, dry-run validation, and explicit duplicate handling. Larger committed imports run in resumable 250-row background batches. License exports can be filtered and masked by default; full keys require the dedicated export capability. Activation inventory exports never contain instance fingerprints or license keys. See `docs/IMPORT-EXPORT.md`.
+The license inventory also offers a masked CSV export of up to 100 selected records. This action never includes full keys, even if an unauthorized client submits the full-key option.
 
 ## Setup and diagnostics
 

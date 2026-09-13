@@ -14,6 +14,7 @@ use Dreamax\LicenseManager\Credentials\CredentialService;
 use Dreamax\LicenseManager\Encryption\Crypto;
 use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
+use Dreamax\LicenseManager\ImportExport\CsvController;
 use Dreamax\LicenseManager\Licenses\KeyNormalizer;
 use Dreamax\LicenseManager\Licenses\LifecycleService;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
@@ -76,6 +77,8 @@ final class Admin {
 				'commitImport'    => __( 'Import licenses', 'dreamax-license-manager' ),
 				'safeExport'      => __( 'Download safe export', 'dreamax-license-manager' ),
 				'sensitiveExport' => __( 'Download sensitive export', 'dreamax-license-manager' ),
+				'selectedExport'  => __( 'Download masked CSV', 'dreamax-license-manager' ),
+				'applyAction'     => __( 'Apply action', 'dreamax-license-manager' ),
 			)
 		);
 	}
@@ -350,7 +353,7 @@ final class Admin {
 		if ( current_user_can( Capabilities::DELETE ) ) {
 			echo '<option value="delete">' . esc_html__( 'Permanently delete eligible pool records', 'dreamax-license-manager' ) . '</option>';
 		}
-		echo '</select></label><label class="dreamax-lm-field" data-dlm-extension hidden><span>' . esc_html__( 'Extension days', 'dreamax-license-manager' ) . '</span><input type="number" name="extension_days" min="1" max="3650" value="30"></label><label class="dreamax-lm-field dreamax-lm-field--reason"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input type="text" name="reason" minlength="3" maxlength="500" required placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label><label class="dreamax-lm-confirm"><input data-dlm-confirm type="checkbox" name="confirm_operation" value="1" required> <span>' . esc_html__( 'I reviewed the selected licenses and confirm this operation.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" data-dlm-submit>' . esc_html__( 'Apply action', 'dreamax-license-manager' ) . '</button></div></div></form></section>';
+		echo '<option value="export">' . esc_html__( 'Export selected (masked CSV)', 'dreamax-license-manager' ) . '</option></select></label><label class="dreamax-lm-field" data-dlm-extension hidden><span>' . esc_html__( 'Extension days', 'dreamax-license-manager' ) . '</span><input type="number" name="extension_days" min="1" max="3650" value="30"></label><label class="dreamax-lm-field dreamax-lm-field--reason"><span>' . esc_html__( 'Reason', 'dreamax-license-manager' ) . '</span><input type="text" name="reason" minlength="3" maxlength="500" required placeholder="' . esc_attr__( 'Required for the audit log', 'dreamax-license-manager' ) . '"></label><label class="dreamax-lm-confirm"><input data-dlm-confirm type="checkbox" name="confirm_operation" value="1" required> <span>' . esc_html__( 'I reviewed the selected licenses and confirm this operation.', 'dreamax-license-manager' ) . '</span></label><button class="button button-primary" data-dlm-submit>' . esc_html__( 'Apply action', 'dreamax-license-manager' ) . '</button></div></div></form></section>';
 		$base = remove_query_arg( 'paged' );
 		echo '<nav class="dreamax-lm-pagination" aria-label="' . esc_attr__( 'License pages', 'dreamax-license-manager' ) . '">';
 		if ( $page > 1 ) {
@@ -818,7 +821,7 @@ final class Admin {
 		}
 
 		$operation = isset( $_POST['bulk_operation'] ) ? sanitize_key( wp_unslash( (string) $_POST['bulk_operation'] ) ) : '';
-		if ( ! in_array( $operation, array( 'suspend', 'restore', 'revoke', 'extend', 'reset', 'delete' ), true ) ) {
+		if ( ! in_array( $operation, array( 'suspend', 'restore', 'revoke', 'extend', 'reset', 'delete', 'export' ), true ) ) {
 			wp_die( esc_html__( 'The requested operation is invalid.', 'dreamax-license-manager' ) );
 		}
 		if ( 'delete' === $operation ) {
@@ -830,6 +833,10 @@ final class Admin {
 		$base_operation_id = isset( $_POST['operation_id'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['operation_id'] ) ) : '';
 		if ( ! wp_is_uuid( $base_operation_id, 4 ) ) {
 			wp_die( esc_html__( 'The operation identifier is invalid. Reload the page and try again.', 'dreamax-license-manager' ) );
+		}
+		if ( 'export' === $operation ) {
+			( new CsvController() )->export_selected( $ids );
+			exit;
 		}
 
 		$service = new LifecycleService();

@@ -8,6 +8,7 @@
 - Expanded System Status into a setup and readiness checklist with REST/cache and queue smoke checks, trusted-proxy configuration, master-key-aware backup acknowledgement, a key-free email test, and a secret-free downloadable support report.
 - Added allowlisted license sorting, exact product filtering, authorized product/order/customer links, installation navigation, and bounded expiry/low-pool inventory warnings.
 - Added administrator-only license notes and bounded reference fields with stale-form protection, transactional audit, and no customer/API disclosure.
+- Added a masked selected-license CSV action to the inventory; unsuccessful export auditing now removes the completed temporary file without sending a download.
 
 ## 0.3.6 - Recovery Boundary Hardening
 

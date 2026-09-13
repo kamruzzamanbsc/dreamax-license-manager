@@ -66,16 +66,61 @@ final class CsvController {
 
 	/** Exports a filtered license inventory or privacy-conscious activation list. */
 	public function export(): void {
-		global $wpdb;
 		$this->authorize( Capabilities::MANAGE );
 		check_admin_referer( 'dreamax_lm_export_csv' );
 		$type = isset( $_POST['export_type'] ) && 'activations' === sanitize_key( wp_unslash( (string) $_POST['export_type'] ) ) ? 'activations' : 'licenses';
 		$full = 'licenses' === $type && isset( $_POST['full_keys'] ) && current_user_can( Capabilities::EXPORT );
+		$this->stream_export( $type, $full, $this->export_filters( $type ), array() );
+	}
+
+	/**
+	 * Downloads only the selected license rows, always with masked keys.
+	 *
+	 * @param array $ids Public IDs already selected in the inventory.
+	 * @phpstan-param list<string> $ids
+	 */
+	public function export_selected( array $ids ): void {
+		$this->authorize( Capabilities::MANAGE );
+		check_admin_referer( 'dreamax_lm_bulk_lifecycle' );
+		$ids = array_values( array_unique( $ids ) );
+		if ( array() === $ids || count( $ids ) > 100 ) {
+			wp_die( esc_html__( 'Select between 1 and 100 valid licenses.', 'dreamax-license-manager' ) );
+		}
+		foreach ( $ids as $id ) {
+			if ( ! is_string( $id ) || 1 !== preg_match( '/^lic_[A-Za-z0-9_-]{22}$/D', $id ) ) {
+				wp_die( esc_html__( 'A selected license ID is invalid.', 'dreamax-license-manager' ) );
+			}
+		}
+		$this->stream_export(
+			'licenses',
+			false,
+			array(
+				'status'   => '',
+				'product'  => '',
+				'customer' => 0,
+				'order'    => 0,
+				'expiry'   => '',
+			),
+			$ids
+		);
+	}
+
+	/**
+	 * Streams a validated and fully assembled export after its audit write.
+	 *
+	 * @param string              $type Dataset type.
+	 * @param bool                $full Whether the dedicated export capability permits unmasked keys.
+	 * @param array<string,mixed> $filters Existing read-only export filters.
+	 * @param array               $selected Selected public IDs, or empty for a regular filtered export.
+	 * @phpstan-param list<string> $selected
+	 */
+	private function stream_export( string $type, bool $full, array $filters, array $selected ): void {
+		global $wpdb;
 		if ( 'licenses' === $type && ! ( new Crypto() )->ready() ) {
 			wp_die( esc_html__( 'Secure key access is temporarily unavailable. Restore the configured master key before exporting licenses.', 'dreamax-license-manager' ), esc_html__( 'License export unavailable', 'dreamax-license-manager' ), array( 'response' => 503 ) );
 		}
 
-		$where = $this->export_where( $this->export_filters( $type ), $type );
+		$where = $this->export_where( $filters, $type, $selected );
 		$path  = wp_tempnam( 'dreamax-license-export.csv' );
 		if ( ! is_string( $path ) || '' === $path ) {
 			wp_die( esc_html__( 'A secure temporary export file could not be created.', 'dreamax-license-manager' ) );
@@ -132,18 +177,24 @@ final class CsvController {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes the completed private export stream.
 		fclose( $output );
 
-		( new EventRepository() )->append(
-			AuditEventCatalog::LICENSE_EXPORTED,
-			null,
-			'administrator',
-			get_current_user_id(),
-			null,
-			array(
-				'full_keys' => $full,
-				'row_count' => $row_count,
-			),
-			AuditEventCatalog::SCHEMA_V1
-		);
+		try {
+			( new EventRepository() )->append(
+				AuditEventCatalog::LICENSE_EXPORTED,
+				null,
+				'administrator',
+				get_current_user_id(),
+				null,
+				array(
+					'full_keys' => $full,
+					'row_count' => $row_count,
+				),
+				AuditEventCatalog::SCHEMA_V1
+			);
+		} catch ( Throwable $error ) {
+			unset( $error );
+			wp_delete_file( $path );
+			wp_die( esc_html__( 'The export could not be audited; no download was created.', 'dreamax-license-manager' ), esc_html__( 'Export unavailable', 'dreamax-license-manager' ), array( 'response' => 503 ) );
+		}
 		$this->download_headers( 'dreamax-' . $type . '-' . gmdate( 'Ymd-His' ) . '.csv' );
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streams a completed private export.
 		readfile( $path );
@@ -240,9 +291,11 @@ final class CsvController {
 	 *
 	 * @param array<string,mixed> $filters Validated filters.
 	 * @param string              $type Export dataset type.
+	 * @param array               $selected Selected license IDs (bounded by the caller).
+	 * @phpstan-param list<string> $selected
 	 * @return array{sql:string,args:list<mixed>}
 	 */
-	private function export_where( array $filters, string $type ): array {
+	private function export_where( array $filters, string $type, array $selected = array() ): array {
 		$status = 'licenses' === $type ? 'l.lifecycle_status' : 'a.status';
 		$sql    = '';
 		$args   = array();
@@ -271,6 +324,10 @@ final class CsvController {
 			$args[] = gmdate( 'Y-m-d H:i:s', time() + 30 * DAY_IN_SECONDS );
 		} elseif ( 'lifetime' === $expiry ) {
 			$sql .= ' AND l.expires_at IS NULL';
+		}
+		if ( array() !== $selected ) {
+			$sql .= ' AND l.public_id IN (' . implode( ',', array_fill( 0, count( $selected ), '%s' ) ) . ')';
+			$args = array_merge( $args, $selected );
 		}
 		return array(
 			'sql'  => $sql,
