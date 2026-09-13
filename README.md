@@ -1,6 +1,6 @@
 # Dreamax License Manager
 
-Dreamax License Manager is a self-hosted WooCommerce licensing plugin published by [Dreamax Soft](https://dreamaxsoft.com/). The unreleased `0.3.7` candidate completes the Free V1 merchant controls, customer activation workflow, portability, and setup diagnostics while retaining the `0.3.6` recovery boundary.
+Dreamax License Manager is a self-hosted WooCommerce licensing plugin published by [Dreamax Soft](https://dreamaxsoft.com/). The published `0.3.7` release completes the Free V1 merchant controls, customer activation workflow, portability, and setup diagnostics. The `0.3.8` hotfix candidate additionally enforces paid-order eligibility across every allocation path.
 
 ## Current baseline
 
@@ -51,4 +51,4 @@ License keys use XChaCha20-Poly1305 authenticated encryption and a separate keye
 
 ## Project status
 
-The source prepares the `0.3.7` Free V1 release candidate. Its WordPress.org publication remains gated on exact-package validation and release review. See `docs/BUILDING.md`, `docs/RELEASE.md`, and the coverage ledger.
+The source prepares the `0.3.8` paid-order guard hotfix. Its WordPress.org publication remains gated on exact-package validation and release review. See `docs/BUILDING.md`, `docs/RELEASE.md`, and the coverage ledger.

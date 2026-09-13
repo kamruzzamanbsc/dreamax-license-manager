@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.8 - Paid-order allocation guard
+
+- Required WooCommerce payment confirmation for every automatic or manual allocation path, even when a merchant-selected custom status triggers the automatic hook.
+- Kept cancelled, failed, and refunded orders ineligible regardless of configured delivery statuses.
+
 ## 0.3.7 - Free V1 completion
 
 - Added configurable secure generators and product/variation policy precedence.

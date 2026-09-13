@@ -4,7 +4,7 @@ Tags: woocommerce, license manager, software licensing
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.3.7
+Stable tag: 0.3.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -127,6 +127,10 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 7. Give signed-in customers a focused standalone dashboard for viewing licenses and claiming eligible guest orders.
 
 == Changelog ==
+
+= 0.3.8 =
+
+* Prevents automatic and manual license allocation unless WooCommerce confirms that the order is paid and is not cancelled, failed, or refunded.
 
 = 0.3.7 =
 

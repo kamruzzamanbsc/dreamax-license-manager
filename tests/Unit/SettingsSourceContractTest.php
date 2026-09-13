@@ -16,6 +16,9 @@ final class SettingsSourceContractTest extends TestCase {
 		self::assertStringNotContainsString( 'woocommerce_order_status_completed', $order );
 		self::assertStringContainsString( 'Settings::allocation_statuses()', $order );
 		self::assertStringContainsString( "array( 'processing', 'completed' )", $settings );
+		self::assertStringContainsString( '! $order->is_paid()', $order );
+		self::assertStringContainsString( "has_status( array( 'cancelled', 'failed', 'refunded' ) )", $order );
+		self::assertStringNotContainsString( '$explicit && ( ! $order->is_paid()', $order );
 	}
 
 	public function test_settings_screen_is_capability_and_nonce_protected(): void {

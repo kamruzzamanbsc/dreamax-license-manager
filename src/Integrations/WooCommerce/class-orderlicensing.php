@@ -113,10 +113,15 @@ final class OrderLicensing {
 	 * @param WC_Order|null $order Order supplied by WooCommerce.
 	 */
 	public function status_changed( int $order_id, string $from, string $to, ?WC_Order $order = null ): void {
-		unset( $from, $order );
-		if ( in_array( $to, Settings::allocation_statuses(), true ) ) {
-			$this->allocate( $order_id );
+		unset( $from );
+		if ( ! in_array( $to, Settings::allocation_statuses(), true ) ) {
+			return;
 		}
+		$order = $order instanceof WC_Order ? $order : wc_get_order( $order_id );
+		if ( ! $order || ! $order->is_paid() || $order->has_status( array( 'cancelled', 'failed', 'refunded' ) ) ) {
+			return;
+		}
+		$this->allocate( $order_id );
 	}
 
 	/**
@@ -152,7 +157,7 @@ final class OrderLicensing {
 		if ( ! $order ) {
 			throw new RuntimeException( 'The order could not be found.' );
 		}
-		if ( $explicit && ( ! $order->is_paid() || $order->has_status( array( 'cancelled', 'failed', 'refunded' ) ) ) ) {
+		if ( ! $order->is_paid() || $order->has_status( array( 'cancelled', 'failed', 'refunded' ) ) ) {
 			throw new RuntimeException( 'Licenses can be allocated only after payment is confirmed.' );
 		}
 
