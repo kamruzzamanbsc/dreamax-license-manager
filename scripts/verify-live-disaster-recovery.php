@@ -10,8 +10,10 @@ declare(strict_types=1);
 use Dreamax\LicenseManager\Activations\ActivationService;
 use Dreamax\LicenseManager\Encryption\Crypto;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
+use Dreamax\LicenseManager\Licenses\LicenseService;
 use Dreamax\LicenseManager\ReleaseTools\DisposableEnvironmentGuard;
 use Dreamax\LicenseManager\Support\Health;
+use Dreamax\LicenseManager\Support\PublicId;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/lib/release-tools.php';
@@ -52,7 +54,7 @@ function dreamax_lm_f12_assert_owned_database( string $database ): void {
  */
 function dreamax_lm_f12_tables( string $database ): array {
 	global $wpdb;
-	if ( 1 !== preg_match( '/^[A-Za-z0-9_]+$/D', $database ) ) {
+	if ( 1 !== preg_match( '/^[A-Za-z0-9_-]+$/D', $database ) ) {
 		throw new RuntimeException( 'A database identifier was unsafe.' );
 	}
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The identifier is constrained above and live recovery acceptance requires authoritative schema inspection.
@@ -128,7 +130,7 @@ function dreamax_lm_f12_database_digest( string $database ): array {
  */
 function dreamax_lm_f12_plugin_digest( string $database ): string {
 	global $wpdb;
-	if ( 1 !== preg_match( '/^[A-Za-z0-9_]+$/D', $database ) || 1 !== preg_match( '/^[A-Za-z0-9_]+$/D', $wpdb->prefix ) ) {
+	if ( 1 !== preg_match( '/^[A-Za-z0-9_-]+$/D', $database ) || 1 !== preg_match( '/^[A-Za-z0-9_]+$/D', $wpdb->prefix ) ) {
 		throw new RuntimeException( 'Plugin-state inspection refused an unsafe identifier.' );
 	}
 	$plugin_prefix = $wpdb->prefix . 'dreamax_lm_';
@@ -191,7 +193,7 @@ function dreamax_lm_f12_plugin_digest( string $database ): string {
 function dreamax_lm_f12_copy_database( string $source, string $target ): void {
 	global $wpdb;
 	dreamax_lm_f12_assert_owned_database( $target );
-	if ( 1 !== preg_match( '/^[A-Za-z0-9_]+$/D', $source ) ) {
+	if ( 1 !== preg_match( '/^[A-Za-z0-9_-]+$/D', $source ) ) {
 		throw new RuntimeException( 'The source database identifier was unsafe.' );
 	}
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Fresh existence check prevents overwriting any database.
@@ -503,7 +505,7 @@ function dreamax_lm_f12_run_worker( string $mode, string $clone_root, string $ma
 	return $result;
 }
 
-$options = getopt( '', array( 'environment-marker:', 'wp-root:', 'confirm-restore:', 'worker:', 'result-file:', 'diagnose-only' ) );
+$options = getopt( '', array( 'environment-marker:', 'wp-root:', 'confirm-restore:', 'worker:', 'result-file:', 'diagnose-only', 'create-fixture' ) );
 if ( isset( $options['worker'] ) ) {
 	dreamax_lm_f12_worker( $options );
 }
@@ -537,7 +539,7 @@ if ( ! is_plugin_active( 'dreamax-license-manager/dreamax-license-manager.php' )
 
 global $wpdb;
 $source_database = (string) $wpdb->get_var( 'SELECT DATABASE()' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-if ( 1 !== preg_match( '/^[A-Za-z0-9_]+$/D', $source_database ) ) {
+if ( 1 !== preg_match( '/^[A-Za-z0-9_-]+$/D', $source_database ) ) {
 	dreamax_lm_f12_fail( 'The disposable database identifier was unsafe.' );
 }
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Read-only residue preflight prevents ambiguous destructive cleanup.
@@ -567,8 +569,32 @@ if ( isset( $options['diagnose-only'] ) ) {
 	) . PHP_EOL;
 	exit( in_array( false, $diagnosis, true ) ? 1 : 0 );
 }
-if ( DREAMAX_LM_F12_CONFIRMATION !== $confirmation || in_array( false, $diagnosis, true ) ) {
+if ( DREAMAX_LM_F12_CONFIRMATION !== $confirmation || ! $diagnosis['source_database_readable'] || ! $diagnosis['no_stale_database_residue'] || ! $diagnosis['no_stale_clone_residue'] ) {
 	dreamax_lm_f12_fail( 'The exact disposable restore confirmation and clean preflight are required.' );
+}
+
+$source_digest_without_fixture = $source_digest;
+$fixture_license_id            = 0;
+if ( $eligible_count < 1 ) {
+	if ( ! isset( $options['create-fixture'] ) ) {
+		dreamax_lm_f12_fail( 'An eligible encrypted fixture or the explicit create-fixture option is required.' );
+	}
+	$fixture            = ( new LicenseService() )->create_generated(
+		array(
+			'lifecycle_status'  => 'assigned',
+			'product_public_id' => PublicId::generate( 'prd' ),
+			'activation_limit'  => 1,
+			'expires_at'        => gmdate( 'Y-m-d H:i:s', time() + YEAR_IN_SECONDS ),
+			'actor_type'        => 'system',
+			'source'            => 'recovery_verifier',
+		)
+	);
+	$fixture_license_id = (int) $fixture['id'];
+	if ( isset( $fixture['key'] ) && is_string( $fixture['key'] ) && function_exists( 'sodium_memzero' ) ) {
+		sodium_memzero( $fixture['key'] );
+	}
+	unset( $fixture );
+	$source_digest = dreamax_lm_f12_database_digest( $source_database );
 }
 
 $suffix           = bin2hex( random_bytes( 8 ) );
@@ -587,6 +613,7 @@ $cleanup          = array(
 	'backup_database_removed'  => false,
 	'restore_database_removed' => false,
 	'clone_removed'            => false,
+	'fixture_removed'          => 0 === $fixture_license_id,
 );
 
 try {
@@ -679,6 +706,17 @@ try {
 		$cleanup['clone_removed'] = ! file_exists( $clone_root );
 	} catch ( Throwable $cleanup_error ) {
 		$cleanup['clone_removed'] = false;
+	}
+	if ( $fixture_license_id > 0 ) {
+		try {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Removes only the exact verifier-created row and its owned audit events.
+			$wpdb->delete( $wpdb->prefix . 'dreamax_lm_events', array( 'license_id' => $fixture_license_id ), array( '%d' ) );
+			$wpdb->delete( $wpdb->prefix . 'dreamax_lm_licenses', array( 'id' => $fixture_license_id ), array( '%d' ) );
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$cleanup['fixture_removed'] = dreamax_lm_f12_database_digest( $source_database ) === $source_digest_without_fixture;
+		} catch ( Throwable $cleanup_error ) {
+			$cleanup['fixture_removed'] = false;
+		}
 	}
 }
 

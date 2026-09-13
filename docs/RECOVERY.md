@@ -25,6 +25,10 @@ Restore into a separate, disposable site/database; restore the same root constan
 
 On 2026-08-29, a guarded private-clone drill copied the complete disposable database into a verifier-owned backup database and then into a distinct restore database. The schema, row counts, and table checksums matched across the source, backup, and pre-boot restore. A database-only restore entered recovery mode, emitted the critical recovery signal, and blocked decryption. Restoring the exact backed-up external-key configuration returned encryption to Ready and allowed a pre-backup license to decrypt and validate. Plugin-owned rows and server-side hashes of the key identifier and KDF salt remained unchanged, the original configuration and database retained their starting digests, and exact cleanup removed both temporary databases and the private clone. No protected value or private path was retained.
 
+The 2026-09-14 Free V1 branch rerun used the verifier's explicit `--create-fixture` mode because the disposable source had no eligible license. Only after the exact destructive confirmation did it create one encrypted assigned fixture, include it in the backup and independent restore, prove the same database-only and complete-key outcomes, then remove the fixture and restore the source database digest. All eight recovery contracts and cleanup passed. See `docs/release-evidence/free-v1/disaster-recovery.md`.
+
+Free V1 does not rotate the encryption root automatically. A future rotation implementation must be versioned, resumable and rollback-safe; until that separately tested migration exists, replace neither the configured root nor stored key identity. API credential rotation is independent and is documented in ADR 0003.
+
 ## Missing or wrong key
 
 Recovery mode blocks key-dependent reads and all sensitive writes. Do not generate a replacement, reset metadata, or alter ciphertext. Restore the correct constant. Recovery clears only after the identifier matches and authenticated decryption/self-test succeeds. Contact the person responsible for backups if the external key is unavailable; encrypted keys cannot be reconstructed from the database alone.

@@ -23,6 +23,9 @@ final class DisasterRecoverySourceContractTest extends TestCase {
 	}
 
 	public function test_verifier_creates_a_backup_then_an_independent_restore(): void {
+		self::assertStringContainsString( "'create-fixture'", $this->verifier );
+		self::assertStringContainsString( "'source'            => 'recovery_verifier'", $this->verifier );
+		self::assertStringContainsString( "'fixture_removed'", $this->verifier );
 		self::assertStringContainsString( "'backup_test_'", $this->verifier );
 		self::assertStringContainsString( "'restore_test_'", $this->verifier );
 		self::assertStringContainsString( 'dreamax_lm_f12_copy_database( $source_database, $backup_database )', $this->verifier );
