@@ -16,9 +16,10 @@ final class DuplicateHookReplaySourceContractTest extends TestCase {
 		$this->verifier       = (string) file_get_contents( $root . '/scripts/verify-live-duplicate-hook-replay.php' );
 	}
 
-	public function test_both_paid_status_hooks_share_the_same_allocator(): void {
-		self::assertStringContainsString( "add_action( 'woocommerce_order_status_processing', array( \$this, 'allocate' ) );", $this->orderLicensing );
-		self::assertStringContainsString( "add_action( 'woocommerce_order_status_completed', array( \$this, 'allocate' ) );", $this->orderLicensing );
+	public function test_configured_status_changes_share_the_same_allocator(): void {
+		self::assertStringContainsString( "add_action( 'woocommerce_order_status_changed', array( \$this, 'status_changed' ), 10, 4 );", $this->orderLicensing );
+		self::assertStringContainsString( 'Settings::allocation_statuses()', $this->orderLicensing );
+		self::assertStringContainsString( '$this->allocate( $order_id );', $this->orderLicensing );
 	}
 
 	public function test_existing_slots_are_checked_before_license_creation(): void {
@@ -43,8 +44,8 @@ final class DuplicateHookReplaySourceContractTest extends TestCase {
 	}
 
 	public function test_live_verifier_replays_both_hooks_and_rolls_back(): void {
-		self::assertStringContainsString( "dreamax_lm_f05_replay( 'woocommerce_order_status_processing'", $this->verifier );
-		self::assertStringContainsString( "dreamax_lm_f05_replay( 'woocommerce_order_status_completed'", $this->verifier );
+		self::assertStringContainsString( "dreamax_lm_f05_replay( 'processing'", $this->verifier );
+		self::assertStringContainsString( "dreamax_lm_f05_replay( 'completed'", $this->verifier );
 		self::assertStringContainsString( "\$wpdb->query( 'START TRANSACTION' )", $this->verifier );
 		self::assertStringContainsString( "\$wpdb->query( 'ROLLBACK' )", $this->verifier );
 		self::assertStringContainsString( "'sensitive_output'            => false", $this->verifier );

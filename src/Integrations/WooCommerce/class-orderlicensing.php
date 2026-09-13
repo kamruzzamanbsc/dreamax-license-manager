@@ -14,6 +14,7 @@ use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
 use Dreamax\LicenseManager\Licenses\LicenseService;
 use Dreamax\LicenseManager\Support\Capabilities;
+use Dreamax\LicenseManager\Support\Settings;
 use RuntimeException;
 use Throwable;
 use WC_Email;
@@ -91,8 +92,7 @@ final class OrderLicensing {
 	 * Handles the register operation.
 	 */
 	public function register(): void {
-		add_action( 'woocommerce_order_status_processing', array( $this, 'allocate' ) );
-		add_action( 'woocommerce_order_status_completed', array( $this, 'allocate' ) );
+		add_action( 'woocommerce_order_status_changed', array( $this, 'status_changed' ), 10, 4 );
 		add_action( 'woocommerce_order_refunded', array( $this, 'refunded' ), 10, 2 );
 		add_action( 'woocommerce_order_status_cancelled', array( $this, 'cancelled' ), 10, 2 );
 		add_action( 'woocommerce_saved_order_items', array( $this, 'quantity_saved' ), 10, 2 );
@@ -102,6 +102,21 @@ final class OrderLicensing {
 		add_action( 'woocommerce_email_order_meta', array( $this, 'email_licenses' ), 20, 4 );
 		add_action( 'woocommerce_order_details_after_order_table', array( $this, 'order_licenses' ) );
 		add_action( 'woocommerce_thankyou', array( $this, 'thankyou_licenses' ), 20 );
+	}
+
+	/**
+	 * Allocates licenses only when an order enters a merchant-selected status.
+	 *
+	 * @param int           $order_id Order identifier.
+	 * @param string        $from Previous status.
+	 * @param string        $to Current status.
+	 * @param WC_Order|null $order Order supplied by WooCommerce.
+	 */
+	public function status_changed( int $order_id, string $from, string $to, ?WC_Order $order = null ): void {
+		unset( $from, $order );
+		if ( in_array( $to, Settings::allocation_statuses(), true ) ) {
+			$this->allocate( $order_id );
+		}
 	}
 
 	/**

@@ -2303,6 +2303,50 @@
 	background: #fbfcfe;
 }
 
+.dreamax-lm-settings-form {
+	display: grid;
+	max-width: 900px;
+	gap: 18px;
+}
+
+.dreamax-lm-settings-options {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+	padding: 22px 24px 24px;
+}
+
+.dreamax-lm-settings-options legend {
+	grid-column: 1 / -1;
+	margin-bottom: 2px;
+	font-weight: 700;
+}
+
+.dreamax-lm-settings-options label {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 14px;
+	border: 1px solid var(--dlm-border);
+	border-radius: 7px;
+	background: #fbfcfe;
+}
+
+.dreamax-lm-settings-options label > span,
+.dreamax-lm-settings-options small {
+	display: block;
+}
+
+.dreamax-lm-settings-options small {
+	margin-top: 5px;
+	color: var(--dlm-muted);
+}
+
+.dreamax-lm-settings-actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
 @media (max-width: 1180px) {
 	.dreamax-lm-filter-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 	.dreamax-lm-field--search { grid-column: span 2; }
@@ -2369,6 +2413,8 @@
 	.dreamax-lm-generator-fields .dreamax-lm-field--wide { grid-column: auto; }
 	.dreamax-lm-generator-form .dreamax-lm-panel-footer { align-items: stretch; flex-direction: column; }
 	.dreamax-lm-generator-form .dreamax-lm-panel-footer .button { width: 100%; }
+	.dreamax-lm-settings-options { grid-template-columns: 1fr; }
+	.dreamax-lm-settings-actions .button { width: 100%; }
 }
 
 @media (max-width: 480px) {

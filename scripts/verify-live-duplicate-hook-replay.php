@@ -11,6 +11,7 @@ use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Integrations\WooCommerce\OrderLicensing;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
 use Dreamax\LicenseManager\ReleaseTools\DisposableEnvironmentGuard;
+use Dreamax\LicenseManager\Support\Settings;
 
 require_once __DIR__ . '/lib/release-tools.php';
 
@@ -43,7 +44,7 @@ function dreamax_lm_f05_callback( string $hook ): array {
 				if ( is_array( $callback )
 					&& isset( $callback[0], $callback[1] )
 					&& $callback[0] instanceof OrderLicensing
-					&& 'allocate' === $callback[1]
+					&& 'status_changed' === $callback[1]
 					&& is_callable( $callback ) ) {
 					$registered[] = array(
 						'callback'      => $callback,
@@ -64,13 +65,14 @@ function dreamax_lm_f05_callback( string $hook ): array {
 /**
  * Replays one hook while isolating the registered Dreamax callback in memory.
  *
- * @param string                                                  $hook Hook name.
+ * @param string                                                  $to Target order status.
  * @param int                                                     $order_id Internal order identifier.
  * @param array{callback:callable,priority:int,accepted_args:int} $definition Callback definition.
  * @param int                                                     $replays Replay count.
  */
-function dreamax_lm_f05_replay( string $hook, int $order_id, array $definition, int $replays ): void {
+function dreamax_lm_f05_replay( string $to, int $order_id, array $definition, int $replays ): void {
 	global $wp_filter;
+	$hook = 'woocommerce_order_status_changed';
 
 	$original = $wp_filter[ $hook ];
 	$isolated = new WP_Hook();
@@ -80,7 +82,8 @@ function dreamax_lm_f05_replay( string $hook, int $order_id, array $definition, 
 
 	try {
 		for ( $attempt = 0; $attempt < $replays; ++$attempt ) {
-			do_action( $hook, $order_id );
+			$order = wc_get_order( $order_id );
+			do_action( $hook, $order_id, 'pending', $to, $order );
 		}
 	} finally {
 		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restore the exact original WordPress hook object after the isolated replay.
@@ -182,10 +185,11 @@ $order_id      = (int) $fixture_order->get_id();
 $item_id       = (int) $item->get_id();
 $license_id    = (int) $license['id'];
 
-$callbacks = array(
-	'processing' => dreamax_lm_f05_callback( 'woocommerce_order_status_processing' ),
-	'completed'  => dreamax_lm_f05_callback( 'woocommerce_order_status_completed' ),
-);
+$callback = dreamax_lm_f05_callback( 'woocommerce_order_status_changed' );
+$statuses = Settings::allocation_statuses();
+if ( ! in_array( 'processing', $statuses, true ) || ! in_array( 'completed', $statuses, true ) ) {
+	dreamax_lm_f05_fail( 'The duplicate replay fixture requires the default processing and completed delivery statuses.' );
+}
 
 /**
  * Captures sanitized duplicate-sensitive database state.
@@ -249,8 +253,8 @@ $failure     = null;
 $during      = array();
 $rolled_back = false;
 try {
-	dreamax_lm_f05_replay( 'woocommerce_order_status_processing', $order_id, $callbacks['processing'], 2 );
-	dreamax_lm_f05_replay( 'woocommerce_order_status_completed', $order_id, $callbacks['completed'], 2 );
+	dreamax_lm_f05_replay( 'processing', $order_id, $callback, 2 );
+	dreamax_lm_f05_replay( 'completed', $order_id, $callback, 2 );
 	$during = $snapshot();
 	if ( $before !== $during ) {
 		throw new RuntimeException( 'Repeated status hooks changed license, event, or order-note state.' );
@@ -272,7 +276,7 @@ if ( ! $rolled_back || $before !== $after ) {
 echo wp_json_encode(
 	array(
 		'classification'              => 'live_disposable_wordpress_innodb',
-		'registered_status_callbacks' => count( $callbacks ),
+		'registered_status_callbacks' => 1,
 		'processing_hook_replays'     => 2,
 		'completed_hook_replays'      => 2,
 		'order_licenses_before'       => $before['order_licenses'],

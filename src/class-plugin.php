@@ -12,6 +12,7 @@ namespace Dreamax\LicenseManager;
 use Dreamax\LicenseManager\Admin\Admin;
 use Dreamax\LicenseManager\Admin\CustomerPortalPage;
 use Dreamax\LicenseManager\Admin\GeneratorAdmin;
+use Dreamax\LicenseManager\Admin\SettingsAdmin;
 use Dreamax\LicenseManager\Api\PublicRoutes;
 use Dreamax\LicenseManager\Api\PrivilegedRoutes;
 use Dreamax\LicenseManager\CustomerPortal\AccountEndpoint;
@@ -51,6 +52,7 @@ final class Plugin {
 		( new GuestClaimService() )->register();
 		( new Admin() )->register();
 		( new GeneratorAdmin() )->register();
+		( new SettingsAdmin() )->register();
 		( new CustomerPortalPage() )->register();
 		( new CsvController() )->register();
 		( new Privacy() )->register();
