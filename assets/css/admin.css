@@ -2347,6 +2347,19 @@
 	justify-content: flex-end;
 }
 
+.dreamax-lm-activation-filters {
+	display: grid;
+	grid-template-columns: minmax(220px, 1fr) minmax(180px, 260px) auto;
+	gap: 14px;
+	align-items: end;
+	padding: 20px;
+	border-bottom: 1px solid var(--dlm-border);
+}
+
+.dreamax-lm-activation-filters .button {
+	min-height: 40px;
+}
+
 @media (max-width: 1180px) {
 	.dreamax-lm-filter-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 	.dreamax-lm-field--search { grid-column: span 2; }
@@ -2415,6 +2428,8 @@
 	.dreamax-lm-generator-form .dreamax-lm-panel-footer .button { width: 100%; }
 	.dreamax-lm-settings-options { grid-template-columns: 1fr; }
 	.dreamax-lm-settings-actions .button { width: 100%; }
+	.dreamax-lm-activation-filters { grid-template-columns: 1fr; }
+	.dreamax-lm-activation-filters .button { width: 100%; }
 }
 
 @media (max-width: 480px) {

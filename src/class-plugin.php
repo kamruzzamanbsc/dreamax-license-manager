@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Dreamax\LicenseManager;
 
 use Dreamax\LicenseManager\Admin\Admin;
+use Dreamax\LicenseManager\Admin\ActivationAdmin;
 use Dreamax\LicenseManager\Admin\CustomerPortalPage;
 use Dreamax\LicenseManager\Admin\GeneratorAdmin;
 use Dreamax\LicenseManager\Admin\SettingsAdmin;
@@ -51,6 +52,7 @@ final class Plugin {
 		( new LicenseDashboard() )->register();
 		( new GuestClaimService() )->register();
 		( new Admin() )->register();
+		( new ActivationAdmin() )->register();
 		( new GeneratorAdmin() )->register();
 		( new SettingsAdmin() )->register();
 		( new CustomerPortalPage() )->register();
