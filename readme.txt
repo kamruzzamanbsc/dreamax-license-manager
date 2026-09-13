@@ -4,7 +4,7 @@ Tags: woocommerce, license manager, software licensing
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.3.6
+Stable tag: 0.3.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -121,12 +121,18 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 1. Review license inventory, ownership, lifecycle state, activation use, and expiry from one workspace.
 2. Create a securely generated or imported license with clear activation and expiry rules.
 3. Inspect license identity and perform controlled lifecycle and ownership operations.
-4. Review active installations and the immutable audit trail for an individual license.
+4. Review active installations and the recorded audit trail for an individual license.
 5. Configure WooCommerce product issuance, activation, validity, refund, and cancellation policies.
 6. Create narrowly scoped, expiring API credentials for trusted integrations.
 7. Give signed-in customers a focused standalone dashboard for viewing licenses and claiming eligible guest orders.
 
 == Changelog ==
+
+= 0.3.7 =
+
+* Adds merchant-controlled generators, product and per-license policy controls, customer activation management, and clearer inventory and high-impact action previews.
+* Expands CSV import/export with mapping, bounded resumable batches, private reports, and filtered or masked exports; adds detailed setup diagnostics and explicit REST schemas.
+* Hardens queued-import worker ownership and verifies customer isolation, public API behavior, recovery, and data cleanup against disposable WordPress fixtures.
 
 = 0.3.6 =
 

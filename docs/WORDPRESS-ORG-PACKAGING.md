@@ -17,7 +17,7 @@ Current official release pages identified WordPress 7.1 and WooCommerce 11.0.1. 
 - Directory/slug: `dreamax-license-manager`.
 - Main file: `dreamax-license-manager.php`.
 - ZIP location: `dreamax-license-manager/dreamax-license-manager.php`.
-- Current published version/header/constant/readme Stable Tag: numeric `0.3.4`.
+- Current published version: `0.3.6`; the unreleased source candidate uses matching numeric `0.3.7` header, constant, and readme Stable Tag.
 - Text domain: literal `dreamax-license-manager`.
 - WordPress.org dependency slug: `Requires Plugins: woocommerce`.
 - Author: Dreamax Soft; Author URI: `https://dreamaxsoft.com/`.

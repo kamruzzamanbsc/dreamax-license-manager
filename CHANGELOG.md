@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased - Free V1 completion
+## 0.3.7 - Free V1 completion
 
 - Added configurable secure generators and product/variation policy precedence.
 - Added merchant delivery settings, customer-managed activations, a global activation inventory, and explicit REST request/response schemas.
@@ -10,6 +10,8 @@
 - Added administrator-only license notes and bounded reference fields with stale-form protection, transactional audit, and no customer/API disclosure.
 - Added a masked selected-license CSV action to the inventory; unsuccessful export auditing now removes the completed temporary file without sending a download.
 - Added guarded per-license activation and fixed-UTC expiry overrides with strict date parsing, stale-form protection, active-installation validation, and audited reasons.
+- Added effect previews for bulk lifecycle actions and ownership reassignment; changing a choice clears prior confirmation.
+- Hardened queued-import worker locking with exact-owner lease release and verified expired-lock handoff.
 
 ## 0.3.6 - Recovery Boundary Hardening
 
