@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\Integrations\WooCommerce;
 
+use Dreamax\LicenseManager\Generators\GeneratorRepository;
 use Dreamax\LicenseManager\Support\PublicId;
 use WC_Product;
 use WP_Post;
@@ -52,11 +53,32 @@ final class ProductSettings {
 		);
 		woocommerce_wp_select(
 			array(
+				'id'          => '_dreamax_lm_generator_public_id',
+				'label'       => __( 'License generator', 'dreamax-license-manager' ),
+				'description' => __( 'Used when the key source is secure generation.', 'dreamax-license-manager' ),
+				'options'     => $this->generator_options( false ),
+			)
+		);
+		woocommerce_wp_select(
+			array(
 				'id'      => '_dreamax_lm_issuance',
 				'label'   => __( 'Issuance mode', 'dreamax-license-manager' ),
 				'options' => array(
 					'per_quantity' => __( 'One license per purchased quantity', 'dreamax-license-manager' ),
 					'per_item'     => __( 'One license per order item', 'dreamax-license-manager' ),
+				),
+			)
+		);
+		woocommerce_wp_select(
+			array(
+				'id'      => '_dreamax_lm_activation_mode',
+				'label'   => __( 'Activation policy', 'dreamax-license-manager' ),
+				'options' => array(
+					''          => __( 'Legacy value below', 'dreamax-license-manager' ),
+					'generator' => __( 'Use generator default', 'dreamax-license-manager' ),
+					'unlimited' => __( 'Unlimited activations', 'dreamax-license-manager' ),
+					'disabled'  => __( 'Activation disabled', 'dreamax-license-manager' ),
+					'limited'   => __( 'Use limit below', 'dreamax-license-manager' ),
 				),
 			)
 		);
@@ -69,6 +91,19 @@ final class ProductSettings {
 				'custom_attributes' => array( 'min' => '0' ),
 			)
 		);
+		woocommerce_wp_select(
+			array(
+				'id'      => '_dreamax_lm_validity_mode',
+				'label'   => __( 'Validity policy', 'dreamax-license-manager' ),
+				'options' => array(
+					''          => __( 'Legacy value below', 'dreamax-license-manager' ),
+					'generator' => __( 'Use generator default', 'dreamax-license-manager' ),
+					'never'     => __( 'Never expires', 'dreamax-license-manager' ),
+					'duration'  => __( 'Use duration below', 'dreamax-license-manager' ),
+					'fixed'     => __( 'Use fixed expiry below', 'dreamax-license-manager' ),
+				),
+			)
+		);
 		woocommerce_wp_text_input(
 			array(
 				'id'                => '_dreamax_lm_valid_days',
@@ -76,6 +111,14 @@ final class ProductSettings {
 				'description'       => __( 'Leave blank for a lifetime license.', 'dreamax-license-manager' ),
 				'type'              => 'number',
 				'custom_attributes' => array( 'min' => '1' ),
+			)
+		);
+		woocommerce_wp_text_input(
+			array(
+				'id'          => '_dreamax_lm_fixed_expiry',
+				'label'       => __( 'Fixed expiry date', 'dreamax-license-manager' ),
+				'description' => __( 'Used only by the fixed-expiry validity policy. The license expires at the end of this UTC date.', 'dreamax-license-manager' ),
+				'type'        => 'date',
 			)
 		);
 		woocommerce_wp_select(
@@ -131,6 +174,16 @@ final class ProductSettings {
 		);
 		woocommerce_wp_select(
 			array(
+				'id'            => "_dreamax_lm_generator_public_id_{$loop}",
+				'name'          => "_dreamax_lm_generator_public_id[{$loop}]",
+				'value'         => get_post_meta( $variation->ID, '_dreamax_lm_generator_public_id', true ),
+				'label'         => __( 'License generator', 'dreamax-license-manager' ),
+				'options'       => $this->generator_options( true ),
+				'wrapper_class' => 'form-row form-row-full',
+			)
+		);
+		woocommerce_wp_select(
+			array(
 				'id'            => "_dreamax_lm_issuance_{$loop}",
 				'name'          => "_dreamax_lm_issuance[{$loop}]",
 				'value'         => get_post_meta( $variation->ID, '_dreamax_lm_issuance', true ),
@@ -141,6 +194,22 @@ final class ProductSettings {
 					'per_item'     => __( 'One per item', 'dreamax-license-manager' ),
 				),
 				'wrapper_class' => 'form-row form-row-last',
+			)
+		);
+		woocommerce_wp_select(
+			array(
+				'id'            => "_dreamax_lm_activation_mode_{$loop}",
+				'name'          => "_dreamax_lm_activation_mode[{$loop}]",
+				'value'         => get_post_meta( $variation->ID, '_dreamax_lm_activation_mode', true ),
+				'label'         => __( 'Activation policy', 'dreamax-license-manager' ),
+				'options'       => array(
+					''          => __( 'Use product setting', 'dreamax-license-manager' ),
+					'generator' => __( 'Use generator default', 'dreamax-license-manager' ),
+					'unlimited' => __( 'Unlimited activations', 'dreamax-license-manager' ),
+					'disabled'  => __( 'Activation disabled', 'dreamax-license-manager' ),
+					'limited'   => __( 'Use limit below', 'dreamax-license-manager' ),
+				),
+				'wrapper_class' => 'form-row form-row-first',
 			)
 		);
 		woocommerce_wp_text_input(
@@ -154,6 +223,22 @@ final class ProductSettings {
 				'custom_attributes' => array( 'min' => '0' ),
 			)
 		);
+		woocommerce_wp_select(
+			array(
+				'id'            => "_dreamax_lm_validity_mode_{$loop}",
+				'name'          => "_dreamax_lm_validity_mode[{$loop}]",
+				'value'         => get_post_meta( $variation->ID, '_dreamax_lm_validity_mode', true ),
+				'label'         => __( 'Validity policy', 'dreamax-license-manager' ),
+				'options'       => array(
+					''          => __( 'Use product setting', 'dreamax-license-manager' ),
+					'generator' => __( 'Use generator default', 'dreamax-license-manager' ),
+					'never'     => __( 'Never expires', 'dreamax-license-manager' ),
+					'duration'  => __( 'Use duration below', 'dreamax-license-manager' ),
+					'fixed'     => __( 'Use fixed expiry below', 'dreamax-license-manager' ),
+				),
+				'wrapper_class' => 'form-row form-row-first',
+			)
+		);
 		woocommerce_wp_text_input(
 			array(
 				'id'                => "_dreamax_lm_valid_days_{$loop}",
@@ -163,6 +248,16 @@ final class ProductSettings {
 				'type'              => 'number',
 				'wrapper_class'     => 'form-row form-row-last',
 				'custom_attributes' => array( 'min' => '1' ),
+			)
+		);
+		woocommerce_wp_text_input(
+			array(
+				'id'            => "_dreamax_lm_fixed_expiry_{$loop}",
+				'name'          => "_dreamax_lm_fixed_expiry[{$loop}]",
+				'value'         => get_post_meta( $variation->ID, '_dreamax_lm_fixed_expiry', true ),
+				'label'         => __( 'Fixed expiry date', 'dreamax-license-manager' ),
+				'type'          => 'date',
+				'wrapper_class' => 'form-row form-row-last',
 			)
 		);
 		$variation_options = array( '' => __( 'Use product setting', 'dreamax-license-manager' ) ) + $this->policy_options();
@@ -243,7 +338,7 @@ final class ProductSettings {
 	 * @phpstan-param int|null $index Index value.
 	 */
 	private function save_values( WC_Product $product, array $source, ?int $index ): void {
-		$fields  = array( '_dreamax_lm_source', '_dreamax_lm_issuance', '_dreamax_lm_activation_limit', '_dreamax_lm_valid_days', '_dreamax_lm_refund_policy', '_dreamax_lm_cancellation_policy' );
+		$fields  = array( '_dreamax_lm_source', '_dreamax_lm_generator_public_id', '_dreamax_lm_issuance', '_dreamax_lm_activation_mode', '_dreamax_lm_activation_limit', '_dreamax_lm_validity_mode', '_dreamax_lm_valid_days', '_dreamax_lm_fixed_expiry', '_dreamax_lm_refund_policy', '_dreamax_lm_cancellation_policy' );
 		$enabled = null === $index ? isset( $source['_dreamax_lm_enabled'] ) : isset( $source['_dreamax_lm_enabled'][ $index ] );
 		$product->update_meta_data( '_dreamax_lm_enabled', $enabled ? 'yes' : 'no' );
 		foreach ( $fields as $field ) {
@@ -268,5 +363,19 @@ final class ProductSettings {
 			'revoke'         => __( 'Permanently revoke', 'dreamax-license-manager' ),
 			'release_unused' => __( 'Release only if never delivered or used', 'dreamax-license-manager' ),
 		);
+	}
+
+	/**
+	 * Returns current generators for a product or variation selector.
+	 *
+	 * @param bool $inherit Whether the empty option inherits the product setting.
+	 * @return array<string,string>
+	 */
+	private function generator_options( bool $inherit ): array {
+		$options = array( '' => $inherit ? __( 'Use product setting', 'dreamax-license-manager' ) : __( 'Use built-in secure defaults', 'dreamax-license-manager' ) );
+		foreach ( ( new GeneratorRepository() )->all() as $generator ) {
+			$options[ (string) $generator['public_id'] ] = (string) $generator['name'];
+		}
+		return $options;
 	}
 }

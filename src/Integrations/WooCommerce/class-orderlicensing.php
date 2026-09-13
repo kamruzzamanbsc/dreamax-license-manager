@@ -208,6 +208,8 @@ final class OrderLicensing {
 					continue;
 				}
 				$now        = gmdate( 'Y-m-d H:i:s' );
+				$paid_at    = $order->get_date_paid() ? $order->get_date_paid()->getTimestamp() : time();
+				$expires_at = $policy['fixed_expires_at'] ?? ( null !== $policy['valid_for_seconds'] ? gmdate( 'Y-m-d H:i:s', $paid_at + $policy['valid_for_seconds'] ) : null );
 				$attributes = array(
 					'lifecycle_status'  => 'assigned',
 					'product_public_id' => $policy['public_id'],
@@ -217,8 +219,10 @@ final class OrderLicensing {
 					'order_item_id'     => (int) $item_id,
 					'quantity_slot'     => $slot,
 					'customer_id'       => (int) $order->get_customer_id(),
+					'generator_id'      => $policy['generator_id'],
 					'activation_limit'  => $policy['activation_limit'],
-					'expires_at'        => $policy['valid_days'] > 0 ? gmdate( 'Y-m-d H:i:s', $order->get_date_paid() ? $order->get_date_paid()->getTimestamp() + $policy['valid_days'] * DAY_IN_SECONDS : time() + $policy['valid_days'] * DAY_IN_SECONDS ) : null,
+					'valid_for_seconds' => $policy['valid_for_seconds'],
+					'expires_at'        => $expires_at,
 					'actor_type'        => $actor_type,
 					'actor_id'          => $actor_id,
 					'source'            => $policy['source'],
@@ -237,6 +241,9 @@ final class OrderLicensing {
 						),
 					),
 				);
+				if ( array() !== $policy['generator'] ) {
+					$attributes['generator'] = $policy['generator'];
+				}
 				try {
 					'pool' === $policy['source'] ? $this->service->assign_pool( $policy['public_id'], $attributes ) : $this->service->create_generated( $attributes );
 					$existing_by_slot[ $slot ] = true;
