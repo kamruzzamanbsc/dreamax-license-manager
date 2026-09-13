@@ -10,4 +10,6 @@ Implementation hardening: `CsvImportJob` now acquires an atomic, non-autoloaded 
 
 Follow-up source review found that an expired worker could otherwise delete a successor's lock in `finally`. The lease now carries a random owner token, and release uses a conditional `option_name` plus exact `option_value` delete. The guarded drill covers expired-lock handoff, stale-owner release refusal, and exact-owner release before processing the 501 rows.
 
+The guarded F19 real multipart matrix also uploaded a file above the asynchronous threshold through the actual admin action. Its queued job pointed to a restricted private temporary file outside the web uploads directory; the copied file hash matched the source, and the verifier removed the job and file. The source now refuses WordPress's web-root temporary fallback for queued uploads, reports, and exports.
+
 Result: PASS for the explicit queued-job drill. No key, cookie, database credential or filesystem path was printed or retained. This is Free V1 branch evidence, not an SVN release authorization.

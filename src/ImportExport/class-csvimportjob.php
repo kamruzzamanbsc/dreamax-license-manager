@@ -39,8 +39,14 @@ final class CsvImportJob {
 	 * @throws RuntimeException When private job persistence fails.
 	 */
 	public function create( string $uploaded_path, array $configuration ): string {
-		$path = wp_tempnam( 'dreamax-lm-import.csv' );
-		if ( ! is_string( $path ) || '' === $path || ! move_uploaded_file( $uploaded_path, $path ) ) {
+		$path = PrivateTempFile::create( 'dreamax-lm-import.csv' );
+		if ( ! is_uploaded_file( $uploaded_path ) ) {
+			wp_delete_file( $path );
+			throw new RuntimeException( 'The uploaded import file is invalid.' );
+		}
+		$filesystem = new \WP_Filesystem_Direct( false );
+		if ( ! $filesystem->copy( $uploaded_path, $path, true, 0600 ) ) {
+			wp_delete_file( $path );
 			throw new RuntimeException( 'A private temporary import file could not be created.' );
 		}
 		$token = bin2hex( random_bytes( 16 ) );
@@ -215,8 +221,10 @@ final class CsvImportJob {
 		if ( array() === $errors ) {
 			return '';
 		}
-		$path = wp_tempnam( 'dreamax-lm-import-errors.csv' );
-		if ( ! is_string( $path ) || '' === $path ) {
+		try {
+			$path = PrivateTempFile::create( 'dreamax-lm-import-errors.csv' );
+		} catch ( RuntimeException $error ) {
+			unset( $error );
 			return '';
 		}
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- A bounded private CSV report is assembled for an authorized download.

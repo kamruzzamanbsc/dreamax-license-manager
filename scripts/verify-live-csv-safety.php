@@ -282,6 +282,7 @@ $product_public_id    = PublicId::generate( 'prd' );
 $user_ids             = array();
 $license_ids          = array();
 $export_event_ids     = array();
+$queued_job_tokens    = array();
 $cookies              = array();
 $keys                 = array();
 $server               = null;
@@ -443,6 +444,43 @@ try {
 	);
 	$checks['size_boundary'] = str_contains( $oversize_response['body'], 'larger than 5 MiB' );
 
+	$verification_stage = 'queued_private_upload';
+	$queued_path        = $temp_dir . DIRECTORY_SEPARATOR . 'queued.csv';
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Creates an exact private multipart fixture.
+	$queued_handle = fopen( $queued_path, 'wb' );
+	if ( false === $queued_handle ) {
+		throw new RuntimeException( 'The queued upload fixture could not be opened.' );
+	}
+	fputcsv( $queued_handle, array( 'license_key', 'product_public_id' ) );
+	for ( $index = 0; $index < 450; ++$index ) {
+		fputcsv( $queued_handle, array( 'invalid-' . str_repeat( 'x', 700 ) . $index, $product_public_id ) );
+	}
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes the exact queued fixture.
+	fclose( $queued_handle );
+	$queued_response = dreamax_lm_f19_request(
+		$target,
+		$cookies['administrator']['cookie'],
+		array(
+			'action'   => 'dreamax_lm_import_csv',
+			'_wpnonce' => $cookies['administrator']['nonces']['dreamax_lm_import_csv'],
+			'csv'      => new CURLFile( $queued_path, 'text/csv', 'queued.csv' ),
+		)
+	);
+	$location        = (string) ( $queued_response['headers']['location'] ?? '' );
+	$query           = (string) wp_parse_url( $location, PHP_URL_QUERY );
+	parse_str( $query, $queued_query );
+	$queued_token                     = is_string( $queued_query['import_job'] ?? null ) ? $queued_query['import_job'] : '';
+	$checks['queued_upload_redirect'] = 302 === $queued_response['status'] && 1 === preg_match( '/^[a-f0-9]{32}$/D', $queued_token );
+	if ( ! $checks['queued_upload_redirect'] ) {
+		throw new RuntimeException( 'The guarded queued upload did not return its job identifier.' );
+	}
+	$queued_job_tokens[]           = $queued_token;
+	$queued_state                  = get_option( 'dreamax_lm_csv_job_' . $queued_token, null );
+	$queued_private_path           = is_array( $queued_state ) ? (string) ( $queued_state['path'] ?? '' ) : '';
+	$checks['queued_private_copy'] = is_array( $queued_state ) && (int) ( $queued_state['owner'] ?? 0 ) === $user_ids['administrator'] && 'queued' === ( $queued_state['status'] ?? '' ) && '' !== $queued_private_path && is_file( $queued_private_path ) && filesize( $queued_path ) > 262144 && hash_file( 'sha256', $queued_path ) === hash_file( 'sha256', $queued_private_path );
+	$uploads                       = wp_upload_dir();
+	$checks['queued_not_public']   = is_array( $uploads ) && '' !== $queued_private_path && ! str_starts_with( str_replace( '\\', '/', $queued_private_path ), str_replace( '\\', '/', (string) $uploads['basedir'] ) . '/' );
+
 	$verification_stage               = 'actual_import';
 	$actual                           = dreamax_lm_f19_request(
 		$target,
@@ -584,6 +622,23 @@ try {
 		}
 		proc_close( $server );
 	}
+	foreach ( $queued_job_tokens as $queued_token ) {
+		if ( function_exists( 'as_unschedule_all_actions' ) ) {
+			as_unschedule_all_actions( 'dreamax_lm_process_csv_import', array( $queued_token ), 'dreamax-license-manager' );
+		}
+		wp_clear_scheduled_hook( 'dreamax_lm_process_csv_import', array( $queued_token ) );
+		wp_clear_scheduled_hook( 'dreamax_lm_cleanup_csv_job', array( $queued_token ) );
+		$queued_state = get_option( 'dreamax_lm_csv_job_' . $queued_token, null );
+		if ( is_array( $queued_state ) ) {
+			foreach ( array( 'path', 'report_path' ) as $field ) {
+				if ( ! empty( $queued_state[ $field ] ) && is_string( $queued_state[ $field ] ) ) {
+					wp_delete_file( $queued_state[ $field ] );
+				}
+			}
+		}
+		delete_option( 'dreamax_lm_csv_job_' . $queued_token );
+		delete_option( 'dreamax_lm_csv_job_' . $queued_token . '_lock' );
+	}
 
 	// Recover exact owned license identities even when a prior assertion failed.
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Exact owned cleanup discovery.
@@ -672,6 +727,7 @@ echo wp_json_encode(
 	array(
 		'classification'                => 'live_disposable_wordpress_innodb_loopback_multipart',
 		'upload_size_boundary'          => $checks['size_boundary'],
+		'queued_private_upload'         => $checks['queued_upload_redirect'] && $checks['queued_private_copy'] && $checks['queued_not_public'],
 		'row_limit_boundary'            => $checks['row_boundary'],
 		'bounded_memory'                => $checks['bounded_memory'] && $checks['memory_headers'],
 		'preview_no_write'              => $checks['preview_no_write'],

@@ -50,7 +50,7 @@ final class RecoverySurfaceSourceContractTest extends TestCase {
 		$export = $this->method( $this->csv, 'export', 'csv_safe' );
 
 		self::assertStringContainsString( '( new Crypto() )->ready()', $export );
-		self::assertStringContainsString( "wp_tempnam( 'dreamax-license-export.csv' )", $export );
+		self::assertStringContainsString( "PrivateTempFile::create( 'dreamax-license-export.csv' )", $export );
 		self::assertStringContainsString( 'catch ( Throwable $error )', $export );
 		self::assertLessThan(
 			strpos( $export, 'AuditEventCatalog::LICENSE_EXPORTED' ),

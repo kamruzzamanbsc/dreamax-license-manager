@@ -15,7 +15,7 @@ Required canonical fields are `license_key` and `product_public_id`. Optional fi
 
 UTF-8, Windows-1252, and ISO-8859-1 input are supported. Invalid UTF-8 fails the affected row. Imported keys default to the exact, case-sensitive `import-exact-v1` profile. Select `generated-ascii-v1` only when the source keys were created for that normalization contract.
 
-Files up to 5 MiB and 10,000 data rows are accepted. A committed file larger than 256 KiB is copied to the operating system's private temporary directory and processed in resumable 250-row jobs through Action Scheduler, with WP-Cron as a fallback. The original key-bearing file is deleted when processing completes or stops. Job and error-report metadata expire automatically.
+Files up to 5 MiB and 10,000 data rows are accepted. A committed file larger than 256 KiB is copied to a private non-web temporary directory and processed in resumable 250-row jobs through Action Scheduler, with WP-Cron as a fallback. The original key-bearing file is deleted when processing completes or stops. Job and error-report metadata expire automatically.
 
 Row reports contain only the row number and a bounded, sanitized problem description. They never repeat a license key, database error, filesystem path, or encrypted value.
 
@@ -26,6 +26,10 @@ License exports support lifecycle status, product public ID, customer ID, order 
 Ordinary license exports mask keys. Full-key export requires `dreamax_lm_export_license_keys`, explicit confirmation, successful encryption-key recovery, and an audit event. Activation exports contain opaque activation/license IDs and optional labels, but never license keys or raw instance fingerprints.
 
 All exported cells beginning with `=`, `+`, `-`, or `@` are neutralized before CSV serialization to prevent spreadsheet formula execution.
+
+## Private temporary storage
+
+Queued uploads, row reports, and assembled exports require a writable temporary location outside the WordPress and document roots. If WordPress's temp directory falls back into a web-accessible location, Dreamax License Manager refuses to store sensitive CSV data there. Temporary files are restricted to owner-only permissions where the filesystem supports them and are removed after processing or expiry.
 
 ## Recovery and cleanup
 

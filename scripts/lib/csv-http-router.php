@@ -85,6 +85,14 @@ if ( ! is_plugin_active( 'dreamax-license-manager/dreamax-license-manager.php' )
 }
 
 add_filter( 'woocommerce_prevent_admin_access', '__return_false', PHP_INT_MAX );
+add_filter(
+	'pre_as_enqueue_async_action',
+	static function ( $pre, string $hook ) {
+		return 'dreamax_lm_process_csv_import' === $hook ? 1 : $pre;
+	},
+	10,
+	2
+);
 
 header( 'X-Dreamax-F19-Router-Stage: admin-post' );
 

@@ -12,6 +12,7 @@
 - Added guarded per-license activation and fixed-UTC expiry overrides with strict date parsing, stale-form protection, active-installation validation, and audited reasons.
 - Added effect previews for bulk lifecycle actions and ownership reassignment; changing a choice clears prior confirmation.
 - Hardened queued-import worker locking with exact-owner lease release and verified expired-lock handoff.
+- Kept CSV uploads, reports, and exports in restricted non-web temporary storage, failing closed if WordPress falls back to a web-accessible directory.
 
 ## 0.3.6 - Recovery Boundary Hardening
 

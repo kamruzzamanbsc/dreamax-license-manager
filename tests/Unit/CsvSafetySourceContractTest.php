@@ -35,6 +35,12 @@ final class CsvSafetySourceContractTest extends TestCase {
 		self::assertStringContainsString( "LOCK_SUFFIX   = '_lock'", $this->job );
 		self::assertStringContainsString( 'release_lock( $token, $lock_owner )', $this->job );
 		self::assertStringContainsString( "'option_value' => \$lock_owner", $this->job );
+		self::assertStringContainsString( 'is_uploaded_file( $uploaded_path )', $this->job );
+		self::assertStringContainsString( 'new \\WP_Filesystem_Direct( false )', $this->job );
+		self::assertStringContainsString( '$filesystem->copy( $uploaded_path, $path, true, 0600 )', $this->job );
+		self::assertStringContainsString( "PrivateTempFile::create( 'dreamax-lm-import.csv' )", $this->job );
+		self::assertStringContainsString( "PrivateTempFile::create( 'dreamax-lm-import-errors.csv' )", $this->job );
+		self::assertStringContainsString( 'queued_private_upload', $this->verifier );
 		self::assertStringContainsString( 'finally', $this->job );
 	}
 

@@ -121,8 +121,10 @@ final class CsvController {
 		}
 
 		$where = $this->export_where( $filters, $type, $selected );
-		$path  = wp_tempnam( 'dreamax-license-export.csv' );
-		if ( ! is_string( $path ) || '' === $path ) {
+		try {
+			$path = PrivateTempFile::create( 'dreamax-license-export.csv' );
+		} catch ( Throwable $error ) {
+			unset( $error );
 			wp_die( esc_html__( 'A secure temporary export file could not be created.', 'dreamax-license-manager' ) );
 		}
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- A bounded private temporary export is required.
