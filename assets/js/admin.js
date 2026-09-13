@@ -2,6 +2,36 @@
 	'use strict';
 
 	document.addEventListener('DOMContentLoaded', function () {
+		document.querySelectorAll('.dreamax-lm-merchant-notes').forEach(function (panel) {
+			var rows = panel.querySelector('[data-dlm-merchant-fields]');
+			var template = panel.querySelector('[data-dlm-merchant-template]');
+			var add = panel.querySelector('[data-dlm-add-merchant-field]');
+			if (!rows || !template || !add) {
+				return;
+			}
+
+			function update() {
+				add.disabled = rows.querySelectorAll('[data-dlm-merchant-row]').length >= Number(rows.dataset.limit);
+			}
+			add.addEventListener('click', function () {
+				if (add.disabled) {
+					return;
+				}
+				var row = template.content.firstElementChild.cloneNode(true);
+				rows.appendChild(row);
+				row.querySelector('input').focus();
+				update();
+			});
+			rows.addEventListener('click', function (event) {
+				var button = event.target.closest('[data-dlm-remove-merchant-field]');
+				if (button && rows.contains(button)) {
+					button.closest('[data-dlm-merchant-row]').remove();
+					update();
+				}
+			});
+			update();
+		});
+
 		document.querySelectorAll('[data-dlm-import-form]').forEach(function (form) {
 			var input = form.querySelector('[data-dlm-file-input]');
 			var filename = form.querySelector('[data-dlm-file-name]');

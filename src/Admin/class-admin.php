@@ -18,6 +18,7 @@ use Dreamax\LicenseManager\Licenses\KeyNormalizer;
 use Dreamax\LicenseManager\Licenses\LifecycleService;
 use Dreamax\LicenseManager\Licenses\LicenseRepository;
 use Dreamax\LicenseManager\Licenses\LicenseService;
+use Dreamax\LicenseManager\Licenses\MerchantMetadata;
 use Dreamax\LicenseManager\Support\Base64Url;
 use Dreamax\LicenseManager\Support\Capabilities;
 use Dreamax\LicenseManager\Support\Diagnostics;
@@ -37,6 +38,7 @@ final class Admin {
 		add_action( 'admin_post_dreamax_lm_create_license', array( $this, 'create_license' ) );
 		add_action( 'admin_post_dreamax_lm_bulk_lifecycle', array( $this, 'bulk_lifecycle' ) );
 		add_action( 'admin_post_dreamax_lm_reassign_license', array( $this, 'reassign_license' ) );
+		add_action( 'admin_post_dreamax_lm_save_license_notes', array( $this, 'save_license_notes' ) );
 		add_action( 'admin_post_dreamax_lm_generate_master_key', array( $this, 'master_key' ) );
 		add_action( 'admin_post_dreamax_lm_create_credential', array( $this, 'create_credential' ) );
 		add_action( 'admin_post_dreamax_lm_rotate_credential', array( $this, 'rotate_credential' ) );
@@ -392,6 +394,9 @@ final class Admin {
 		if ( isset( $_GET['failed'] ) && (int) $_GET['failed'] > 0 ) {
 			echo '<div class="notice notice-warning"><p>' . esc_html__( 'The operation was rejected because it did not match the current license state or policy.', 'dreamax-license-manager' ) . '</p></div>';
 		}
+		if ( isset( $_GET['notes_saved'] ) ) {
+			echo '<div class="notice notice-success"><p>' . esc_html__( 'Internal notes saved.', 'dreamax-license-manager' ) . '</p></div>';
+		}
 		/* phpcs:enable WordPress.Security.NonceVerification.Recommended */
 		echo '<section class="dreamax-lm-panel dreamax-lm-license-overview"><div class="dreamax-lm-license-identity"><div><span class="dreamax-lm-detail-label">' . esc_html__( 'License public ID', 'dreamax-license-manager' ) . '</span><code>' . esc_html( $public_id ) . '</code></div><span class="dreamax-lm-status dreamax-lm-status--' . esc_attr( $this->status_key( $license ) ) . '"><span aria-hidden="true"></span>' . esc_html( $this->status_label( $license ) ) . '</span></div><div class="dreamax-lm-detail-facts">';
 		echo '<article><span class="dashicons dashicons-products" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Product', 'dreamax-license-manager' ) . '</span>';
@@ -405,6 +410,7 @@ final class Admin {
 		}
 		echo '</div></article><article><span class="dashicons dashicons-admin-network" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Activation policy', 'dreamax-license-manager' ) . '</span><strong>' . esc_html( $limit_label ) . '</strong></div></article><article><span class="dashicons dashicons-calendar-alt" aria-hidden="true"></span><div><span class="dreamax-lm-detail-label">' . esc_html__( 'Expiry', 'dreamax-license-manager' ) . '</span><strong>' . esc_html( $expiry_label ) . '</strong></div></article></div></section>';
 
+		$this->render_merchant_notes( $license );
 		echo '<div class="dreamax-lm-detail-operation-grid"><section class="dreamax-lm-panel dreamax-lm-detail-operation"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Lifecycle operation', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Change availability, expiry, or active installations.', 'dreamax-license-manager' ) . '</p></div><span class="dashicons dashicons-update-alt" aria-hidden="true"></span></div>';
 		echo '<form class="dreamax-lm-operation-form" data-dlm-lifecycle-form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_bulk_lifecycle"><input type="hidden" name="license_ids[]" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="return_license" value="' . esc_attr( $public_id ) . '"><input type="hidden" name="operation_id" value="' . esc_attr( wp_generate_uuid4() ) . '">';
 		wp_nonce_field( 'dreamax_lm_bulk_lifecycle' );
@@ -435,6 +441,38 @@ final class Admin {
 		echo '</tbody></table></div></section><section class="dreamax-lm-panel dreamax-lm-detail-table-panel dreamax-lm-audit-panel"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Audit trail', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Immutable operational history for this license.', 'dreamax-license-manager' ) . '</p></div><span class="dreamax-lm-count">' . esc_html( number_format_i18n( count( $events ) ) ) . '</span></div><div class="dreamax-lm-table-scroll">';
 		$this->render_events( $events );
 		echo '</div></section></div>';
+	}
+
+	/**
+	 * Renders the merchant-only note and reference editor for one license.
+	 *
+	 * @param array<string,mixed> $license License row.
+	 */
+	private function render_merchant_notes( array $license ): void {
+		$merchant = ( new MerchantMetadata() )->view( $license );
+		echo '<section class="dreamax-lm-panel dreamax-lm-merchant-notes"><div class="dreamax-lm-panel-heading"><div><h2>' . esc_html__( 'Internal notes', 'dreamax-license-manager' ) . '</h2><p>' . esc_html__( 'Visible only to license administrators. Do not enter keys, passwords, or personal data.', 'dreamax-license-manager' ) . '</p></div></div>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="dreamax_lm_save_license_notes"><input type="hidden" name="license" value="' . esc_attr( (string) $license['public_id'] ) . '"><input type="hidden" name="revision" value="' . esc_attr( $merchant['revision'] ) . '">';
+		wp_nonce_field( 'dreamax_lm_save_license_notes' );
+		echo '<div class="dreamax-lm-merchant-body"><label class="dreamax-lm-field" for="dreamax-lm-internal-note"><span>' . esc_html__( 'Note', 'dreamax-license-manager' ) . '</span></label><textarea id="dreamax-lm-internal-note" name="internal_note" maxlength="2000" rows="3">' . esc_textarea( $merchant['note'] ) . '</textarea><div class="dreamax-lm-merchant-field-heading"><strong>' . esc_html__( 'Reference fields', 'dreamax-license-manager' ) . '</strong><button type="button" class="button" data-dlm-add-merchant-field>' . esc_html__( 'Add field', 'dreamax-license-manager' ) . '</button></div><div data-dlm-merchant-fields data-limit="10">';
+		foreach ( $merchant['fields'] as $key => $value ) {
+			$this->render_merchant_field_row( $key, $value );
+		}
+		if ( count( $merchant['fields'] ) < 10 ) {
+			$this->render_merchant_field_row( '', '' );
+		}
+		echo '</div><template data-dlm-merchant-template>';
+		$this->render_merchant_field_row( '', '' );
+		echo '</template><button class="button button-primary" type="submit">' . esc_html__( 'Save internal notes', 'dreamax-license-manager' ) . '</button></div></form></section>';
+	}
+
+	/**
+	 * Renders one paired, editable reference field.
+	 *
+	 * @param string $key Reference name.
+	 * @param string $value Reference value.
+	 */
+	private function render_merchant_field_row( string $key, string $value ): void {
+		echo '<div class="dreamax-lm-merchant-field" data-dlm-merchant-row><label><span class="screen-reader-text">' . esc_html__( 'Field name', 'dreamax-license-manager' ) . '</span><input name="field_keys[]" aria-label="' . esc_attr__( 'Field name', 'dreamax-license-manager' ) . '" pattern="[a-z][a-z0-9_]{0,31}" maxlength="32" placeholder="' . esc_attr__( 'Name', 'dreamax-license-manager' ) . '" value="' . esc_attr( $key ) . '"></label><label><span class="screen-reader-text">' . esc_html__( 'Field value', 'dreamax-license-manager' ) . '</span><input name="field_values[]" aria-label="' . esc_attr__( 'Field value', 'dreamax-license-manager' ) . '" maxlength="160" placeholder="' . esc_attr__( 'Value', 'dreamax-license-manager' ) . '" value="' . esc_attr( $value ) . '"></label><button type="button" class="button" data-dlm-remove-merchant-field aria-label="' . esc_attr__( 'Remove field', 'dreamax-license-manager' ) . '" title="' . esc_attr__( 'Remove field', 'dreamax-license-manager' ) . '"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div>';
 	}
 
 	/**
@@ -697,6 +735,55 @@ final class Admin {
 			wp_die( esc_html( $error->getMessage() ) );
 		}
 		wp_safe_redirect( add_query_arg( 'created', rawurlencode( $result['public_id'] ), admin_url( 'admin.php?page=dreamax-license-manager' ) ) );
+		exit;
+	}
+
+	/**
+	 * Saves internal notes without exposing them in a redirect or audit record.
+	 */
+	public function save_license_notes(): void {
+		$this->authorize( Capabilities::MANAGE );
+		check_admin_referer( 'dreamax_lm_save_license_notes' );
+		$public_id = isset( $_POST['license'] ) && is_string( $_POST['license'] ) ? sanitize_text_field( wp_unslash( $_POST['license'] ) ) : '';
+		$revision  = isset( $_POST['revision'] ) && is_string( $_POST['revision'] ) ? sanitize_text_field( wp_unslash( $_POST['revision'] ) ) : '';
+		$note      = isset( $_POST['internal_note'] ) && is_string( $_POST['internal_note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['internal_note'] ) ) : '';
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Each element is checked below and then validated against a strict field allowlist by the service.
+		$raw_keys = isset( $_POST['field_keys'] ) && is_array( $_POST['field_keys'] ) ? wp_unslash( $_POST['field_keys'] ) : array();
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Each element is sanitized below and bounded by the service.
+		$raw_vals = isset( $_POST['field_values'] ) && is_array( $_POST['field_values'] ) ? wp_unslash( $_POST['field_values'] ) : array();
+		if ( count( $raw_keys ) > 10 || count( $raw_keys ) !== count( $raw_vals ) ) {
+			wp_die( esc_html__( 'A maximum of 10 paired reference fields is allowed.', 'dreamax-license-manager' ) );
+		}
+		$fields = array();
+		foreach ( $raw_keys as $index => $raw_key ) {
+			if ( ! is_string( $raw_key ) || ! isset( $raw_vals[ $index ] ) || ! is_string( $raw_vals[ $index ] ) ) {
+				wp_die( esc_html__( 'Reference fields must be text.', 'dreamax-license-manager' ) );
+			}
+			$key = trim( sanitize_key( $raw_key ) );
+			$val = trim( sanitize_text_field( $raw_vals[ $index ] ) );
+			if ( '' === $key && '' === $val ) {
+				continue;
+			}
+			if ( '' === $key || isset( $fields[ $key ] ) ) {
+				wp_die( esc_html__( 'Every reference value needs a unique field name.', 'dreamax-license-manager' ) );
+			}
+			$fields[ $key ] = $val;
+		}
+		try {
+			( new MerchantMetadata() )->save( $public_id, $revision, $note, $fields, get_current_user_id() );
+		} catch ( Throwable $error ) {
+			wp_die( esc_html( $error->getMessage() ) );
+		}
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'        => 'dreamax-license-manager-license',
+					'license'     => $public_id,
+					'notes_saved' => 1,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
 		exit;
 	}
 

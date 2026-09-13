@@ -56,7 +56,7 @@ Reference notation below is `L` license, `A` actor, and `R` request/operation; e
 | `license_suspended` | administrator | L:required A:required R:required | `from:string`, `to:string`, `reason:string` | none |
 | `license_revoked` | administrator, api_credential | L:required A:optional R:optional | exactly one variant: lifecycle `from`, `to`, `reason`; or management API `changed_fields:list<string>` | none |
 | `license_restored` | administrator | L:required A:required R:required | `from:string`, `to:string`, `reason:string` | none |
-| `license_updated` | api_credential | L:required A:optional R:optional | `changed_fields:list<string>` | none |
+| `license_updated` | administrator, api_credential | L:required A:optional R:optional | `changed_fields:list<string>`; merchant notes record only `merchant_data`, never the contents | none |
 | `license_extended` | administrator | L:required A:required R:required | `old_expiry:?UTC`, `new_expiry:UTC`, `extension_days:int+`, `reason:string` | none |
 | `license_activations_reset` | administrator | L:required A:required R:required | `reset_count:int0+`, `reason:string` | none |
 | `license_reassigned` | administrator | L:required A:required R:required | `before` and `after` exact license snapshots, `activation_reset:bool`, `reset_count:int0+`, `reason:string` | none |
