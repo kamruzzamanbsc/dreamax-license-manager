@@ -57,6 +57,12 @@ body.dreamax-lm-account-page .woocommerce > .woocommerce-notices-wrapper {
 	color: #991b1b;
 }
 
+.dreamax-lm-claim-notice--warning {
+	border-color: #fde68a;
+	background: #fffbeb;
+	color: #854d0e;
+}
+
 body.dreamax-lm-account-page .woocommerce > .woocommerce-MyAccount-navigation {
 	float: none !important;
 	grid-column: 1;
@@ -292,6 +298,22 @@ body.dreamax-lm-account-page .woocommerce > .woocommerce-MyAccount-content {
 	letter-spacing: 0.035em;
 	line-height: 1.2;
 	white-space: nowrap;
+}
+
+.dreamax-lm-key.is-unavailable {
+	color: #92400e;
+	font-family: inherit;
+	font-weight: 700;
+	letter-spacing: 0;
+	white-space: normal;
+}
+
+.dreamax-lm-account .button.dreamax-lm-reveal:disabled {
+	border-color: #dbe3ef !important;
+	background: #f8fafc !important;
+	color: #7b8798 !important;
+	cursor: not-allowed;
+	opacity: 1;
 }
 
 .dreamax-lm-status {

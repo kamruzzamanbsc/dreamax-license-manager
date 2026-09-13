@@ -154,11 +154,15 @@ final class AccountEndpoint {
 	 */
 	public function render(): void {
 		$this->send_private_cache_headers();
-		$rows  = $this->licenses->for_customer( get_current_user_id() );
-		$count = count( $rows );
+		$rows       = $this->licenses->for_customer( get_current_user_id() );
+		$key_access = $this->prepare_key_access( $rows );
+		$count      = count( $rows );
 
 		echo '<div class="dreamax-lm-account">';
 		$this->render_claim_notice();
+		if ( array() !== $key_access['unavailable'] ) {
+			echo '<div class="dreamax-lm-claim-notice dreamax-lm-claim-notice--warning" role="status"><p><strong>' . esc_html__( 'Secure key access is temporarily unavailable.', 'dreamax-license-manager' ) . '</strong> ' . esc_html__( 'License details remain visible, but revealing and copying affected keys is paused while the site administrator restores secure access.', 'dreamax-license-manager' ) . '</p></div>';
+		}
 		echo '<header class="dreamax-lm-account__header"><div><p class="dreamax-lm-account__eyebrow">' . esc_html__( 'Software access', 'dreamax-license-manager' ) . '</p><h1>' . esc_html__( 'Your licenses', 'dreamax-license-manager' ) . '</h1><p>' . esc_html__( 'View the licenses connected to your account and securely copy a key when you need it.', 'dreamax-license-manager' ) . '</p></div>';
 		/* translators: %d: number of licenses linked to the customer account. */
 		$license_count = sprintf( _n( '%d license', '%d licenses', $count, 'dreamax-license-manager' ), $count );
@@ -170,14 +174,20 @@ final class AccountEndpoint {
 		} else {
 			echo '<div class="dreamax-lm-table-wrap"><table class="shop_table shop_table_responsive dreamax-lm-license-table"><thead><tr><th>' . esc_html__( 'License', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Status', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Expiry', 'dreamax-license-manager' ) . '</th><th>' . esc_html__( 'Actions', 'dreamax-license-manager' ) . '</th></tr></thead><tbody>';
 			foreach ( $rows as $row ) {
-				$key          = $this->licenses->decrypt_key( $row );
-				$masked       = strlen( $key ) > 8 ? substr( $key, 0, 4 ) . str_repeat( "\xE2\x80\xA2", min( 12, strlen( $key ) - 8 ) ) . substr( $key, -4 ) : str_repeat( "\xE2\x80\xA2", strlen( $key ) );
-				$status       = (string) $row['lifecycle_status'];
-				$status_label = ucwords( str_replace( array( '-', '_' ), ' ', $status ) );
-				echo '<tr><td data-title="' . esc_attr__( 'License', 'dreamax-license-manager' ) . '"><code class="dreamax-lm-key" id="dreamax-key-' . esc_attr( (string) $row['public_id'] ) . '" aria-live="polite">' . esc_html( $masked ) . '</code></td>';
+				$public_id     = (string) $row['public_id'];
+				$key_available = isset( $key_access['keys'][ $public_id ] );
+				$key           = $key_available ? $key_access['keys'][ $public_id ] : '';
+				$masked        = $key_available ? ( strlen( $key ) > 8 ? substr( $key, 0, 4 ) . str_repeat( "\xE2\x80\xA2", min( 12, strlen( $key ) - 8 ) ) . substr( $key, -4 ) : str_repeat( "\xE2\x80\xA2", strlen( $key ) ) ) : __( 'Temporarily unavailable', 'dreamax-license-manager' );
+				$status        = (string) $row['lifecycle_status'];
+				$status_label  = ucwords( str_replace( array( '-', '_' ), ' ', $status ) );
+				echo '<tr><td data-title="' . esc_attr__( 'License', 'dreamax-license-manager' ) . '"><code class="dreamax-lm-key' . esc_attr( $key_available ? '' : ' is-unavailable' ) . '" id="dreamax-key-' . esc_attr( $public_id ) . '" aria-live="polite">' . esc_html( $masked ) . '</code></td>';
 				echo '<td data-title="' . esc_attr__( 'Status', 'dreamax-license-manager' ) . '"><span class="dreamax-lm-status dreamax-lm-status--' . esc_attr( sanitize_html_class( strtolower( $status ) ) ) . '">' . esc_html( $status_label ) . '</span></td>';
 				echo '<td data-title="' . esc_attr__( 'Expiry', 'dreamax-license-manager' ) . '">' . esc_html( $row['expires_at'] ? wc_format_datetime( new \WC_DateTime( (string) $row['expires_at'], new \DateTimeZone( 'UTC' ) ) ) : __( 'Never', 'dreamax-license-manager' ) ) . '</td>';
-				echo '<td data-title="' . esc_attr__( 'Actions', 'dreamax-license-manager' ) . '"><button type="button" class="button dreamax-lm-reveal" data-license="' . esc_attr( (string) $row['public_id'] ) . '" aria-controls="dreamax-key-' . esc_attr( (string) $row['public_id'] ) . '">' . esc_html__( 'Reveal and copy', 'dreamax-license-manager' ) . '</button></td></tr>';
+				if ( $key_available ) {
+					echo '<td data-title="' . esc_attr__( 'Actions', 'dreamax-license-manager' ) . '"><button type="button" class="button dreamax-lm-reveal" data-license="' . esc_attr( $public_id ) . '" aria-controls="dreamax-key-' . esc_attr( $public_id ) . '">' . esc_html__( 'Reveal and copy', 'dreamax-license-manager' ) . '</button></td></tr>';
+				} else {
+					echo '<td data-title="' . esc_attr__( 'Actions', 'dreamax-license-manager' ) . '"><button type="button" class="button dreamax-lm-reveal" disabled aria-disabled="true">' . esc_html__( 'Key unavailable', 'dreamax-license-manager' ) . '</button></td></tr>';
+				}
 			}
 			echo '</tbody></table></div>';
 		}
@@ -269,8 +279,46 @@ final class AccountEndpoint {
 		if ( ! is_array( $license ) || get_current_user_id() !== (int) $license['customer_id'] ) {
 			wp_send_json_error( array( 'message' => __( 'You cannot access that license.', 'dreamax-license-manager' ) ), 403 );
 		}
+		try {
+			$key = $this->licenses->decrypt_key( $license );
+		} catch ( Throwable $error ) {
+			unset( $error );
+			wp_send_json_error( array( 'message' => __( 'Secure key access is temporarily unavailable.', 'dreamax-license-manager' ) ), 503 );
+		}
+
 		( new EventRepository() )->append( AuditEventCatalog::LICENSE_REVEALED, (int) $license['id'], 'customer', get_current_user_id(), null, array( 'channel' => 'my_account' ), AuditEventCatalog::SCHEMA_V1 );
-		wp_send_json_success( array( 'key' => $this->licenses->decrypt_key( $license ) ) );
+		wp_send_json_success( array( 'key' => $key ) );
+	}
+
+	/**
+	 * Decrypts account keys behind a bounded recovery-mode boundary.
+	 *
+	 * @param array $rows License rows.
+	 * @phpstan-param list<array<string,mixed>> $rows License rows.
+	 * @return array{keys:array<string,string>,unavailable:array<string,true>}
+	 */
+	private function prepare_key_access( array $rows ): array {
+		$keys        = array();
+		$unavailable = array();
+
+		foreach ( $rows as $row ) {
+			$public_id = (string) ( $row['public_id'] ?? '' );
+			if ( '' === $public_id ) {
+				continue;
+			}
+
+			try {
+				$keys[ $public_id ] = $this->licenses->decrypt_key( $row );
+			} catch ( Throwable $error ) {
+				unset( $error );
+				$unavailable[ $public_id ] = true;
+			}
+		}
+
+		return array(
+			'keys'        => $keys,
+			'unavailable' => $unavailable,
+		);
 	}
 
 	/**

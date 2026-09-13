@@ -2,16 +2,17 @@
 
 ## Current objective
 
-Prepare the customer-safe portal recovery patch as version `0.3.5`. Preserve all published WordPress.org tags and encrypted license records while preventing missing or changed master-key material from exposing a fatal error to customers.
+Prepare the recovery-boundary hardening patch as version `0.3.6`. Preserve all published WordPress.org tags and encrypted license records while preventing missing, changed, or invalid master-key material from exposing fatal errors across customer, order, email, resend, and export surfaces.
 
-## 0.3.5 candidate scope and validation
+## 0.3.6 candidate scope and validation
 
-- Catch key-decryption failures at the customer portal boundary while retaining non-sensitive license metadata.
-- Disable reveal/copy for affected keys and show a clear recovery-state message without exposing exception details, paths, or key material.
-- Keep the signed-out page accessible with a single portal-owned H1 and keep recovery notices compact in the responsive grid.
-- PHPUnit: 285 tests and 1,847 assertions passed.
+- Retain non-sensitive license metadata and disable key actions when decryption is unavailable in either customer portal.
+- Keep order details, thank-you output, and customer email rendering available with a generic key-unavailable state.
+- Decrypt resend payloads before claiming idempotency state and decrypt reveal payloads before appending audit events.
+- Validate CSV exports in a server-side temporary file before appending an export event or sending download headers.
+- PHPUnit: 288 tests and 1,872 assertions passed.
 - WordPress PHPCS passed with no output; PHPStan passed with no errors.
-- Release metadata validation passed at version `0.3.5`, and authenticated local rendering confirmed the safe notice, disabled action, retained license record, and absence of fatal/path disclosure.
+- Release metadata validation passed at version `0.3.6`; live recovery-mode regression and deterministic packaging remain pending for the recorded release commit.
 
 ## 0.3.3 candidate scope
 

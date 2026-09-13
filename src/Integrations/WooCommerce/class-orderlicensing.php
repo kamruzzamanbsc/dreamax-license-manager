@@ -547,6 +547,16 @@ final class OrderLicensing {
 		if ( array() === $rows ) {
 			throw new RuntimeException( 'The order has no assigned licenses to resend.' );
 		}
+		/* translators: %d: WooCommerce order ID. */
+		$lines = array( sprintf( __( 'Licenses for order #%d', 'dreamax-license-manager' ), $order_id ), '' );
+		try {
+			foreach ( $rows as $row ) {
+				$lines[] = $this->licenses->decrypt_key( $row );
+			}
+		} catch ( Throwable $error ) {
+			unset( $error );
+			throw new RuntimeException( 'Secure key access is temporarily unavailable.' );
+		}
 		$claimed = false;
 		if ( null !== $operation_id ) {
 			$claimed = $this->operations->claim( 'order_resend', $order_id, $operation_id );
@@ -556,11 +566,6 @@ final class OrderLicensing {
 					'replayed' => true,
 				);
 			}
-		}
-		/* translators: %d: WooCommerce order ID. */
-		$lines = array( sprintf( __( 'Licenses for order #%d', 'dreamax-license-manager' ), $order_id ), '' );
-		foreach ( $rows as $row ) {
-			$lines[] = $this->licenses->decrypt_key( $row );
 		}
 		/* translators: %d: WooCommerce order ID. */
 		$sent = wp_mail( (string) $order->get_billing_email(), sprintf( __( 'Your licenses for order #%d', 'dreamax-license-manager' ), $order_id ), implode( "\n", $lines ) );
@@ -671,15 +676,30 @@ final class OrderLicensing {
 		if ( $plain ) {
 			echo "\n" . esc_html__( 'Licenses', 'dreamax-license-manager' ) . "\n";
 			foreach ( $rows as $row ) {
-				echo esc_html( $this->licenses->decrypt_key( $row ) ) . ' — ' . esc_html( (string) $row['lifecycle_status'] ) . "\n";
+				echo esc_html( $this->key_for_display( $row ) ) . ' — ' . esc_html( (string) $row['lifecycle_status'] ) . "\n";
 			}
 			return;
 		}
 		echo '<section class="dreamax-lm-order-licenses"><h2>' . esc_html__( 'Licenses', 'dreamax-license-manager' ) . '</h2><ul>';
 		foreach ( $rows as $row ) {
-			echo '<li><code>' . esc_html( $this->licenses->decrypt_key( $row ) ) . '</code> <span>— ' . esc_html( (string) $row['lifecycle_status'] ) . '</span></li>';
+			echo '<li><code>' . esc_html( $this->key_for_display( $row ) ) . '</code> <span>— ' . esc_html( (string) $row['lifecycle_status'] ) . '</span></li>';
 		}
 		echo '</ul></section>';
+	}
+
+	/**
+	 * Decrypts a key without allowing recovery-mode failures to break order views.
+	 *
+	 * @param array $row License row.
+	 * @phpstan-param array<string,mixed> $row License row.
+	 */
+	private function key_for_display( array $row ): string {
+		try {
+			return $this->licenses->decrypt_key( $row );
+		} catch ( Throwable $error ) {
+			unset( $error );
+			return __( 'Temporarily unavailable', 'dreamax-license-manager' );
+		}
 	}
 
 	/**

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Dreamax\LicenseManager\ImportExport;
 
+use Dreamax\LicenseManager\Encryption\Crypto;
 use Dreamax\LicenseManager\Events\AuditEventCatalog;
 use Dreamax\LicenseManager\Events\EventRepository;
 use Dreamax\LicenseManager\Licenses\KeyNormalizer;
@@ -132,9 +133,58 @@ final class CsvController {
 		global $wpdb;
 		$this->authorize( Capabilities::MANAGE );
 		check_admin_referer( 'dreamax_lm_export_csv' );
+		if ( ! ( new Crypto() )->ready() ) {
+			wp_die(
+				esc_html__( 'Secure key access is temporarily unavailable. Restore the configured master key before exporting licenses.', 'dreamax-license-manager' ),
+				esc_html__( 'License export unavailable', 'dreamax-license-manager' ),
+				array( 'response' => 503 )
+			);
+		}
 		$full = isset( $_POST['full_keys'] ) && current_user_can( Capabilities::EXPORT );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database reads and writes; object caching would break locking and replay guarantees.
-		$row_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}dreamax_lm_licenses" );
+		$row_count      = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}dreamax_lm_licenses" );
+		$temporary_file = wp_tempnam( 'dreamax-license-export.csv' );
+		if ( ! is_string( $temporary_file ) || '' === $temporary_file ) {
+			wp_die( esc_html__( 'A secure temporary export file could not be created.', 'dreamax-license-manager' ) );
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- The export is assembled in a bounded server-side temporary file before response headers are sent.
+		$output = fopen( $temporary_file, 'wb' );
+		if ( false === $output ) {
+			wp_delete_file( $temporary_file );
+			wp_die( esc_html__( 'The temporary export file could not be opened.', 'dreamax-license-manager' ) );
+		}
+		try {
+			fputcsv( $output, array( 'public_id', 'license_key', 'product_public_id', 'lifecycle_status', 'activation_limit', 'expires_at', 'order_id', 'customer_id' ) );
+			$repository = new LicenseRepository();
+			$last_id    = 0;
+			$batch_size = 250;
+			do {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Keyset pagination keeps the authorized export bounded while reading fresh plugin-owned data.
+				$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_licenses WHERE id>%d ORDER BY id LIMIT %d", $last_id, $batch_size ), ARRAY_A );
+				$rows = is_array( $rows ) ? $rows : array();
+				foreach ( $rows as $row ) {
+					$key = $repository->decrypt_key( $row );
+					if ( ! $full ) {
+						$key = strlen( $key ) > 8 ? substr( $key, 0, 4 ) . '********' . substr( $key, -4 ) : '********';
+					}
+					fputcsv( $output, array_map( array( $this, 'csv_safe' ), array( $row['public_id'], $key, $row['product_public_id'], $row['lifecycle_status'], $row['activation_limit'], $row['expires_at'], $row['order_id'], $row['customer_id'] ) ) );
+					$last_id = (int) $row['id'];
+				}
+				$batch_count = count( $rows );
+			} while ( $batch_size === $batch_count );
+		} catch ( Throwable $error ) {
+			unset( $error );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes the temporary CSV stream before cleanup.
+			fclose( $output );
+			wp_delete_file( $temporary_file );
+			wp_die(
+				esc_html__( 'Secure key access is temporarily unavailable. No export was created.', 'dreamax-license-manager' ),
+				esc_html__( 'License export unavailable', 'dreamax-license-manager' ),
+				array( 'response' => 503 )
+			);
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes the completed temporary CSV stream.
+		fclose( $output );
 		( new EventRepository() )->append(
 			AuditEventCatalog::LICENSE_EXPORTED,
 			null,
@@ -150,30 +200,9 @@ final class CsvController {
 		nocache_headers();
 		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename="dreamax-licenses-' . gmdate( 'Ymd-His' ) . '.csv"' );
-		$output = fopen( 'php://output', 'wb' );
-		if ( false === $output ) {
-			wp_die( esc_html__( 'The export stream could not be opened.', 'dreamax-license-manager' ) );
-		}
-		fputcsv( $output, array( 'public_id', 'license_key', 'product_public_id', 'lifecycle_status', 'activation_limit', 'expires_at', 'order_id', 'customer_id' ) );
-		$repository = new LicenseRepository();
-		$last_id    = 0;
-		$batch_size = 250;
-		do {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Keyset pagination keeps the authorized export bounded while reading fresh plugin-owned data.
-			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}dreamax_lm_licenses WHERE id>%d ORDER BY id LIMIT %d", $last_id, $batch_size ), ARRAY_A );
-			$rows = is_array( $rows ) ? $rows : array();
-			foreach ( $rows as $row ) {
-				$key = $repository->decrypt_key( $row );
-				if ( ! $full ) {
-					$key = strlen( $key ) > 8 ? substr( $key, 0, 4 ) . '********' . substr( $key, -4 ) : '********';
-				}
-				fputcsv( $output, array_map( array( $this, 'csv_safe' ), array( $row['public_id'], $key, $row['product_public_id'], $row['lifecycle_status'], $row['activation_limit'], $row['expires_at'], $row['order_id'], $row['customer_id'] ) ) );
-				$last_id = (int) $row['id'];
-			}
-			$batch_count = count( $rows );
-		} while ( $batch_size === $batch_count );
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes the php://output CSV stream.
-		fclose( $output );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streams the already validated server-side temporary export.
+		readfile( $temporary_file );
+		wp_delete_file( $temporary_file );
 		exit;
 	}
 

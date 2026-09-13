@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.6 - Recovery Boundary Hardening
+
+- Extended recovery-safe key handling to the legacy account endpoint, order details, thank-you pages, customer emails, resend operations, and CSV exports.
+- Moved customer reveal auditing and resend idempotency claims after successful decryption so failed recovery attempts do not create misleading state.
+- Assembled CSV exports in a validated temporary file before sending download headers, preventing partial downloads and export audits when encrypted data is unavailable.
+
 ## 0.3.5 - Customer Portal Recovery
 
 - Kept the customer license portal available when secure key decryption is temporarily unavailable, retained non-sensitive license details, and disabled reveal/copy actions without exposing internal exceptions or server paths.

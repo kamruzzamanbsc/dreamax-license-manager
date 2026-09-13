@@ -1,6 +1,6 @@
 # Dreamax License Manager
 
-Dreamax License Manager is a self-hosted WooCommerce licensing plugin published by [Dreamax Soft](https://dreamaxsoft.com/). Version `0.3.5` adds a customer-safe recovery state to the configured standalone dashboard when secure key access is temporarily unavailable.
+Dreamax License Manager is a self-hosted WooCommerce licensing plugin published by [Dreamax Soft](https://dreamaxsoft.com/). Version `0.3.6` applies a fail-safe recovery boundary to every customer, order, email, resend, and export surface that reads encrypted license keys.
 
 ## Current baseline
 
@@ -32,4 +32,4 @@ License keys use XChaCha20-Poly1305 authenticated encryption and a separate keye
 
 ## Project status
 
-The source prepares the `0.3.5` Customer Portal Recovery patch. All 33 Free V1 gates retain their recorded `PASS_WITH_EVIDENCE` status; the patch adds bounded degraded-mode rendering without changing encrypted license records. See `docs/BUILDING.md`, `docs/RELEASE.md`, and the coverage ledger.
+The source prepares the `0.3.6` Recovery Boundary Hardening patch. It prevents missing, changed, or invalid master-key material from breaking customer and order views, records reveal/export/resend state only after key access succeeds, and leaves encrypted license records unchanged. See `docs/BUILDING.md`, `docs/RELEASE.md`, and the coverage ledger.
