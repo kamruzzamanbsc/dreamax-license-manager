@@ -275,6 +275,106 @@ final class LifecycleService {
 	}
 
 	/**
+	 * Applies a product-bound expiry extension requested through the commercial contract.
+	 *
+	 * @param string $public_id License public identifier.
+	 * @param string $product_public_id Expected product public identifier.
+	 * @param int    $days Extension duration in days.
+	 * @param int    $effective_timestamp Authoritative billing-event timestamp.
+	 * @param string $operation_id Deterministic operation identifier.
+	 * @param string $request_digest Canonical command digest.
+	 * @throws InvalidArgumentException When command input is invalid.
+	 * @return array<string,mixed>
+	 */
+	public function extend_from_commercial_contract(
+		string $public_id,
+		string $product_public_id,
+		int $days,
+		int $effective_timestamp,
+		string $operation_id,
+		string $request_digest
+	): array {
+		$this->assert_public_id( $public_id );
+		$this->assert_operation_id( $operation_id );
+		if ( 1 !== preg_match( '/^prd_[A-Za-z0-9_-]{22}$/D', $product_public_id ) ) {
+			throw new InvalidArgumentException( 'The product public ID is invalid.' );
+		}
+		if ( $days < 1 || $days > 3650 ) {
+			throw new InvalidArgumentException( 'The extension must be between 1 and 3650 days.' );
+		}
+		if ( $effective_timestamp < 946684800 || $effective_timestamp > time() + 300 ) {
+			throw new InvalidArgumentException( 'The effective timestamp is outside the accepted range.' );
+		}
+		if ( 1 !== preg_match( '/^[a-f0-9]{64}$/D', $request_digest ) ) {
+			throw new InvalidArgumentException( 'The command digest is invalid.' );
+		}
+
+		return $this->transaction->run(
+			function () use ( $public_id, $product_public_id, $days, $effective_timestamp, $operation_id, $request_digest ): array {
+				global $wpdb;
+				$row = $this->lock( $public_id );
+				if ( (string) ( $row['product_public_id'] ?? '' ) !== $product_public_id ) {
+					throw new LicenseException( 'product_mismatch', 'The license is not assigned to the expected product.', 409 );
+				}
+
+				$record = $this->commercial_operation_record( $row, $operation_id );
+				if ( null !== $record ) {
+					if ( ! hash_equals( (string) ( $record['request_digest'] ?? '' ), $request_digest ) ) {
+						throw new LicenseException( 'idempotency_conflict', 'The operation identifier was already used for a different command.', 409 );
+					}
+					return array(
+						'public_id'  => $public_id,
+						'expires_at' => (string) ( $record['expires_at'] ?? '' ),
+						'replayed'   => true,
+					);
+				}
+				if ( $this->operation_applied( $row, $operation_id ) ) {
+					throw new LicenseException( 'idempotency_conflict', 'The operation identifier was already used outside this command contract.', 409 );
+				}
+
+				$old_expiry = null === $row['expires_at'] ? null : (string) $row['expires_at'];
+				$new_expiry = $this->expiry->extend( $old_expiry, $days * 86400, $effective_timestamp );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned transactional tables require direct, fresh database writes for locking and replay guarantees.
+				$updated = $wpdb->update(
+					$wpdb->prefix . 'dreamax_lm_licenses',
+					array(
+						'expires_at' => $new_expiry,
+						'updated_at' => gmdate( 'Y-m-d H:i:s' ),
+						'metadata'   => $this->mark_commercial_operation( $row, $operation_id, $request_digest, $new_expiry ),
+					),
+					array( 'id' => (int) $row['id'] ),
+					array( '%s', '%s', '%s' ),
+					array( '%d' )
+				);
+				if ( false === $updated ) {
+					throw new RuntimeException( 'The expiry extension could not be stored.' );
+				}
+				$this->events->append(
+					AuditEventCatalog::LICENSE_EXPIRY_EXTENSION_APPLIED,
+					(int) $row['id'],
+					'system',
+					null,
+					$operation_id,
+					array(
+						'old_expiry'     => $old_expiry,
+						'new_expiry'     => $new_expiry,
+						'extension_days' => $days,
+						'reason'         => 'Verified commercial renewal',
+						'source'         => 'commercial_contract_v1',
+					),
+					AuditEventCatalog::SCHEMA_V1
+				);
+
+				return array(
+					'public_id'  => $public_id,
+					'expires_at' => $new_expiry,
+					'replayed'   => false,
+				);
+			}
+		);
+	}
+
+	/**
 	 * Handles the reset activations operation.
 	 *
 	 * @param string $public_id Public id value.
@@ -648,6 +748,51 @@ final class LifecycleService {
 		$encoded                          = wp_json_encode( $metadata );
 		if ( ! is_string( $encoded ) ) {
 			throw new RuntimeException( 'The lifecycle operation marker could not be encoded.' );
+		}
+		return $encoded;
+	}
+
+	/**
+	 * Returns a stored commercial-command replay record.
+	 *
+	 * @param array<string,mixed> $row License row.
+	 * @param string              $operation_id Operation identifier.
+	 * @return array<string,mixed>|null
+	 */
+	private function commercial_operation_record( array $row, string $operation_id ): ?array {
+		$metadata = json_decode( (string) ( $row['metadata'] ?? '{}' ), true );
+		$records  = is_array( $metadata ) && is_array( $metadata['commercial_extension_operations'] ?? null ) ? $metadata['commercial_extension_operations'] : array();
+		$key      = hash( 'sha256', $operation_id );
+		$record   = $records[ $key ] ?? null;
+		return is_array( $record ) ? $record : null;
+	}
+
+	/**
+	 * Stores a bounded command digest and its original result for exact replay.
+	 *
+	 * @param array<string,mixed> $row License row.
+	 * @param string              $operation_id Operation identifier.
+	 * @param string              $request_digest Canonical request digest.
+	 * @param string              $expires_at Resulting UTC expiry.
+	 * @throws RuntimeException When metadata encoding fails.
+	 */
+	private function mark_commercial_operation( array $row, string $operation_id, string $request_digest, string $expires_at ): string {
+		$metadata                         = json_decode( (string) ( $row['metadata'] ?? '{}' ), true );
+		$metadata                         = is_array( $metadata ) ? $metadata : array();
+		$operations                       = is_array( $metadata['lifecycle_operations'] ?? null ) ? $metadata['lifecycle_operations'] : array();
+		$key                              = hash( 'sha256', $operation_id );
+		$operations[]                     = $key;
+		$metadata['lifecycle_operations'] = array_slice( array_values( array_unique( $operations ) ), -50 );
+
+		$records                                     = is_array( $metadata['commercial_extension_operations'] ?? null ) ? $metadata['commercial_extension_operations'] : array();
+		$records[ $key ]                             = array(
+			'request_digest' => $request_digest,
+			'expires_at'     => $expires_at,
+		);
+		$metadata['commercial_extension_operations'] = array_slice( $records, -50, null, true );
+		$encoded                                     = wp_json_encode( $metadata );
+		if ( ! is_string( $encoded ) ) {
+			throw new RuntimeException( 'The commercial command marker could not be encoded.' );
 		}
 		return $encoded;
 	}

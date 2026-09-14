@@ -20,7 +20,7 @@ final class AuditEventCatalogTest extends TestCase {
 
 	public function test_every_catalog_contract_accepts_a_complete_version_one_payload(): void {
 		$contracts = AuditEventCatalog::contracts();
-		self::assertCount( 48, $contracts );
+		self::assertCount( 49, $contracts );
 		foreach ( $contracts as $event_type => $versions ) {
 			self::assertSame( array( AuditEventCatalog::SCHEMA_V1 ), array_keys( $versions ), $event_type );
 			$contract = $versions[ AuditEventCatalog::SCHEMA_V1 ];
@@ -52,7 +52,7 @@ final class AuditEventCatalogTest extends TestCase {
 		foreach ( $this->production_php( $root . '/src' ) as $file ) {
 			$calls = array_merge( $calls, $this->append_calls( (string) file_get_contents( $file ) ) );
 		}
-		self::assertCount( 47, $calls );
+		self::assertCount( 48, $calls );
 		foreach ( $calls as $call ) {
 			self::assertStringContainsString( 'AuditEventCatalog::', $call );
 			self::assertStringContainsString( 'AuditEventCatalog::SCHEMA_V1', $call );

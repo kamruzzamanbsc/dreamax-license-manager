@@ -10,7 +10,7 @@ ADR 0001 requires every audit event to have an opaque identifier, stable type, p
 
 ## Decision
 
-`AuditEventCatalog` is the authoritative code contract. It defines all 44 production-emitted schema-v1 event types and four explicitly non-persistable legacy published names. Each supported version defines allowed actors, license/actor/request reference policies, required and optional metadata fields, safe types, emitter paths, and cross-field variant rules. Every production emitter passes a catalog event expression and `SCHEMA_V1` explicitly. `EventRepository` recursively redacts, validates, encodes, and only then persists the event with an opaque `evt_` ID and server UTC occurrence time.
+`AuditEventCatalog` is the authoritative code contract. At adoption it defined 44 production-emitted schema-v1 event types and four explicitly non-persistable legacy published names; later releases may add new, independently named event contracts without changing those frozen meanings. Each supported version defines allowed actors, license/actor/request reference policies, required and optional metadata fields, safe types, emitter paths, and cross-field variant rules. Every production emitter passes a catalog event expression and `SCHEMA_V1` explicitly. `EventRepository` recursively redacts, validates, encodes, and only then persists the event with an opaque `evt_` ID and server UTC occurrence time.
 
 Metadata contracts are closed at write time. A producer may add a documented optional field under the same version only when existing meaning is unchanged; arbitrary undeclared fields are rejected. Incompatible field, actor, reference, or semantic changes require a new positive payload version and retained support/fixtures for earlier versions.
 

@@ -20,6 +20,12 @@ final class CommercialProviderRegistry {
 	 */
 	private CoreAuthorityInterface $core_authority;
 	/**
+	 * Free-owned expiry extension authority.
+	 *
+	 * @var LicenseExpiryExtensionAuthorityInterface
+	 */
+	private LicenseExpiryExtensionAuthorityInterface $expiry_extension_authority;
+	/**
 	 * Registered entitlement provider.
 	 *
 	 * @var EntitlementProviderInterface|null
@@ -59,15 +65,22 @@ final class CommercialProviderRegistry {
 	/**
 	 * Creates an open registry around the immutable Free authority.
 	 *
-	 * @param CoreAuthorityInterface $core_authority Free-owned authority adapter.
+	 * @param CoreAuthorityInterface                        $core_authority Free-owned authority adapter.
+	 * @param LicenseExpiryExtensionAuthorityInterface|null $expiry_extension_authority Free-owned command authority.
 	 */
-	public function __construct( CoreAuthorityInterface $core_authority ) {
-		$this->core_authority = $core_authority;
+	public function __construct( CoreAuthorityInterface $core_authority, ?LicenseExpiryExtensionAuthorityInterface $expiry_extension_authority = null ) {
+		$this->core_authority             = $core_authority;
+		$this->expiry_extension_authority = $expiry_extension_authority ?? new LicenseExpiryExtensionAuthority();
 	}
 
 	/** Returns the immutable Free authority adapter. */
 	public function core_authority(): CoreAuthorityInterface {
 		return $this->core_authority;
+	}
+
+	/** Returns the narrow Free-owned expiry extension authority. */
+	public function expiry_extension_authority(): LicenseExpiryExtensionAuthorityInterface {
+		return $this->expiry_extension_authority;
 	}
 
 	/**

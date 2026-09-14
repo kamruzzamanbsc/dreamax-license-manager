@@ -31,6 +31,7 @@ final class CommercialContracts {
 		'core_authority.v1',
 		'entitlement_provider.v1',
 		'installation_credential_issuer.v1',
+		'license_expiry_extension_command.v1',
 		'package_authorization.v1',
 		'release_metadata_provider.v1',
 	);

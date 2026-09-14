@@ -14,7 +14,11 @@ Signed entitlement documents use asymmetric signatures, document and signing-key
 
 Extensions register providers during `dreamax_lm_register_commercial_providers_v1`. Registration locks immediately after that action. Duplicate or late providers are rejected. The compatibility descriptor reports contract, Free, and schema versions plus readiness and supported capabilities without exposing configuration or customer data.
 
-`CoreAuthorityInterface` is the only supported route from an extension to authoritative Free license and installation state. Its snapshots exclude license keys, ciphertext, key and instance fingerprints, internal Free IDs, customer email, private metadata, table names, and repository objects. Extensions must not query or mutate `dreamax_lm_*` tables directly.
+Free 0.4.1 adds `license_expiry_extension_command.v1`. Extensions obtain the `LicenseExpiryExtensionAuthorityInterface` from `CommercialProviderRegistry::expiry_extension_authority()` and submit a `LicenseExpiryExtensionCommand`. The command binds an opaque license ID to the expected opaque product ID, an extension duration, a whole-second UTC billing-event time, and a deterministic operation ID. Free validates the request, owns the transaction and audit event, rejects an operation ID reused with changed command fields, and returns the originally stored expiry for an exact replay. Commands fail closed while storage or encryption recovery is unavailable. The effective time cannot be future-dated beyond the bounded clock-skew allowance.
+
+The command is intentionally limited to extending an existing finite license. It cannot create, import, reveal, reassign, suspend, revoke, delete, or change activation limits. Extensions remain responsible for verifying provider events and deriving deterministic operation IDs before invoking it.
+
+`CoreAuthorityInterface` is the supported read path from an extension to authoritative Free license and installation state. `LicenseExpiryExtensionAuthorityInterface` is the only supported commercial write path. Snapshots and command results exclude license keys, ciphertext, key and instance fingerprints, internal Free IDs, customer email, private metadata, table names, and repository objects. Extensions must not query or mutate `dreamax_lm_*` tables directly.
 
 Secret-bearing `LicenseProof`, `InstallationProof`, and `IssuedCredential` values redact debug output and reject serialization. Provider messages are immutable, field-allowlisted, nesting-bounded, and reject common secret-bearing fields.
 

@@ -44,6 +44,7 @@ final class AuditEventCatalog {
 	public const LICENSE_RESTORED                         = 'license_restored';
 	public const LICENSE_UPDATED                          = 'license_updated';
 	public const LICENSE_EXTENDED                         = 'license_extended';
+	public const LICENSE_EXPIRY_EXTENSION_APPLIED         = 'license_expiry_extension_applied';
 	public const LICENSE_ACTIVATIONS_RESET                = 'license_activations_reset';
 	public const LICENSE_REASSIGNED                       = 'license_reassigned';
 	public const LICENSE_REASSIGNMENT_NOTIFIED            = 'license_reassignment_notified';
@@ -300,6 +301,21 @@ final class AuditEventCatalog {
 					'new_expiry'     => 'utc-datetime',
 					'extension_days' => 'positive-int',
 					'reason'         => 'reason',
+				),
+				array(),
+				array( 'src/Licenses/class-lifecycleservice.php' )
+			),
+			self::LICENSE_EXPIRY_EXTENSION_APPLIED         => self::v1(
+				array( 'system' ),
+				'required',
+				'none',
+				'required',
+				array(
+					'old_expiry'     => 'nullable-utc-datetime',
+					'new_expiry'     => 'utc-datetime',
+					'extension_days' => 'positive-int',
+					'reason'         => 'reason',
+					'source'         => 'non-empty-string',
 				),
 				array(),
 				array( 'src/Licenses/class-lifecycleservice.php' )

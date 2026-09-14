@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 - Commercial renewal command boundary
+
+- Added a narrow Free-owned typed command for product-bound expiry extensions initiated by separately distributed commercial renewal workflows.
+- Added transaction-locked exact replay, changed-payload conflict detection, authoritative effective-time bounds, and original-result replay.
+- Added a dedicated sanitized audit event while keeping license storage and lifecycle policy entirely owned by Free.
+
 ## 0.4.0 - Commercial extension contract
 
 - Added a versioned compatibility descriptor, locked provider registry, immutable contract values, and five typed extension-provider interfaces.

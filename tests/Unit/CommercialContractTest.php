@@ -18,6 +18,9 @@ use Dreamax\LicenseManager\Contracts\Commercial\V1\InstallationDecision;
 use Dreamax\LicenseManager\Contracts\Commercial\V1\InstallationProof;
 use Dreamax\LicenseManager\Contracts\Commercial\V1\IssuedCredential;
 use Dreamax\LicenseManager\Contracts\Commercial\V1\LicenseDecision;
+use Dreamax\LicenseManager\Contracts\Commercial\V1\LicenseExpiryExtensionAuthorityInterface;
+use Dreamax\LicenseManager\Contracts\Commercial\V1\LicenseExpiryExtensionCommand;
+use Dreamax\LicenseManager\Contracts\Commercial\V1\LicenseExpiryExtensionResult;
 use Dreamax\LicenseManager\Contracts\Commercial\V1\LicenseProof;
 use PHPUnit\Framework\TestCase;
 
@@ -80,6 +83,43 @@ final class CommercialContractTest extends TestCase {
 	public function test_allowed_decisions_require_authoritative_snapshots(): void {
 		$this->expectException( ContractException::class );
 		new LicenseDecision( true, 'valid', null, '2026-09-14T00:00:00Z' );
+	}
+
+	public function test_expiry_extension_command_is_strict_and_has_a_stable_payload_digest(): void {
+		$command = new LicenseExpiryExtensionCommand(
+			'lic_1234567890123456789012',
+			'prd_1234567890123456789012',
+			365,
+			'2026-09-14T00:00:00Z',
+			'renewal:woo:123456'
+		);
+
+		self::assertSame( 365, $command->extension_days() );
+		self::assertSame( '2026-09-14T00:00:00Z', $command->effective_at() );
+		self::assertMatchesRegularExpression( '/^[a-f0-9]{64}$/D', $command->digest() );
+		self::assertSame( $command->digest(), $command->digest() );
+	}
+
+	public function test_expiry_extension_command_rejects_invalid_calendar_time(): void {
+		$this->expectException( ContractException::class );
+		new LicenseExpiryExtensionCommand(
+			'lic_1234567890123456789012',
+			'prd_1234567890123456789012',
+			365,
+			'2026-02-31T00:00:00Z',
+			'renewal:woo:123456'
+		);
+	}
+
+	public function test_registry_exposes_an_injectable_free_owned_expiry_authority(): void {
+		$command_authority = new class() implements LicenseExpiryExtensionAuthorityInterface {
+			public function extend( LicenseExpiryExtensionCommand $command ): LicenseExpiryExtensionResult {
+				return new LicenseExpiryExtensionResult( true, 'extended', $command->license_public_id(), '2027-09-14 00:00:00', false, '2026-09-14T00:00:00Z' );
+			}
+		};
+		$registry = new CommercialProviderRegistry( $this->authority(), $command_authority );
+
+		self::assertSame( $command_authority, $registry->expiry_extension_authority() );
 	}
 
 	public function test_registry_rejects_duplicates_and_late_registration(): void {

@@ -4,7 +4,7 @@ Tags: woocommerce, license manager, software licensing
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -127,6 +127,11 @@ No. Distributed client code is inspectable. The server protects legitimate acces
 7. Give signed-in customers a focused standalone dashboard for viewing licenses and claiming eligible guest orders.
 
 == Changelog ==
+
+= 0.4.1 =
+
+* Adds a narrow Free-owned command contract for product-bound, idempotent license expiry extensions from verified commercial renewal workflows.
+* Rejects changed-payload replays, future-dated commands, product mismatches, and writes while storage or encryption recovery is unavailable.
 
 = 0.4.0 =
 

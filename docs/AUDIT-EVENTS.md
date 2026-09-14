@@ -1,6 +1,6 @@
 # Versioned audit-event catalog
 
-This is the published consumer catalog for development version 0.3.2. The authoritative executable definition is `AuditEventCatalog`; every production emitter names a catalog constant and schema version explicitly, and `EventRepository` validates the complete envelope before persistence.
+This is the published consumer catalog through development version 0.4.1. The authoritative executable definition is `AuditEventCatalog`; every production emitter names a catalog constant and schema version explicitly, and `EventRepository` validates the complete envelope before persistence.
 
 ## Stable envelope
 
@@ -58,6 +58,7 @@ Reference notation below is `L` license, `A` actor, and `R` request/operation; e
 | `license_restored` | administrator | L:required A:required R:required | `from:string`, `to:string`, `reason:string` | none |
 | `license_updated` | administrator, api_credential | L:required A:optional R:optional | `changed_fields:list<string>`; merchant notes record only `merchant_data`, never the contents | `reason:reason` for administrator policy changes |
 | `license_extended` | administrator | L:required A:required R:required | `old_expiry:?UTC`, `new_expiry:UTC`, `extension_days:int+`, `reason:string` | none |
+| `license_expiry_extension_applied` | system | L:required A:none R:required | `old_expiry:?UTC`, `new_expiry:UTC`, `extension_days:int+`, `reason:string`, `source:string` | none |
 | `license_activations_reset` | administrator | L:required A:required R:required | `reset_count:int0+`, `reason:string` | none |
 | `license_reassigned` | administrator | L:required A:required R:required | `before` and `after` exact license snapshots, `activation_reset:bool`, `reset_count:int0+`, `reason:string` | none |
 | `license_reassignment_notified` | administrator | L:required A:required R:required | `customer_id:int+` | none |
@@ -90,7 +91,7 @@ The `license_reassigned` snapshot has exactly `customer_id:?int+`, `order_id:?in
 
 ## Legacy published names
 
-Four names appeared in earlier documentation without a production emitter or frozen payload shape: `activation_failed`, `license_expired`, `license_imported`, and `license_renewed`. They remain recognizable as schema-v1 legacy catalog entries so stored history can be displayed and consumers can report `legacy_catalog_entry`. New persistence under these names is rejected. Imports use `license_created` with `source`; expiry is computed; renewal remains outside the implemented Free V1 surface.
+Four names appeared in earlier documentation without a production emitter or frozen payload shape: `activation_failed`, `license_expired`, `license_imported`, and `license_renewed`. They remain recognizable as schema-v1 legacy catalog entries so stored history can be displayed and consumers can report `legacy_catalog_entry`. New persistence under these names is rejected. Imports use `license_created` with `source`; expiry is computed; the narrow commercial renewal boundary uses `license_expiry_extension_applied` instead of retroactively defining the legacy name.
 
 ## Compatibility and redaction
 

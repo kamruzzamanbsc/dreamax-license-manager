@@ -17,7 +17,7 @@ final class CommercialContractSourceTest extends TestCase {
 	public function test_contract_version_and_capabilities_are_frozen(): void {
 		self::assertSame( 1, CommercialContracts::VERSION );
 		$source = (string) file_get_contents( $this->root . '/src/Contracts/Commercial/V1/class-commercialcontracts.php' );
-		foreach ( array( 'core_authority.v1', 'entitlement_provider.v1', 'installation_credential_issuer.v1', 'billing_event_adapter.v1', 'release_metadata_provider.v1', 'package_authorization.v1' ) as $capability ) {
+		foreach ( array( 'core_authority.v1', 'entitlement_provider.v1', 'installation_credential_issuer.v1', 'billing_event_adapter.v1', 'release_metadata_provider.v1', 'package_authorization.v1', 'license_expiry_extension_command.v1' ) as $capability ) {
 			self::assertStringContainsString( "'{$capability}'", $source );
 		}
 	}
@@ -70,6 +70,10 @@ final class CommercialContractSourceTest extends TestCase {
 			'InstallationProof',
 			'IssuedCredential',
 			'LicenseDecision',
+			'LicenseExpiryExtensionAuthority',
+			'LicenseExpiryExtensionAuthorityInterface',
+			'LicenseExpiryExtensionCommand',
+			'LicenseExpiryExtensionResult',
 			'LicenseProof',
 			'PackageAuthorizationDecision',
 			'PackageAuthorizationInterface',
