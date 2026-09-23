@@ -50,10 +50,9 @@ the applicable checks against future changes.
 - [x] Make the README explain the problem, infrastructure positioning,
   architecture, developer entry points, security boundaries, limitations, and
   maintenance evidence.
-- [ ] Manually align the GitHub repository description with the published
-  project. Proposed text: `Open-source self-hosted licensing infrastructure for
-  WordPress and WooCommerce developers.` This is an external settings change
-  and requires separate approval.
+- [x] Align the GitHub repository description with the published project:
+  `Open-source self-hosted licensing infrastructure for WordPress and
+  WooCommerce developers.`
 - [x] Verify that maintained local version/status statements agree across the
   README, project status, plugin header, and WordPress.org readme. The live
   GitHub repository description remains an external settings task.
@@ -138,6 +137,12 @@ completed successfully for commit `b26fa6c0fb48aa4a3f7dbcc0db1d21b82728eab2`.
 Its tests/static-checks job and both PHP 8.0 and PHP 8.2 syntax jobs passed. The
 remote job also completed strict Composer metadata validation and the locked
 dependency audit.
+
+Follow-up run
+[`35858471311`](https://github.com/kamruzzamanbsc/dreamax-license-manager/actions/runs/35858471311)
+also completed successfully for commit
+`741389c4a3c5d33b0ac23d8bd908670d21f65eef`, including both syntax jobs and the
+complete tests/static-checks job.
 
 ## Release-history audit snapshot
 

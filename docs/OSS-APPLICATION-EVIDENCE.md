@@ -109,4 +109,6 @@ sensitive validation only in bounded disposable environments.
 - [ ] Confirm that every linked claim still matches the current public branch.
 - [x] Record the successful initial CI run:
   https://github.com/kamruzzamanbsc/dreamax-license-manager/actions/runs/35858086787
+- [x] Record the successful follow-up CI run:
+  https://github.com/kamruzzamanbsc/dreamax-license-manager/actions/runs/35858471311
 - [ ] Obtain separate authorization before submitting the external application.

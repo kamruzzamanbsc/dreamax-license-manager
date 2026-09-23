@@ -40,8 +40,8 @@ The tracked plan is `docs/OPEN-SOURCE-READINESS.md`.
 
 - The initial GitHub Actions quality run passes, along with the available local
   PHP test, analysis, coding-standard, syntax, and release-metadata checks.
-- Public GitHub version/status messaging and WordPress.org publication state
-  need a final consistency review.
+- The GitHub repository description and maintained version/status documentation
+  now align with the published `0.4.1` baseline.
 - Current public adoption and external-contribution evidence is limited and must
   not be overstated.
 - Git tag and GitHub Release parity with published WordPress.org versions needs
