@@ -1,0 +1,40 @@
+name: Feature request
+description: Propose a bounded improvement with its compatibility and security impact.
+title: "Feature: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Describe the user or developer problem rather than only the proposed implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed outcome
+      description: Describe the smallest useful behavior and its acceptance criteria.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Compatibility and security impact
+      description: Note effects on REST v1, storage, migrations, encryption, authorization, privacy, WooCommerce, or existing integrations.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and the roadmap.
+          required: true
+        - label: I have not included secrets, customer data, or private configuration.
+          required: true

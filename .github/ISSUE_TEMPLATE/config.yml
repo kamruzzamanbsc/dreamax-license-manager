@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://dreamaxsoft.com/
+    about: Follow SECURITY.md and email support@dreamaxsoft.com privately. Do not disclose vulnerabilities publicly.
+  - name: WordPress.org support
+    url: https://wordpress.org/support/plugin/dreamax-license-manager/
+    about: Ask usage and installation questions in the public support forum without sharing sensitive data.

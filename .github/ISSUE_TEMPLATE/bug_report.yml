@@ -1,0 +1,62 @@
+name: Bug report
+description: Report a reproducible problem without including secrets or customer data.
+title: "Bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report vulnerabilities here. Follow SECURITY.md and never include license keys, credentials, master keys, customer data, or production database content.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide sanitized, repeatable steps using a disposable environment.
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Dreamax License Manager version
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: WordPress, WooCommerce, PHP, and database versions
+    validations:
+      required: true
+  - type: dropdown
+    id: storage
+    attributes:
+      label: WooCommerce order storage
+      options:
+        - HPOS
+        - Classic order storage
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Include relevant messages or logs only after removing all sensitive values.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety checks
+      options:
+        - label: I searched existing issues and documentation.
+          required: true
+        - label: This is not a vulnerability report.
+          required: true
+        - label: I removed secrets, credentials, license keys, customer data, and private URLs.
+          required: true

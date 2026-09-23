@@ -1,7 +1,7 @@
 # F22 release-header URL evidence
 
 - Date: 2026-08-25
-- Reviewer: Codex automated release-gate audit
+- Reviewer: Automated release-gate audit
 - Scope: release-facing URL metadata only; no licensing runtime behavior changed
 
 ## Procedure and result

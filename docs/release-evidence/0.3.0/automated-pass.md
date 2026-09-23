@@ -1,7 +1,7 @@
 # Free V1 automated evidence — 0.3.0
 
 - Date: 2026-08-25
-- Reviewer: Codex automated release-gate audit
+- Reviewer: Automated release-gate audit
 - Environment: Windows 10.0.19045 x64; PHP 8.2.4 with JSON and Sodium; Composer 2.8.5; PHPUnit 10.5.64; PHPStan 2.2.9; PHP_CodeSniffer 3.13.6; WordPress stubs 6.9.4; WooCommerce stubs 11.0.0
 - Runtime limitation: no live WordPress, WooCommerce, web server, database, proxy/CDN, multisite, mail, or browser environment was available.
 - Secret handling: no license key, credential, master secret, token, customer data, or request payload is present in this evidence.
@@ -32,7 +32,7 @@ Composer emitted a sandbox-only Git ownership warning and defaulted root-package
 - Expected: default entropy is at least 128 bits and configurations below 96 bits are rejected.
 - Observed: exit 0; 3/3 tests and 4 assertions passed, including the default-entropy and sub-floor rejection tests.
 - Evidence: this section and `tests/Unit/KeyGeneratorTest.php`.
-- Environment/date/reviewer: environment above; 2026-08-25; Codex automated release-gate audit.
+- Environment/date/reviewer: environment above; 2026-08-25; automated release-gate audit.
 
 ### F21 — Static/security analysis
 
@@ -40,7 +40,7 @@ Composer emitted a sandbox-only Git ownership warning and defaulted root-package
 - Expected: no WordPress coding-standard violation, no PHPStan error, and no known dependency vulnerability advisory.
 - Observed: all exited 0; PHPCS reported no violation; PHPStan reported `[OK] No errors` for 49/49 files; Composer reported `No security vulnerability advisories found.`
 - Evidence: Required automated audit above and this section.
-- Environment/date/reviewer: environment above; 2026-08-25; Codex automated release-gate audit.
+- Environment/date/reviewer: environment above; 2026-08-25; automated release-gate audit.
 
 ### F23 — Dependencies
 
@@ -48,7 +48,7 @@ Composer emitted a sandbox-only Git ownership warning and defaulted root-package
 - Expected: runtime dependencies are isolated and recorded, dependency licenses are compatible with the GPL-2.0-or-later project, and no known vulnerability advisory remains.
 - Observed: both commands exited 0; runtime Composer requirements contain only PHP, JSON, and Sodium; WordPress/WooCommerce are host-provided; all installed third-party packages are development tooling under MIT, BSD-3-Clause, or LGPL-3.0-or-later terms; no advisory was found; the runtime inventory is recorded in `docs/DEPENDENCIES.md`.
 - Evidence: this section, `composer.json`, `composer.lock`, and `docs/DEPENDENCIES.md`.
-- Environment/date/reviewer: environment above; 2026-08-25; Codex automated release-gate audit.
+- Environment/date/reviewer: environment above; 2026-08-25; automated release-gate audit.
 
 ## F01–F33 classification
 

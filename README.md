@@ -1,14 +1,87 @@
 # Dreamax License Manager
 
-Dreamax License Manager is a self-hosted WooCommerce licensing plugin developed and maintained by [Dreamax Soft](https://dreamaxsoft.com).
+Dreamax License Manager is an open-source, self-hosted licensing infrastructure
+layer for WordPress and WooCommerce developers. It lets a store issue, deliver,
+validate, activate, recover, and audit software licenses while keeping licensing
+data and cryptographic control on the store owner's infrastructure.
 
-The plugin is publicly available on WordPress.org:
+It is developed and maintained by [Dreamax Soft](https://dreamaxsoft.com) and is
+available from the
+[WordPress.org Plugin Directory](https://wordpress.org/plugins/dreamax-license-manager/).
+Version `0.4.1` is the current published release.
 
-https://wordpress.org/plugins/dreamax-license-manager/
+This repository contains the actively maintained development source, tests,
+operational documentation, and release evidence.
 
-Version `0.4.1` is currently published on WordPress.org. The project provides license generation, activation management, customer license access, import/export tools, diagnostics, administrative controls, and a versioned developer boundary for separately distributed extensions.
+## Why this project exists
 
-This repository contains the actively maintained development source for the plugin.
+Developers selling WordPress plugins or other licensed products often have to
+choose between an external licensing service and building security-sensitive
+license infrastructure from scratch. Dreamax License Manager provides a
+self-hosted foundation integrated with WooCommerce orders while keeping the
+public API, lifecycle policy, encryption boundary, customer access, and audit
+history under the merchant's control.
+
+It is infrastructure rather than unbreakable DRM. Distributed client code is
+inspectable; the server protects legitimate access, activation state, delivery,
+support, and future service boundaries.
+
+## Core capabilities
+
+- Generate cryptographically strong keys or allocate from imported key pools.
+- Bind issuance policies to WooCommerce products and variations.
+- Allocate and deliver exact quantity slots only for eligible paid orders.
+- Validate, activate, deactivate, suspend, revoke, extend, release, and
+  reassign licenses through guarded workflows.
+- Provide a private customer dashboard and single-use guest-order claim flow.
+- Expose versioned public lifecycle endpoints and scoped management endpoints.
+- Encrypt license keys at rest and resolve exact matches through a separate
+  keyed lookup fingerprint.
+- Record versioned, sanitized audit events and support privacy-aware portability.
+- Fail closed during storage, encryption, or dependency recovery states.
+
+## Architecture at a glance
+
+```text
+WooCommerce order and product policy
+                |
+                v
+     License and lifecycle services
+        |          |          |
+        v          v          v
+   Encryption   Activations   Audit events
+        |          |          |
+        +----------+----------+
+                   |
+                   v
+        Site-local InnoDB storage
+                   ^
+                   |
+     REST API / Admin / Customer portal
+```
+
+WordPress and WooCommerce are integration boundaries. Licensing rules live in
+namespaced services, and storage access is kept behind repository/service
+boundaries. Read the full [architecture](docs/ARCHITECTURE.md),
+[threat model](docs/THREAT-MODEL.md), and
+[v1 contract decisions](docs/adr/0001-v1-contracts.md).
+
+## Developer entry points
+
+- [REST API v1](docs/API.md) and the machine-readable
+  [OpenAPI document](docs/openapi-v1.yaml)
+- [API credential lifecycle](docs/API-CREDENTIALS.md)
+- [Dependency-light PHP client example](examples/php-client.php)
+- [Hooks and filters](docs/HOOKS-AND-FILTERS.md)
+- [Capability and role matrix](docs/CAPABILITIES.md)
+- [Commercial extension contract v1](docs/COMMERCIAL-EXTENSIONS.md)
+- [Audit-event producer and consumer guidance](docs/AUDIT-EVENTS.md)
+
+The REST base path is `/wp-json/dreamax-license-manager/v1`. Production calls
+that carry a license key or credential require HTTPS. Public lifecycle routes
+accept license proof; management routes require narrowly scoped, expiring
+Bearer credentials. Never put a license key, credential, token, or idempotency
+value in a URL.
 
 ## Current baseline
 
@@ -31,6 +104,20 @@ The recorded acceptance matrix used WordPress 7.1, WooCommerce 11.0.1, PHP 8.2.4
 Never test migrations, fixture generation, destructive actions, or recovery drills against production data.
 
 Review `docs/FREE-V1-MUST-PASS.md` before making any release claim.
+
+## Quality and release discipline
+
+The repository includes PHPUnit tests, source-contract tests, PHPStan, WordPress
+Coding Standards, deterministic release tooling, frozen fixtures, and guarded
+live verifiers for disposable environments. The recorded `0.4.1` release
+verification reports 354 tests and 2,247 assertions, with PHPCS, PHPStan,
+release-metadata validation, deterministic packaging, and exact WordPress.org
+package comparison passing.
+
+That record describes the reviewed release, not an automatic claim about later
+changes. See the
+[0.4.1 verification record](docs/release-evidence/0.4.1/release-verification.md),
+[build guide](docs/BUILDING.md), and [release process](docs/RELEASE.md).
 
 ## Customer license portal
 
@@ -151,16 +238,38 @@ Ongoing development focuses on:
 
 Changes are developed and reviewed in this public repository before release where applicable.
 
+## Contributing and security
+
+Contributions that preserve public contracts and security boundaries are
+welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). Report suspected
+vulnerabilities privately according to [SECURITY.md](SECURITY.md), and never
+include real keys, credentials, customer data, database dumps, or master-key
+material in an issue or test fixture.
+
+The current open-source application-readiness work is tracked in
+[docs/OPEN-SOURCE-READINESS.md](docs/OPEN-SOURCE-READINESS.md). The record is a
+program-neutral maintenance plan, not a claim of eligibility or acceptance.
+
+## Scope and limitations
+
+- WooCommerce is required for product, order, allocation, delivery, and
+  customer-ownership workflows.
+- Sodium, an external master key, HTTPS, and InnoDB are operational security
+  requirements, not optional production hardening.
+- A database backup without the matching external master key cannot recover
+  clear license keys.
+- The plugin does not make client-side licensing unbreakable and does not claim
+  broad ecosystem adoption or universal deployment compatibility.
+- Guarded migration, recovery, concurrency, mail, and live verification scripts
+  are for explicitly marked disposable environments only.
+
 ## Project status
 
 Version `0.4.1` is currently published on WordPress.org.
 
 The project remains under active maintenance and development while preserving the plugin's established public behavior and compatibility expectations.
 
-WordPress.org plugin page:
-
-https://wordpress.org/plugins/dreamax-license-manager/
-
-GitHub repository:
-
-https://github.com/kamruzzamanbsc/dreamax-license-manager
+- [WordPress.org plugin page](https://wordpress.org/plugins/dreamax-license-manager/)
+- [GitHub repository](https://github.com/kamruzzamanbsc/dreamax-license-manager)
+- [Project status](PROJECT_STATUS.md)
+- [Changelog](CHANGELOG.md)
