@@ -5,14 +5,11 @@ The current detailed checklist is maintained in
 
 ## Next small steps
 
-1. Run Composer metadata validation and the locked dependency audit in CI or a
-   compatible environment with Composer, then record the first remote workflow
-   result.
-2. Confirm the applicant's GitHub identity, core-maintainer permissions, and
+1. Confirm the applicant's GitHub identity, core-maintainer permissions, and
    any qualifying activity across other repositories.
-3. Re-check current public metrics and official program criteria immediately
+2. Re-check current public metrics and official program criteria immediately
    before submission.
-4. Review the prepared evidence packet and application narrative without
+3. Review the prepared evidence packet and application narrative without
    overstating adoption.
 
 ## Later actions requiring separate approval

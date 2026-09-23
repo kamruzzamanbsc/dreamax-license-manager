@@ -107,6 +107,6 @@ sensitive validation only in bounded disposable environments.
 - [ ] Replace no placeholders with sensitive contact data in the repository;
   supply contact details only in the private form.
 - [ ] Confirm that every linked claim still matches the current public branch.
-- [ ] Record a successful CI run or explicitly state that the workflow has not
-  yet run.
+- [x] Record the successful initial CI run:
+  https://github.com/kamruzzamanbsc/dreamax-license-manager/actions/runs/35858086787
 - [ ] Obtain separate authorization before submitting the external application.

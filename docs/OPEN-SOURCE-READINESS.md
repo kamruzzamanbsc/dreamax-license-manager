@@ -75,8 +75,8 @@ the applicable checks against future changes.
   PHPUnit, PHPStan, PHPCS, and release-metadata validation.
 - [x] Run the available local PHP quality suite and record the exact result.
   The workflow itself is not described as green until it runs remotely.
-- [ ] Run Composer metadata validation and the locked dependency audit in CI or
-  another environment with a Composer executable.
+- [x] Run Composer metadata validation and the locked dependency audit in the
+  first remote CI workflow.
 
 ### P2: release and application evidence
 
@@ -132,9 +132,12 @@ Validated locally on 2026-09-23 without changing production data:
 - Repository scan for the excluded vendor names: no matches outside ignored
   dependency, build, and Git metadata directories.
 
-Composer metadata validation, the locked dependency audit, and the new GitHub
-Actions workflow remain unverified because Composer is not available on the
-current shell PATH and no remote workflow was triggered.
+GitHub Actions run
+[`35858086787`](https://github.com/kamruzzamanbsc/dreamax-license-manager/actions/runs/35858086787)
+completed successfully for commit `b26fa6c0fb48aa4a3f7dbcc0db1d21b82728eab2`.
+Its tests/static-checks job and both PHP 8.0 and PHP 8.2 syntax jobs passed. The
+remote job also completed strict Composer metadata validation and the locked
+dependency audit.
 
 ## Release-history audit snapshot
 

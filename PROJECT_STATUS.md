@@ -38,10 +38,8 @@ The tracked plan is `docs/OPEN-SOURCE-READINESS.md`.
 
 ## Current readiness gaps
 
-- The new GitHub Actions quality workflow has not run remotely. The available
-  local PHP test, analysis, coding-standard, syntax, and release-metadata checks
-  pass, but Composer validation and dependency audit remain pending because no
-  Composer executable is available on the current shell PATH.
+- The initial GitHub Actions quality run passes, along with the available local
+  PHP test, analysis, coding-standard, syntax, and release-metadata checks.
 - Public GitHub version/status messaging and WordPress.org publication state
   need a final consistency review.
 - Current public adoption and external-contribution evidence is limited and must

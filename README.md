@@ -1,5 +1,7 @@
 # Dreamax License Manager
 
+[![Quality](https://github.com/kamruzzamanbsc/dreamax-license-manager/actions/workflows/quality.yml/badge.svg)](https://github.com/kamruzzamanbsc/dreamax-license-manager/actions/workflows/quality.yml)
+
 Dreamax License Manager is an open-source, self-hosted licensing infrastructure
 layer for WordPress and WooCommerce developers. It lets a store issue, deliver,
 validate, activate, recover, and audit software licenses while keeping licensing
