@@ -38,3 +38,35 @@ Authenticate with exactly one `Authorization: Bearer dlm_v1_<22-character-public
 Every response includes `success`, stable `code`, a human message, opaque `request_id`, authoritative RFC3339 server `timestamp`, and `data`. Stable errors include `invalid_request`, `invalid_license`, `product_mismatch`, `license_expired`, `license_suspended`, `license_revoked`, `activation_limit_reached`, `activation_not_found`, `rate_limited`, `authentication_required`, `insufficient_scope`, `idempotency_conflict`, and `server_unavailable`.
 
 Required no-store headers apply to all licensing responses. There is no wildcard CORS policy; administrators must explicitly allow exact origins.
+
+
+## Public lifecycle error handling
+
+Clients should branch on the stable `code`, `success`, and HTTP status fields.
+The human-readable `message` may be displayed, but clients should not parse it
+to make decisions. The opaque `request_id` may be retained for support without
+retaining the license key or raw request body.
+
+| Operation | Documented failure codes |
+| --- | --- |
+| Activate | `invalid_request`, `invalid_license`, `product_mismatch`, `license_expired`, `license_suspended`, `license_revoked`, `activation_limit_reached`, `rate_limited`, `idempotency_conflict`, `server_unavailable` |
+| Deactivate | `invalid_request`, `invalid_license`, `product_mismatch`, `activation_not_found`, `rate_limited`, `idempotency_conflict`, `server_unavailable` |
+| Validate or status | `invalid_request`, `invalid_license`, `product_mismatch`, `license_expired`, `license_suspended`, `license_revoked`, `rate_limited`, `server_unavailable` |
+
+Recommended handling:
+
+- Correct `invalid_request` before retrying. Do not resend an unchanged invalid
+  payload.
+- Treat `invalid_license`, `product_mismatch`, `license_expired`,
+  `license_suspended`, `license_revoked`, `activation_limit_reached`, and
+  `activation_not_found` as authoritative responses requiring user or
+  administrator action rather than blind retries.
+- Back off after `rate_limited`. Use bounded retries and avoid synchronized
+  retry loops.
+- An `idempotency_conflict` means that the supplied key was already associated
+  with different request data. Never reuse that key for a changed operation.
+- For `server_unavailable`, first verify HTTPS and service readiness, then use
+  bounded retries if the failure is temporary. An exact activation or
+  deactivation retry must reuse the original idempotency key and payload.
+- Never log or attach license keys, Bearer credentials, idempotency values, or
+  raw request bodies when reporting an error.
