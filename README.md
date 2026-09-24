@@ -74,6 +74,7 @@ boundaries. Read the full [architecture](docs/ARCHITECTURE.md),
   [OpenAPI document](docs/openapi-v1.yaml)
 - [API credential lifecycle](docs/API-CREDENTIALS.md)
 - [Dependency-light PHP client example](examples/php-client.php)
+- [WordPress plugin reference integration](docs/REFERENCE-INTEGRATION.md)
 - [Hooks and filters](docs/HOOKS-AND-FILTERS.md)
 - [Capability and role matrix](docs/CAPABILITIES.md)
 - [Commercial extension contract v1](docs/COMMERCIAL-EXTENSIONS.md)

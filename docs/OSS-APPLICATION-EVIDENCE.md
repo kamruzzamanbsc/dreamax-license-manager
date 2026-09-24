@@ -1,6 +1,6 @@
 # Open-source program application evidence
 
-Snapshot date: 2026-09-23
+Snapshot date: 2026-09-24
 
 This packet prepares truthful source material for an open-source support-program
 application. It is not an application, an eligibility determination, or a claim
@@ -9,9 +9,13 @@ of acceptance.
 ## Applicant details to confirm
 
 - Applicant name: `[confirm before submission]`
-- GitHub username: `[confirm before submission]`
-- Maintainer role and repository permissions: `[confirm before submission]`
-- Other qualifying projects or contribution history: `[verify before submission]`
+- GitHub username: `kamruzzamanbsc` (public repository-owner account; confirm
+  that the applicant controls this account before submission)
+- Maintainer role and repository permissions: repository owner and sole listed
+  contributor; privately confirm current administrator access before submission
+- Other qualifying projects or contribution history: the public snapshot did
+  not establish a separate qualifying route; add private or newly verified
+  evidence only if it is accurate
 - Preferred private contact: `[provide directly in the application; do not commit]`
 
 ## Project identity
@@ -41,11 +45,13 @@ of acceptance.
 
 ## Current measured signals
 
-The public pages inspected on 2026-09-23 showed fewer than 10 active
-WordPress.org installations, no WordPress.org reviews, and no visible GitHub
-stars or forks. No dependency count, qualifying download total, external merged
-pull-request total, external-contributor total, or OpenSSF criticality score has
-been established for this application packet.
+The public pages inspected on 2026-09-24 showed fewer than 10 active
+WordPress.org installations, no WordPress.org reviews, 6 GitHub stars, 4 forks,
+and one listed contributor: the repository-owner account. A public GitHub search
+found no pull requests authored by that account and merged into repositories it
+does not own during the prior 12 months. No qualifying dependency or download
+total, external-contributor total, recognized foundation role, or OpenSSF
+criticality score has been established for this application packet.
 
 Re-check every metric on the submission date. Do not describe the project as
 widely adopted or claim a quantitative eligibility route without direct
@@ -94,19 +100,45 @@ design, API documentation alignment, and release-checklist verification. Human
 maintainers would continue to review changes, control releases, and run
 sensitive validation only in bounded disposable environments.
 
+## Short-form application answer
+
+I maintain Dreamax License Manager, an open-source, self-hosted licensing
+infrastructure plugin for WordPress and WooCommerce developers. It gives stores
+a transparent alternative to an external licensing SaaS for issuing,
+delivering, validating, activating, recovering, and auditing software licenses.
+The project is deliberately honest about being early in adoption and does not
+claim to meet a quantitative eligibility threshold.
+
+The maintenance burden is unusually security-sensitive for a young plugin. The
+codebase covers authenticated encryption with an external master-key boundary,
+transactional activation limits, scoped expiring management credentials,
+idempotency, rate limiting, customer isolation, recovery modes, privacy-aware
+portability, deterministic packaging, and versioned audit events. It includes
+354 tests with 2,247 assertions in the recorded `0.4.1` release verification,
+alongside static analysis, coding standards, release checks, architecture and
+threat-model documentation, and guarded disposable-environment verification.
+
+Advanced coding assistance would be used to review security boundaries, design
+failure-path and compatibility tests, triage issues into bounded contributions,
+keep API documentation aligned, and reduce the cost of careful WordPress and
+WooCommerce maintenance. All changes and releases would remain human-reviewed.
+
 ## Pre-submission verification
 
-- [ ] Confirm the applicant identity, core-maintainer role, and repository
-  permissions.
+- [ ] Privately confirm the applicant's legal/name details, control of the
+  `kamruzzamanbsc` account, and current repository administrator access.
 - [x] Confirm a reliable private security/conduct reporting address:
   `support@dreamaxsoft.com`, with `info@dreamaxsoft.com` as the fallback.
-- [ ] Check whether the applicant qualifies through work on another project or
-  external merged pull requests.
-- [ ] Re-check the official program page and terms.
-- [ ] Re-measure public project and contributor signals.
+- [x] Check the repository-owner account's visible work on other projects and
+  external merged pull requests; no separate qualifying route was found in the
+  2026-09-24 public snapshot.
+- [x] Re-check the official program page and published criteria on 2026-09-24;
+  re-check the terms in the private submission flow before accepting them.
+- [x] Re-measure public project and contributor signals on 2026-09-24.
 - [ ] Replace no placeholders with sensitive contact data in the repository;
   supply contact details only in the private form.
-- [ ] Confirm that every linked claim still matches the current public branch.
+- [x] Confirm that every committed evidence link and version claim matches the
+  current public branch as of 2026-09-24.
 - [x] Record the successful initial CI run:
   https://github.com/kamruzzamanbsc/dreamax-license-manager/actions/runs/35858086787
 - [x] Record the successful follow-up CI run:

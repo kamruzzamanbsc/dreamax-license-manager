@@ -5,18 +5,18 @@ The current detailed checklist is maintained in
 
 ## Next small steps
 
-1. Confirm the applicant's GitHub identity, core-maintainer permissions, and
-   any qualifying activity across other repositories.
-2. Re-check current public metrics and official program criteria immediately
-   before submission.
-3. Review the prepared evidence packet and application narrative without
+1. Privately confirm the applicant's name, control of the `kamruzzamanbsc`
+   account, repository administrator access, and application contact address.
+2. Review the prepared evidence packet and short-form narrative without
    overstating adoption.
+3. Re-check the official terms shown in the private form before accepting and
+   submitting them.
 
 ## Later actions requiring separate approval
 
-- Change the public GitHub repository description or other repository settings.
 - Create or publish missing Git tags or GitHub Releases after provenance review.
-- Push changes, open or merge a pull request, or submit an external application.
+- Publish the prepared contributor issues, push changes, open or merge a pull
+  request, or submit an external application.
 - Modify WordPress.org SVN content or publish another plugin release.
 
 ## Ongoing adoption work
